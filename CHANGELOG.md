@@ -21,14 +21,17 @@
   `local/self`(本人 worker);source 金鑰 / HMAC / 瀏覽器 session token 三種驗證;worker 綁定碼、長輪詢認領、
   租約、逐段回傳、撤銷;平台自建表或記憶體兩種存放;用量帳
 - **Worker v1(`worker/aigo_bridge_worker.py`,只用標準函式庫)**:`enroll` / `run` / `status`;
-  啟動前確認是本人互動登入的 Claude Code、拒絕長效 token 模式;只領本人工單;`claude -p` 無工具模式、
-  haiku 關 thinking、其他模型改用低 effort;串流逐段回傳且在 `message_stop` 即交付;
+  啟動前確認是本人互動登入的 Claude Code、拒絕長效 token 模式;只領本人工單;`claude -p` 無工具模式;
+  串流逐段回傳且在 `message_stop` 即交付;
   帳號 email、同網域 email 與本機路徑的輸出遮罩(串流時只留可能還沒長完的尾巴不送);
   JSON schema 走 `--json-schema`;對話延續(`--session-id` / `--resume`)
 - `tools/e2e_local.py`:以官方 openai 客戶端對 Bridge + 真 worker 做端到端檢查
 - docs/09 API 參考:轉譯規則、路由(相容既有 OpenRouter 呼叫端的 model 寫法)、錯誤形狀、表設計
 
 - `tools/provision_tables.py`:建立或補齊四張平台自建表(預設只列計畫)
+- `examples/minimal-custom-app`:接上 Bridge 的最小 Custom App(連接我的電腦、瀏覽器直連串流、伺服器端同步呼叫),
+  附可直接複製的前端客戶端 `src/lib/bridge.ts`
+- docs/01 §5:部署在平台上的端到端結果、共用池配額的觀察
 
 ### Changed
 - **思考與 effort 不再寫死**:worker 預設不帶任何 thinking / effort 參數;呼叫端以 `reasoning_effort`、
@@ -39,3 +42,13 @@
 - JSON 模式下拿掉模型多包的程式碼區塊外框
 - 自建表預設前綴改為 `biz_bridge_`(平台慣例);查詢鍵在表上的實體名為 `lookup_key`
 - owner / caller user 改以平台使用者 id(`ctx.user_id`)識別,不再以 email
+
+### Fixed
+- 綁定時 Bridge 回 500:平台自建表的 number 欄讀回來是字串,存放層現在依 schema 轉型
+- 沒有空白的英數輸出被遮罩扣到最後才送:保留量上限改為 64 字元(email 帳號部分的上限)
+- worker 超過 240 秒的工作被截斷卻回報完成:上限改為預設 1800 秒(`AIGO_BRIDGE_JOB_TIMEOUT_S`),
+  被中止或輸出不完整一律回報失敗
+- 實際型號拿不到:`local/*` 串流的最後一個 chunk 與所有非串流回應的本體都帶 `x_bridge`
+  (egress 的 `ctx.http.call` 拿不到回應標頭)
+- 沒設雲端金鑰時 409 仍建議改用 `anthropic/*`
+- `tools/deploy_hosted.py` 失敗時把原因印在最後一行

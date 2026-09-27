@@ -1,0 +1,17 @@
+{
+  "bridge_session": {
+    "description": "換短效 session token,讓瀏覽器直連 Bridge 串流",
+    "timeout_ms": 15000,
+    "is_enabled": true
+  },
+  "bridge_computers": {
+    "description": "連接我的電腦:產生綁定碼、列出、撤銷",
+    "timeout_ms": 15000,
+    "is_enabled": true
+  },
+  "bridge_chat": {
+    "description": "伺服器端同步呼叫 Bridge(X-Bridge-Wait: 20;超過回工單 id)",
+    "timeout_ms": 35000,
+    "is_enabled": true
+  }
+}

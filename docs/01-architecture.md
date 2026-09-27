@@ -126,7 +126,7 @@ AI GO 上的 app 呼叫 LLM,常見寫法是在 Server Action 或 Hosted App 裡�
 | Custom App 執行頁的 CSP | `connect-src 'self' https://ai-go.app https://*.ai-go.app …` —— Hosted App 的 `*.deploy.ai-go.app` **在允許範圍內** |
 | 從執行頁來源發出的 CORS 預檢 | 通過(`Access-Control-Allow-Origin: *`,允許 `Authorization`) |
 | Hosted App 改環境變數後生效 | 數秒內換上新實例(以 `/healthz` 的版本標記確認) |
-| 瀏覽器實際串流、錯誤可讀性、長連線截斷點 | 待補(需要在執行頁登入後操作) |
+| 瀏覽器實際串流、錯誤可讀性、長連線截斷點 | ✅ 見下方「部署在平台上的端到端」 |
 
 ### S3 · Custom App 的 Server Action 經 egress 同步呼叫 Bridge
 
@@ -177,6 +177,46 @@ action 的 `timeout_ms` = 120000。
 | 問它看到哪些附加資訊 | ✅ 回答不含 email |
 | 別的使用者呼叫 `local/self` | ✅ 409 `no_worker_for_user` |
 
+### 部署在平台上的端到端(Custom App 執行頁 + Hosted Bridge + 本機 worker)
+
+量法:`examples/minimal-custom-app` 發布成 internal Custom App,Bridge 部署成 public Hosted App
+(冷啟動模式、資料放平台自建表、**不設任何雲端模型金鑰**),worker 以擁有者本人登入的 Claude Code 執行。
+在執行頁登入後操作;畫面在 Shadow DOM 裡,以 `data-testid` 驅動。
+
+| 項目 | 結果 |
+|---|---|
+| 還沒綁電腦就送出 | ✅ 409,畫面顯示「請先連接我的電腦」 |
+| 產生綁定碼 → 本機 `enroll` → 清單顯示「在線」 | ✅ |
+| 瀏覽器直連串流(haiku,thinking 照模型預設) | ✅ 第一段文字約 12 – 23 秒:前段全是 thinking,文字要等它結束 |
+| 同一題、`reasoning.enabled=false` | ✅ 第一段文字 2.4 秒、全部 7.9 秒 |
+| fable + 關 thinking + `effort: low` | ✅ 實際型號 `claude-fable-5-1`,畫面顯示「未套用:thinking_off」 |
+| 延續對話 | ✅ 第二輪只帶問題本身,答得出第一輪的內容 |
+| 不合法的模型 ID | ✅ 400,訊息列出可用的別名與完整 ID 格式 |
+| 伺服器端同步呼叫(`bridge_chat`,`X-Bridge-Wait: 20`) | ✅ 短題目直接回答;長題目 20 秒回工單 id,之後用 `op=job` 取回全文 |
+| 串流 350 秒的工作 | ✅ 串流即時流動;280 秒時 Bridge 收尾、畫面標「不完整」並附工單 id;工作在 349 秒完成,用工單 id 取回全文 |
+| 別的使用者查工單、撤銷別人的電腦 | ✅ 都是 404 |
+| 撤銷電腦 | ✅ 之後的呼叫回 409;worker 下一次輪詢收到 401 後自行結束並提示重新連接 |
+
+這一輪抓到、已修好的錯(每一條都補了測試):
+
+| 症狀 | 原因 | 修法 |
+|---|---|---|
+| 綁定時 Bridge 回 500 | 平台自建表把 number 欄讀回成十進位字串(`"0"`、`"1790513946.341"`),`"0" > 0` 直接 TypeError;記憶體存放的測試看不到 | 存放層讀取的唯一出口依 schema 轉型 |
+| 沒有空白的英數輸出(JSON、雜湊、長網址)到最後才一次出現 | worker 的遮罩為了不送出「可能是 email 前半」的字,扣住整段英數字串而且沒有上限 | email 帳號部分最多 64 字元,只扣最後 64 字;遮罩的比對規則同步加上限,已送出的仍保證是全文前綴 |
+| 超過 240 秒的工作被截斷,卻標成「完整」 | worker 的單一工作上限寫死 240 秒,行程被砍後把已有的半截內容當成功回報 | 上限改為預設 1800 秒(`AIGO_BRIDGE_JOB_TIMEOUT_S`);被砍或沒收到結尾事件一律回報失敗 |
+| 畫面上的「實際型號」是空的 | `local/*` 串流的標頭在 worker 回報型號之前就送出;Custom App 經 egress 的 `ctx.http.call` 拿不到回應標頭 | 串流的最後一個 chunk 與非串流回應的本體都帶 `x_bridge` |
+| 沒設雲端金鑰時,409 仍建議「改用 anthropic/*」 | 提示寫死 | 只在 Bridge 真的設了對應金鑰時才提 |
+
+平台面的觀察:
+
+- **共用池租戶的配額**:每個 Hosted App 執行個體的記憶體上限是平台常數(這個租戶約 1.9 GB),
+  租戶總量 8 GB,而且共用池租戶不能自設(`runtime-settings.resources` 回 403
+  `RESOURCES_REQUIRE_DEDICATED_NODES`)。部署時新舊兩個執行個體要同時存在,
+  租戶忙的時候部署會失敗(`exceeded quota: aigo-quota`),Custom App 的 action 也會回 503「App runner 暫時不可用」、
+  回應帶 `quota_hint`。這不是程式問題,等配額鬆開再試。
+- **有 worker 在線時,Bridge 不會縮到零**(S4 的結論在平台上也成立),等於長期佔一個執行個體的配額。
+- 背景分頁的計時器會被瀏覽器節流,在背景分頁量到的前端時間不可信;時間以 worker 日誌與 Bridge 端為準。
+
 ### S4 · worker 輪詢縮到零的 Bridge
 
 量法:`spikes/cold-poll/probe.py`。Hosted App 為**冷啟動模式**(`always_on=false`,已讀回確認)。
@@ -210,4 +250,6 @@ action 的 `timeout_ms` = 120000。
 | 串流在 280 秒前由 Bridge 主動收尾並送 `[DONE]`,若工作還沒完成就在最後一個事件附上工單 id;呼叫端把「沒收到 `[DONE]`」視為不完整 | S5:300 秒一到連線直接被切,沒有錯誤狀態碼 |
 | Custom App 的呼叫端區塊必須同時處理「`ctx.http.call` 回傳錯誤」與「action 被砍」兩種逾時 | S3 |
 | 呼叫端區塊在 `ctx.http.call` 裡**寫死字面 slug** | 發布閘門只認得字面 slug;用常數傳入會被標成「動態 slug」而無法檢查授權 |
+| Bridge 的回應一律把實際型號與未套用的參數放進本體的 `x_bridge`(串流在最後一個 chunk) | 部署在平台上的端到端:`local/*` 串流的標頭送得比型號早;egress 的 `ctx.http.call` 拿不到回應標頭 |
+| worker 的單一工作上限預設 1800 秒,被砍或沒有結尾事件都算失敗,絕不交出半截內容 | 同上:寫死 240 秒時,截斷的內容被標成「完整」 |
 | worker 的擁有者以平台身分 `ctx.user_id` 為準,由 app 內的「連接我的電腦」流程綁定 | Server Action 拿得到的是 `ctx.user_id`,不是 email;身分來自平台而不是使用者自填 |
