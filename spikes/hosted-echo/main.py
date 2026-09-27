@@ -5,6 +5,7 @@
   POST /bridge/session             source 金鑰 → 短效 session token(S2)
   POST /v1/chat/completions        OpenAI 形狀;stream=true 走 SSE(S2),否則延遲 N 毫秒才回(S3)
   GET  /v1/sse-hold?seconds=N      SSE 撐 N 秒、每 5 秒一個心跳,量平台對長連線的截斷(S2)
+  GET  /v1/sse-gap?gap=N           SSE 先送一段、沉默 N 秒、再送一段,量閒置逾時(local 工單等 worker 時就是這個形狀)
   POST /worker/claim               模擬 worker 輪詢,回實例與 uptime,量冷啟動命中(S4)
 
 驗證:Authorization: Bearer <SPIKE_KEY>,或 Bearer <session token>。
@@ -24,7 +25,7 @@ from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
-VERSION = os.environ.get("SPIKE_VERSION", "spike-1")
+VERSION = os.environ.get("SPIKE_VERSION", "spike-3")
 BOOT = time.time()
 INSTANCE = uuid.uuid4().hex[:8]
 KEY = os.environ.get("SPIKE_KEY", "")
@@ -116,7 +117,7 @@ async def chat(request: Request, authorization: str | None = Header(default=None
     body = await request.json()
     opts = body.get("spike") or {}
     model = str(body.get("model") or "spike/echo")
-    delay_ms = max(0, min(int(opts.get("delay_ms", 0)), 290_000))
+    delay_ms = max(0, min(int(opts.get("delay_ms", 0)), 900_000))   # 量平台上限用,刻意放寬到 15 分鐘
     t0 = time.time()
 
     if not body.get("stream"):
@@ -159,6 +160,22 @@ async def sse_hold(seconds: int = Query(60, ge=1, le=900), authorization: str | 
             n += 1
             yield f"data: {json.dumps({'n': n, 'elapsed_s': round(time.time() - t0, 1), **_meta()})}\n\n"
             await asyncio.sleep(5)
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(stream(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.get("/v1/sse-gap")
+async def sse_gap(gap: int = Query(60, ge=1, le=900), authorization: str | None = Header(default=None),
+                  token: str | None = Query(None)):
+    _auth(authorization or (f"Bearer {token}" if token else None))
+    t0 = time.time()
+
+    async def stream():
+        yield f"data: {json.dumps({'phase': 'start', **_meta()})}\n\n"
+        await asyncio.sleep(gap)
+        yield f"data: {json.dumps({'phase': 'end', 'elapsed_s': round(time.time() - t0, 1), **_meta()})}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(stream(), media_type="text/event-stream",

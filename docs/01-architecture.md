@@ -50,7 +50,7 @@ AI GO 上的 app 呼叫 LLM,常見寫法是在 Server Action 或 Hosted App 裡�
 | **狀態只存平台自建表** | Hosted App 最多 2 個實例、無 sticky session;縮到零會清掉記憶體與磁碟 | — |
 | **Worker 主動輪詢,不開對內入口** | 使用者電腦在 NAT / 公司防火牆後面;反向通道(隧道服務)會斷線,而且要每個人各自設定 | — |
 | **長工作拆成多次請求** | Hosted App 單一請求上限 300 秒,SSE 連線滿 300 秒必斷 | — |
-| **預設不常駐(scale-to-zero)** | 常駐會一直佔用租戶運算資源、部分方案不提供 | P1 實測冷啟動後再決定;worker 輪詢本身就是入站流量 |
+| **Bridge 一律用冷啟動模式(`always_on=false`),非必要不開常駐** | 常駐會一直佔用租戶運算資源、部分方案不提供;S4 實測冷啟動模式下閒置 15 分鐘仍保留實例,而且有 worker 在線時長輪詢本身就讓它保持溫熱 | 只有在「沒有 worker、又要求第一個請求不能等冷啟動」時才考慮開,並寫下理由與退場條件 |
 | **prompt 原文預設不落表** | 自建表對同租戶的 app 普遍可讀;LLM 輸入常含個資與商業資訊 | 需要除錯時由 source 自行開 `BRIDGE_STORE_PROMPTS` |
 
 ## 4. 一次 `local/self` 呼叫的完整路徑
@@ -78,24 +78,45 @@ AI GO 上的 app 呼叫 LLM,常見寫法是在 Server Action 或 Hosted App 裡�
 
 量法:`spikes/cli-latency/probe.py`,同一題重複執行,起點都是「行程啟動」,單位毫秒。
 旗標:`-p --tools "" --max-turns 1 --strict-mcp-config --setting-sources "" --system-prompt …
---output-format stream-json --include-partial-messages --verbose`,**extended thinking 關閉**。
+--output-format stream-json --include-partial-messages --verbose`,這一組量測時關閉了 thinking。
 
 | 模型 | 行程就緒 | 第一段文字 | 文字完成(`message_stop`) | `result` 事件 | 行程結束 | 每次成本(估) |
 |---|---|---|---|---|---|---|
 | haiku(n=5) | 930 | **1,620** | ≈2,400 | 3,509 | 4,046 | $0.0009 |
 | sonnet(n=3) | 916 | **2,064** | — | 3,729 | 4,265 | $0.0019 |
 
-同一題**開著 thinking**:首段文字 10,287 ms、1,399 個 thinking token、$0.0077,而且模型會忽略
-`--system-prompt` 裡的指令(關掉之後照做)。
-
 驗證項:
 
 | 項目 | 結果 |
 |---|---|
 | `--session-id` 開場、`--resume` 續問,記得上一輪 | ✅ |
-| `--system-prompt` 取代預設提示後照規則回答(thinking 關閉時) | ✅ |
 | 工具清單為空(`init.tools = []`) | ✅ |
 | 直接問「你看到哪些附加資訊」,回答不含 email / 本機路徑 / 作業系統 | ✅(有加「不得提及」條款時) |
+
+> **撤回的結論**:早期版本寫「開著 thinking 會忽略系統提示,worker 應預設關閉」。那只來自一題刻意刁難的測試
+> (不管問什麼都只能回四個字),樣本與題型都不足以推論;S1b 的矩陣結果相反,見下。
+
+### S1b · 每次呼叫指定模型、effort、thinking 的影響
+
+量法:`spikes/cli-thinking/probe.py`。3 個模型別名 × 4 種設定 × 2 題(「只輸出指定 JSON」與一般問答)× 2 次,
+共 48 次,中位數。系統提示與 worker 相同。
+
+| 別名 → 實際型號 | 設定 | 第一段文字 | thinking token | 每次成本 | JSON 格式遵守 |
+|---|---|---|---|---|---|
+| `haiku` → claude-haiku-4-5 | 不帶參數 | 3.0 秒 | 177 | $0.0018 | 2/2 |
+| | `--effort low` / `high` | 3.3 / 3.4 秒 | 190 / 197 | $0.0018 | 1/2 / 2/2 |
+| | `MAX_THINKING_TOKENS=0` | **1.5 秒** | 0 | **$0.0008** | **0/2**(多包了程式碼區塊標記) |
+| `sonnet` → claude-sonnet-5 | 四種設定 | 2.2 – 2.6 秒 | 0 | $0.002 | 全部 2/2 |
+| `opus` → **claude-opus-5** | 四種設定 | 2.0 – 2.5 秒 | 0 | $0.0085 | 全部 2/2 |
+
+讀法:
+
+- **thinking 不該預設關閉。** haiku 關掉後快一倍、便宜一半,但格式遵守變差;要不要換這個取捨,應由呼叫端逐次決定。
+- sonnet、opus 在簡單題上本來就幾乎不 thinking,四種設定差異很小;複雜題才會拉開,屆時同樣交給呼叫端指定。
+- `--effort` 對 Haiku 4.5 沒有作用(該模型不支援 effort,也不報錯)。
+- **別名解析因帳號而異**:官方文件說 `opus` 指向 Opus 5.5,這個帳號實測是 claude-opus-5。
+  要結果可預期就傳完整模型 ID,並以回應裡的實際型號為準。
+- 官方文件:`MAX_THINKING_TOKENS=0` 對 Opus 5.5 與 Fable 系列無效,這兩個只能用 effort 調整。
 
 ### S2 · 瀏覽器從 Custom App 執行頁直連 Bridge
 
@@ -107,7 +128,11 @@ AI GO 上的 app 呼叫 LLM,常見寫法是在 Server Action 或 Hosted App 裡�
 | Hosted App 改環境變數後生效 | 數秒內換上新實例(以 `/healthz` 的版本標記確認) |
 | 瀏覽器實際串流、錯誤可讀性、長連線截斷點 | 待補(需要在執行頁登入後操作) |
 
-### S3 · Server Action 經 egress 同步呼叫 Bridge
+### S3 · Custom App 的 Server Action 經 egress 同步呼叫 Bridge
+
+> **適用範圍**:只有「Custom App 的 Server Action → `ctx.http.call` → Bridge」這一條路。
+> 30 秒是 egress 閘道(外部服務的 `timeout_ms` 上限)的限制,**不是 Hosted App 的限制**;
+> 瀏覽器直連 Bridge、其他 Hosted App 直接呼叫 Bridge 都不經過它。Hosted App 自己的上限見 S5。
 
 量法:`spikes/custom-app-client` 的 `spike_sync`,Bridge 刻意延遲 N 秒才回;外部服務 `timeout_ms` = 30000,
 action 的 `timeout_ms` = 120000。
@@ -119,6 +144,24 @@ action 的 `timeout_ms` = 120000。
 | 45 秒 | **整支 action 被砍**:`status: timeout`,`Action 執行超時(30000ms)` |
 
 另外:閒置後第一次呼叫 action,牆鐘 7.7 秒、實際執行 1.2 秒 —— action runner 冷啟動約 **6.5 秒**。
+
+### S5 · Hosted App 本身的時間上限(不經 egress)
+
+量法:`spikes/hosted-timeout/probe.py`,從外部直接打 Hosted App,三種形狀同時送出。Hosted App 為冷啟動模式。
+
+| 形狀 | 目標 | 結果 |
+|---|---|---|
+| 非串流(整段不送任何位元組) | 60 / 120 / 240 / 290 秒 | ✅ 成功 |
+| | 305 / 330 / 600 秒 | ❌ 都在 **300.2 秒**回 504,內容 `activator request timeout` |
+| 串流,每 5 秒一個心跳 | 330 / 620 秒 | ❌ **持續有資料也照樣在 300.2 秒被切**;狀態碼早已是 200,連線直接關閉,收不到 `[DONE]` |
+| 串流,送一段後沉默 | 120 / 250 秒 | ✅ 成功 —— **沒有比 300 秒更短的閒置逾時** |
+| | 330 秒 | ❌ 300.2 秒被切 |
+
+讀法:
+
+- **Hosted App 的上限是「單一請求 300 秒」**,不分串流與否、有沒有持續送資料。
+- 串流被切時不會有錯誤狀態碼,只是連線中斷;呼叫端必須把「沒收到 `[DONE]`」當成內容不完整。
+- worker 可以沉默很久才吐第一段字(至少 250 秒),平台不會因為閒置而切斷。
 
 ### 端到端(本機 Bridge + 真 worker + 官方 openai 客戶端)
 
@@ -136,20 +179,35 @@ action 的 `timeout_ms` = 120000。
 
 ### S4 · worker 輪詢縮到零的 Bridge
 
-量測中(`spikes/cold-poll/probe.py`)。
+量法:`spikes/cold-poll/probe.py`。Hosted App 為**冷啟動模式**(`always_on=false`,已讀回確認)。
+先閒置一段時間再打一次,看實例是否換了;再每 5 秒輪詢 10 分鐘。
+
+| 閒置多久後再打 | 結果 |
+|---|---|
+| 30 秒、1 分、2 分、4 分、8 分、**15 分** | 全部是同一個實例、沒有冷啟動,回應 54 – 140 ms |
+| 每 5 秒輪詢 10 分鐘(119 次) | 0 錯誤、同一個實例,中位數 58 ms、p95 106 ms |
+
+讀法:
+
+- 冷啟動模式下,平台至少保留閒置實例 15 分鐘以上才縮到零(15 分鐘以上沒有再量)。
+- worker 長輪詢每次最多 25 秒就再來一次,**只要有 worker 在線上,Bridge 就一直有流量、不會縮到零**。
+  這不是開常駐,而是冷啟動模式本來的語意:有人在用就溫熱,所有 worker 都下線(例如夜間)後才縮到零。
+- 部署新版後換上新實例,`/healthz` 第一次回應時 uptime 已 4 秒,代表平台在部署時就把實例拉起來了;
+  「從零喚醒」的冷啟動秒數這一輪沒有量到。
 
 ### 由實測得出的決定
 
 | 決定 | 依據 |
 |---|---|
-| worker 預設**關閉 extended thinking**(以 `--settings '{"alwaysThinkingEnabled": false}'`),呼叫端可逐次開啟 | S1:延遲 6 倍、成本 9 倍,且系統提示不被遵守 |
+| worker **預設不帶任何 thinking / effort 參數**,照模型原本的行為;呼叫端可逐次指定模型(別名或完整 ID)、`reasoning_effort` / `reasoning.effort`(轉 `--effort`)、`reasoning.enabled=false` 或 `effort: "none"`(轉 `MAX_THINKING_TOKENS=0`) | S1b:關閉 thinking 有快有慢的取捨(haiku 快一倍但格式遵守變差),不該由 worker 替呼叫端決定 |
 | worker 在 `message_stop` 就交付全文,`result` 到了再補 usage / cost | S1:兩者之間有約 1.3 秒的收尾摘要,另加 0.5 秒行程結束 |
 | worker 永遠在**專用的空目錄**執行、加「不得提及附加資訊」條款、並對輸出做**確定性遮罩**(帳號 email、本機路徑) | Claude Code 會在每一輪附上環境快照與登入帳號 email,且沒有設定可以關掉;條款在測試中有效,遮罩是第二道防線 |
 | Windows 上直接呼叫 `claude.exe`,不經 `claude.cmd` | `.cmd` 殼會重新解析引號,`--tools ""` 這類空字串參數有被吃掉的風險 |
 | 不用 `--bare` | `--bare` 不讀訂閱登入 |
 | **Bridge 必須留在 `*.ai-go.app` 網址,不能綁自訂網域** | S2:執行頁 CSP 只允許 `*.ai-go.app`;綁自訂網域後瀏覽器直連會被擋 |
 | 瀏覽器不能直接打任何模型供應者 | 同上,CSP 不允許 |
-| Server Action 同步模式的預設上限定在 **20 秒**,超過自動轉非同步 | S3:硬牆在 30 秒,而且撞牆時有兩種不同的失敗形狀,留 10 秒餘裕 |
-| 呼叫端必須同時處理「`ctx.http.call` 回傳錯誤」與「action 被砍」兩種逾時 | S3 |
+| 同步等待上限**依呼叫路徑分開**:Bridge 預設 280 秒(Hosted 單一請求上限 300 秒,留 20 秒收尾);Custom App 的呼叫端區塊以請求標頭 `X-Bridge-Wait: 20` 要求較短的等待,超過就回 202 讓它之後查結果 | S3:30 秒硬牆只存在於 egress 這條路,撞牆時有兩種不同的失敗形狀,留 10 秒餘裕;S5:Hosted 本身是 300 秒 |
+| 串流在 280 秒前由 Bridge 主動收尾並送 `[DONE]`,若工作還沒完成就在最後一個事件附上工單 id;呼叫端把「沒收到 `[DONE]`」視為不完整 | S5:300 秒一到連線直接被切,沒有錯誤狀態碼 |
+| Custom App 的呼叫端區塊必須同時處理「`ctx.http.call` 回傳錯誤」與「action 被砍」兩種逾時 | S3 |
 | 呼叫端區塊在 `ctx.http.call` 裡**寫死字面 slug** | 發布閘門只認得字面 slug;用常數傳入會被標成「動態 slug」而無法檢查授權 |
 | worker 的擁有者以平台身分 `ctx.user_id` 為準,由 app 內的「連接我的電腦」流程綁定 | Server Action 拿得到的是 `ctx.user_id`,不是 email;身分來自平台而不是使用者自填 |
