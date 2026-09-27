@@ -1,0 +1,5 @@
+# 一律 LF:避免 Windows 上的工具把整個檔案改寫成 CRLF,造成整檔差異
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.gz binary
