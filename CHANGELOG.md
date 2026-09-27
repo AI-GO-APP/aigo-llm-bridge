@@ -16,5 +16,11 @@
   (先讀現況再合併;共用池租戶不送 `resources`;錯誤訊息不回顯值)
 - docs/01 §5:S1、S3 實測數字與由此得出的設計決定;S2 以標頭確認可行並記下 CSP 限制
 
+- **Bridge v1(`hosted/`,P2 進行中)**:OpenAI 相容的 `/v1/chat/completions`、`/v1/responses`、`/v1/models`、
+  `/v1/jobs/{id}`;三種後端 `anthropic/*`(官方 SDK,含拒答後備、參數相容處理)、`openrouter/*`(原樣轉送)、
+  `local/self`(本人 worker);source 金鑰 / HMAC / 瀏覽器 session token 三種驗證;worker 綁定碼、長輪詢認領、
+  租約、逐段回傳、撤銷;平台自建表或記憶體兩種存放;用量帳
+- docs/09 API 參考:轉譯規則、路由(相容既有 OpenRouter 呼叫端的 model 寫法)、錯誤形狀、表設計
+
 ### Changed
 - owner / caller user 改以平台使用者 id(`ctx.user_id`)識別,不再以 email
