@@ -124,14 +124,17 @@ source 金鑰 → 短效 token。body `{"user": "<平台使用者 id>", "ttl": 3
 - 上游 429:回 429 並帶 `Retry-After`
 - 串流**開始之前**的錯誤回一般的 HTTP 錯誤;開始之後的錯誤以一個 `data: {"error": {...}}` 事件送出後結束
 
-## 8. 表(平台自建表,名稱前綴由 `BRIDGE_TABLE_PREFIX` 決定,預設 `bridge_`)
+## 8. 表(平台自建表,名稱前綴由 `BRIDGE_TABLE_PREFIX` 決定,預設 `biz_bridge_`)
 
 | 表 | 用途 |
 |---|---|
-| `bridge_jobs` | `local` 工單與非同步呼叫的狀態 |
-| `bridge_workers` | worker 名冊(擁有者、設備鑰匙雜湊、最後心跳、版本、可用模型、是否撤銷) |
-| `bridge_enrollments` | 一次性綁定碼(雜湊、擁有者、到期、是否使用) |
-| `bridge_usage` | 每次呼叫一列:source、使用者、後端、模型、token、成本、耗時、結果 |
+| `biz_bridge_jobs` | `local` 工單與非同步呼叫的狀態 |
+| `biz_bridge_workers` | worker 名冊(擁有者、設備鑰匙雜湊、最後心跳、版本、可用模型、是否撤銷) |
+| `biz_bridge_enrollments` | 一次性綁定碼(雜湊、擁有者、到期、是否使用) |
+| `biz_bridge_usage` | 每次呼叫一列:source、使用者、後端、模型、token、成本、耗時、結果 |
+
+建表用 `tools/provision_tables.py`(預設只列計畫,`--apply` 才動手;兩步命名法:英文實體名建立、再改中文顯示名)。
+查詢鍵欄位的實體名是 `lookup_key`(`key` 在部分 SQL 方言是保留字)。時間一律存 epoch 秒的 number 欄。
 
 提示與回應原文**預設不長期落表**。唯一的例外是 `local` 工單:Bridge 最多兩個實例,
 worker 的長輪詢不一定打到收到請求的那一個,所以提示必須暫存在工單列上讓 worker 取得;

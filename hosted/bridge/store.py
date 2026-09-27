@@ -6,7 +6,10 @@
 查詢限制(平台 records 平面):text 欄只有 eq / contains,number 欄才有 gte / lte;沒有 in、ne、OR。
 所以每張表都有一個我們自己產生的 `key`(uuid)當查詢鍵,狀態一次查一個值。
 
-表(邏輯名 → 實體名 = 前綴 + 邏輯名):
+查詢鍵在程式裡叫 `key`,存進平台表時叫 `lookup_key`(`key` 在部分 SQL 方言是保留字,
+而實體名建立後永不可改,寧可一開始就避開)。對應只發生在 AigoStore 這一層。
+
+表(邏輯名 → 實體名 = 前綴 + 邏輯名,預設前綴 biz_bridge_):
   jobs         local 工單與非同步呼叫
   workers      worker 名冊
   enrollments  一次性綁定碼
@@ -131,13 +134,21 @@ class AigoStore:
         self.prefix = prefix
         self.client = client or httpx.AsyncClient(timeout=20.0, headers={"Authorization": f"Bearer {token}"})
 
+    FIELD_MAP = {"key": "lookup_key"}          # 程式裡的名字 → 表上的實體名
+    FIELD_UNMAP = {v: k for k, v in FIELD_MAP.items()}
+
+    @classmethod
+    def _out(cls, data: dict) -> dict:
+        return {cls.FIELD_MAP.get(k, k): v for k, v in data.items()}
+
     def _url(self, table: str, suffix: str = "") -> str:
         return f"{self.base}/{self.prefix}{table}/records{suffix}"
 
-    @staticmethod
-    def _flat(item: dict) -> dict:
+    @classmethod
+    def _flat(cls, item: dict) -> dict:
         data = item.get("data") if isinstance(item.get("data"), dict) else None
-        return {**(data if data is not None else item), "id": item.get("id")}
+        row = {cls.FIELD_UNMAP.get(k, k): v for k, v in (data if data is not None else item).items()}
+        return {**row, "id": item.get("id")}
 
     async def _send(self, method: str, url: str, **kw) -> Any:
         try:
@@ -160,20 +171,22 @@ class AigoStore:
         return resp.json() if resp.content else None
 
     async def insert(self, table: str, data: dict) -> dict:
-        body = await self._send("POST", self._url(table), json={"data": data})
-        return self._flat(body if isinstance(body, dict) else {"id": None, **data})
+        body = await self._send("POST", self._url(table), json={"data": self._out(data)})
+        return self._flat(body) if isinstance(body, dict) else {**data, "id": None}
 
     async def update(self, table: str, row: dict, patch: dict) -> dict:
-        await self._send("PATCH", self._url(table, f"/{row['id']}"), json={"data": patch})
+        await self._send("PATCH", self._url(table, f"/{row['id']}"), json={"data": self._out(patch)})
         return {**row, **patch}
 
     async def find(self, table, filters, *, sort=None, limit=50):
         params: dict[str, Any] = {"page": 1, "page_size": max(1, min(limit, 100))}
         if filters:
-            params["filters"] = json.dumps([{"field": f, "op": op, "value": v} for f, op, v in filters],
+            params["filters"] = json.dumps([{"field": self.FIELD_MAP.get(f, f), "op": op, "value": v}
+                                            for f, op, v in filters],
                                            ensure_ascii=False)
         if sort:
-            params["sort"] = sort
+            desc, name = sort.startswith("-"), sort.lstrip("-")
+            params["sort"] = ("-" if desc else "") + self.FIELD_MAP.get(name, name)
         body = await self._send("GET", self._url(table), params=params) or {}
         return [self._flat(item) for item in body.get("items") or []]
 

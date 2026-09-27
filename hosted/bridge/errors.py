@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from fastapi.responses import JSONResponse
-
 
 class BridgeError(Exception):
     def __init__(self, status: int, code: str, message: str, provider_status: int | None = None,
@@ -18,7 +16,8 @@ class BridgeError(Exception):
     def body(self) -> dict:
         return {"error": {"code": self.code, "message": self.message, "provider_status": self.provider_status}}
 
-    def response(self) -> JSONResponse:
+    def response(self):
+        from fastapi.responses import JSONResponse   # 延後載入:工具程式只用錯誤型別,不需要 web 相依
         return JSONResponse(self.body(), status_code=self.status, headers=self.headers)
 
 

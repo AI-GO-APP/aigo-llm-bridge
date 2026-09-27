@@ -12,7 +12,7 @@
 選填
   BRIDGE_DEFAULT_MODEL      沒有前綴的 model 要路由到哪裡(例 anthropic/claude-opus-5);未設 = 400
   BRIDGE_SYNC_TIMEOUT       同步呼叫最多等幾秒,預設 20(Server Action 經 egress 的硬牆是 30 秒)
-  BRIDGE_TABLE_PREFIX       自建表名稱前綴,預設 bridge_
+  BRIDGE_TABLE_PREFIX       自建表名稱前綴,預設 biz_bridge_(平台慣例:自建表一律 biz_ 開頭)
   BRIDGE_STORE_PROMPTS      1 = 把提示與回應原文存進工單表(除錯用),預設不存
   BRIDGE_ANTHROPIC_FALLBACKS off = 不對 claude-opus-5 / claude-fable-5-1 帶拒答後備
   BRIDGE_STORE              aigo(預設,容器內用平台自建表)或 memory(單機開發與測試)
@@ -40,7 +40,7 @@ class Settings:
     openrouter_api_key: str = ""
     default_model: str = ""
     sync_timeout_s: float = 20.0
-    table_prefix: str = "bridge_"
+    table_prefix: str = "biz_bridge_"
     store_prompts: bool = False
     anthropic_fallbacks: bool = True
     store_backend: str = "aigo"
@@ -85,7 +85,7 @@ def load(env: dict[str, str] | None = None) -> Settings:
         openrouter_api_key=env.get("OPENROUTER_API_KEY", "").strip(),
         default_model=env.get("BRIDGE_DEFAULT_MODEL", "").strip(),
         sync_timeout_s=max(1.0, min(sync_timeout, 280.0)),
-        table_prefix=env.get("BRIDGE_TABLE_PREFIX", "bridge_").strip() or "bridge_",
+        table_prefix=env.get("BRIDGE_TABLE_PREFIX", "biz_bridge_").strip() or "biz_bridge_",
         store_prompts=_flag(env.get("BRIDGE_STORE_PROMPTS"), False),
         anthropic_fallbacks=_flag(env.get("BRIDGE_ANTHROPIC_FALLBACKS"), True),
         store_backend=(env.get("BRIDGE_STORE", "aigo").strip() or "aigo").lower(),

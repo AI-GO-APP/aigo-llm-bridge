@@ -28,5 +28,8 @@
 - `tools/e2e_local.py`:以官方 openai 客戶端對 Bridge + 真 worker 做端到端檢查
 - docs/09 API 參考:轉譯規則、路由(相容既有 OpenRouter 呼叫端的 model 寫法)、錯誤形狀、表設計
 
+- `tools/provision_tables.py`:建立或補齊四張平台自建表(預設只列計畫)
+
 ### Changed
+- 自建表預設前綴改為 `biz_bridge_`(平台慣例);查詢鍵在表上的實體名為 `lookup_key`
 - owner / caller user 改以平台使用者 id(`ctx.user_id`)識別,不再以 email
