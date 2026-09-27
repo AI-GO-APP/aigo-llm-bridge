@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { runAction, streamChat, StreamResult } from "../lib/bridge";
 
-const MODELS = ["local/self", "local/self:haiku", "local/self:sonnet", "local/self:opus"];
+// auto = 依使用者選的優先順序,在本機 Claude Code 與雲端之間主備切換;其餘是固定走本機
+const MODELS = ["auto", "local/self", "local/self:haiku", "local/self:sonnet", "local/self:opus"];
 
 function newConversation(): string {
   return (crypto as any).randomUUID ? (crypto as any).randomUUID() : String(Date.now());
@@ -22,6 +23,7 @@ export default function ChatPage() {
   const [busy, setBusy] = useState(false);
 
   function body() {
+    // 填了完整 ID 就固定走本機的那個型號;要換雲端型號請改 Bridge 的 BRIDGE_AUTO_CLOUD 或帶 models
     const chosen = customModel.trim() ? `local/self:${customModel.trim()}` : model;
     const b: Record<string, any> = { model: chosen, messages: [{ role: "user", content: prompt }] };
     if (effort) b.reasoning_effort = effort;
@@ -57,7 +59,10 @@ export default function ChatPage() {
     <div className="page-container">
       <div className="page-header">
         <h1 className="page-title">對話</h1>
-        <p className="page-description">由你電腦上的 Claude Code 回答。模型、effort、thinking 都可以逐次指定。</p>
+        <p className="page-description">
+          選 auto 時,依你選的優先順序由「你的電腦(Claude Code)」或「雲端(OpenRouter)」回答,另一個是備援。
+          模型、effort、thinking 都可以逐次指定。
+        </p>
       </div>
 
       <div className="card mb-6">
@@ -109,6 +114,8 @@ export default function ChatPage() {
             <p className="text-xs text-muted mt-2" data-testid="meta">
               {meta.complete ? "完整" : "不完整"} · 第一段 {meta.firstTokenMs ?? "—"} ms · 全部 {meta.totalMs} ms
               · 實際型號 {meta.servedBy || "—"}{meta.dropped ? ` · 未套用:${meta.dropped}` : ""}
+              {meta.priority ? ` · 優先:${meta.priority === "local" ? "我的電腦" : "雲端"}` : ""}
+              {meta.fallback ? ` · 已改用備援(${meta.fallback.from} 不可用:${meta.fallback.reason})` : ""}
             </p>
           )}
           {meta?.error && (

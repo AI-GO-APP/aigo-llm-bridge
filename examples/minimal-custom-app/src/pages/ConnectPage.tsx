@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { runAction } from "../lib/bridge";
+import PriorityChooser from "../components/PriorityChooser";
 
 type Computer = { id: string; name: string; os: string; version: string; status: string; online: boolean;
                   last_seen_at: number };
@@ -56,6 +57,8 @@ export default function ConnectPage() {
           讓這個 app 用「你自己電腦上、你自己登入的 Claude Code」處理「你自己」送出的工作。一台電腦只服務它的主人。
         </p>
       </div>
+
+      <PriorityChooser />
 
       <div className="card mb-6">
         <div className="card-header">

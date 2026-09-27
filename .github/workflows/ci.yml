@@ -37,7 +37,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: 編譯檢查所有 Python 檔
-        run: python -m compileall -q tools spikes hosted worker
+        run: python -m compileall -q tools spikes hosted worker clients examples
+      - name: 範例裡的客戶端副本與 clients/ 正本一致
+        run: python tools/sync_clients.py --check
 
   tests:
     runs-on: ubuntu-latest
@@ -60,7 +62,7 @@ jobs:
           python-version: "3.12"
       - name: 安裝相依
         run: pip install -r hosted/requirements.txt pytest
-      - name: pytest(Bridge)
+      - name: pytest(Bridge、三種客戶端、Hosted 範例)
         working-directory: hosted
         run: python -m pytest -q
 

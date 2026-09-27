@@ -13,5 +13,10 @@
     "description": "伺服器端同步呼叫 Bridge(X-Bridge-Wait: 20;超過回工單 id)",
     "timeout_ms": 35000,
     "is_enabled": true
+  },
+  "bridge_priority": {
+    "description": "讀或設定優先用本機 Claude Code 還是雲端",
+    "timeout_ms": 15000,
+    "is_enabled": true
   }
 }

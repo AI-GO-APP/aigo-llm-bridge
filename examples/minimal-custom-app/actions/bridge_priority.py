@@ -1,15 +1,9 @@
-"""伺服器端同步呼叫 Bridge(不需要串流、或要在 action 裡接著處理結果的情境)。
-
-區塊每次都帶 X-Bridge-Wait: 20:egress 閘道的硬牆是 30 秒,Bridge 20 秒內沒做完就回工單 id,
-之後用 op="job" 查結果。
+"""讀或設定「優先用哪一個」(伺服器端版本;瀏覽器也可以直接用 session token 呼叫 Bridge)。
 
 params:
-  op = "chat"(預設)  model(預設 auto)、messages、models、reasoning_effort、reasoning、response_format…
-  op = "job"          id:查 pending 回來的工單
+  priority 省略 → 讀:{"ok", "priority": "local"|"cloud"|None, "choices": [...]}
+  priority = "local" 或 "cloud" → 儲存
 """
-
-ALLOWED = ("models", "reasoning_effort", "reasoning", "thinking", "response_format", "max_tokens",
-           "max_completion_tokens")
 
 # ── 從這裡開始貼 ──────────────────────────────────────────────────────────
 BRIDGE_WAIT_S = 20        # 留 10 秒給 egress 閘道與 action 本身;不要調到 25 以上
@@ -115,9 +109,5 @@ def bridge_revoke_computer(ctx, computer_id):
 
 
 def execute(ctx):
-    if str(ctx.params.get("op") or "chat") == "job":
-        ctx.response.json(bridge_job(ctx, str(ctx.params.get("id") or "")))
-        return
-    params = {k: ctx.params[k] for k in ALLOWED if ctx.params.get(k) is not None}
-    ctx.response.json(bridge_chat(ctx, ctx.params.get("messages") or [], model=ctx.params.get("model") or "auto",
-                                  **params))
+    priority = ctx.params.get("priority")
+    ctx.response.json(bridge_set_priority(ctx, str(priority)) if priority else bridge_get_priority(ctx))

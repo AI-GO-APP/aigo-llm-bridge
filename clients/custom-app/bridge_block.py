@@ -1,15 +1,18 @@
-"""伺服器端同步呼叫 Bridge(不需要串流、或要在 action 裡接著處理結果的情境)。
+"""Custom App Server Action 用的 Bridge 區塊 —— 整段貼進你的 action 檔案(從這行下面到檔尾)。
 
-區塊每次都帶 X-Bridge-Wait: 20:egress 閘道的硬牆是 30 秒,Bridge 20 秒內沒做完就回工單 id,
-之後用 op="job" 查結果。
+為什麼是「貼上」而不是 import:
+- action 連外一律要走 ctx.http.call,而發布閘門只認得**寫死的字面 slug**。用變數傳進來會被標成
+  「動態 slug」,閘門檢查不了授權。所以 slug `llm-bridge` 就寫在下面的呼叫裡;你的外部服務若叫別的
+  名字,把那一處字串換掉即可。
+- egress 閘道對單次呼叫有 30 秒硬牆,所以每次都帶 X-Bridge-Wait: 20:Bridge 20 秒內沒做完就回 202
+  與工單 id,之後用 bridge_job() 查,不會撞牆。
 
-params:
-  op = "chat"(預設)  model(預設 auto)、messages、models、reasoning_effort、reasoning、response_format…
-  op = "job"          id:查 pending 回來的工單
+前置設定(一次):
+  1. 外部服務:slug `llm-bridge`,base_url = Bridge 網址,timeout_ms 30000,授權給這個 app
+  2. secrets:BRIDGE_KEY(Bridge 發給這個 app 的 source 金鑰)、BRIDGE_PUBLIC_URL(Bridge 網址,前端直連用)
+
+回傳值一律是 dict,不丟例外;看 ok 判斷。錯誤代碼見 docs/09 §6。
 """
-
-ALLOWED = ("models", "reasoning_effort", "reasoning", "thinking", "response_format", "max_tokens",
-           "max_completion_tokens")
 
 # ── 從這裡開始貼 ──────────────────────────────────────────────────────────
 BRIDGE_WAIT_S = 20        # 留 10 秒給 egress 閘道與 action 本身;不要調到 25 以上
@@ -112,12 +115,3 @@ def bridge_revoke_computer(ctx, computer_id):
     status, data = _bridge(ctx, "POST", f"/bridge/workers/{computer_id}/revoke", {})
     return _fail(status, data, "撤銷失敗") if status >= 400 or status == 0 else {"ok": True}
 # ── 貼上的區塊到此為止 ────────────────────────────────────────────────────
-
-
-def execute(ctx):
-    if str(ctx.params.get("op") or "chat") == "job":
-        ctx.response.json(bridge_job(ctx, str(ctx.params.get("id") or "")))
-        return
-    params = {k: ctx.params[k] for k in ALLOWED if ctx.params.get(k) is not None}
-    ctx.response.json(bridge_chat(ctx, ctx.params.get("messages") or [], model=ctx.params.get("model") or "auto",
-                                  **params))
