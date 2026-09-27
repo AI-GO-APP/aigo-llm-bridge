@@ -5,7 +5,11 @@
 | 詞 | 意思 | 不是 |
 |---|---|---|
 | **Bridge** | 部署成 AI GO Hosted App 的閘道服務。對外講 OpenAI 相容的線路,對內把請求路由到某個 provider | 不是 worker,也不跑模型 |
-| **Provider** | Bridge 背後實際產生回應的來源:`anthropic`、`openrouter`、`local` 三種 | — |
+| **Provider** | Bridge 背後實際產生回應的來源:`local`、`openrouter`、`anthropic` 三種 | — |
+| **`auto`** | 一種 `model` 寫法:依使用者選的優先順序,在本機與雲端之間主備切換 | 不是「自動挑最好的模型」 |
+| **優先順序(priority)** | 使用者自己選的 `local` 或 `cloud`,依 app × 使用者存在 Bridge。沒選之前 `auto` 回 `priority_required` | 不是 Bridge 的全域設定 |
+| **備援(fallback)** | 優先的那一側失敗時改用另一側。回應以 `fallback: {from, reason}` 註明 | 不是 Anthropic 的拒答後備(那是另一個機制) |
+| **本機 / 雲端** | 本機 = `local/*`(使用者自己的 Claude Code);雲端 = `openrouter/*` 或 `anthropic/*`(組織的金鑰) | — |
 | **`local` provider** | 由使用者本人電腦上的 Claude Code 產生回應。Bridge 只負責把工單交給對的 worker | 不是「一台共用的 Claude 機器」 |
 | **Worker** | 裝在使用者本人電腦上的程式。主動向 Bridge 領工單、呼叫本機 `claude -p`、回傳結果 | 不接受任何對內連線 |
 | **Owner** | worker 的擁有者,以 AI GO 平台使用者 id(Server Action 的 `ctx.user_id`)識別。一台 worker 只屬於一個 owner,綁定只能在 app 內由本人完成 | 不是使用者自填的 email |

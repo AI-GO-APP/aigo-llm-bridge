@@ -5,7 +5,34 @@
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-27
+
+第一個可用版本:本機 Claude Code 與 OpenRouter 並用,由每位使用者自己選優先順序。
+
 ### Added
+- **`model: "auto"`**:依使用者選的優先順序,在本機(使用者自己的 Claude Code)與雲端(OpenRouter 或 Anthropic)之間主備切換。
+  使用者還沒選之前回 `409 priority_required`,**不套任何預設**;只有「換後端可能就會成功」的錯誤才切換,串流只在出字前切換;
+  回應以 `x_bridge.priority` / `fallback` 與 `X-Bridge-Priority` / `X-Bridge-Fallback` 註明
+- `GET/PUT /bridge/preferences`:依 app × 使用者存優先順序,並回報兩個選項當下是否可用;新表 `biz_bridge_prefs`
+- 設定 `BRIDGE_AUTO_LOCAL`、`BRIDGE_AUTO_CLOUD`(auto 的預設候選)、`OPENROUTER_BASE_URL`
+- **呼叫端正本 `clients/`**:瀏覽器 `bridge.ts`(優先順序、串流、工單)、Custom App Server Action 用的貼上區塊
+  `bridge_block.py`、只用標準函式庫的 Python 客戶端 `aigo_bridge.py`(同步、串流、工單、優先順序、綁定、HMAC)
+- `examples/minimal-custom-app`:第一次使用先選優先順序的關卡元件、四支薄殼 action;`examples/hosted-app-caller`(FastAPI)
+- `tools/sync_clients.py`:把 `clients/` 同步進 `examples/`,CI 以 `--check` 擋飄移
+- `tools/e2e_auto.py` 與 `tools/mock_openrouter.py`:auto 的本機端到端檢查(可控制雲端故障)
+- worker 開機自動啟動範本:Windows 工作排程器、macOS launchd、Linux systemd(`worker/autostart/`)
+- worker 環境變數 `AIGO_BRIDGE_CLAUDE`(開機常駐時指定 claude 路徑)
+- 文件:03 部署、04 worker、05 呼叫端、06 前端串流、07 營運、08 最佳實踐、10 疑難排解;09 補上 auto、偏好、
+  綁定與電腦端點、完整錯誤代碼表;01 補上 auto 的本機與平台端到端結果
+
+### Changed
+- README 改寫:定位為「本機 Claude Code 與 OpenRouter 並用」,加入快速上手與文件地圖
+- 綁定後不算在線,要等 worker `run` 的第一次心跳
+- worker 被撤銷時以結束碼 0 結束,開機常駐不會無限重啟
+- 範例 action 改為「貼上區塊 + 幾行」的薄殼
+
+### Earlier development (before 0.1.0)
+#### Added
 - repo 骨架:README、術語表(CONTEXT.md)、架構(docs/01)、使用邊界(docs/02)
 - `tools/lint_terms.py`:檢查 repo 內容與 commit 訊息是否出現不該出現在通用套件的字詞;
   清單由 CI 變數或本機 `.banned-terms` 提供,輸出不回顯命中的詞
@@ -33,7 +60,7 @@
   附可直接複製的前端客戶端 `src/lib/bridge.ts`
 - docs/01 §5:部署在平台上的端到端結果、共用池配額的觀察
 
-### Changed
+#### Changed
 - **思考與 effort 不再寫死**:worker 預設不帶任何 thinking / effort 參數;呼叫端以 `reasoning_effort`、
   `reasoning`(OpenRouter)或 `thinking`(Anthropic)逐次指定,Bridge 依模型轉成實際參數,做不到的列在 `X-Bridge-Dropped`
 - `local/self:` 後面接受完整模型 ID;回報實際回答的型號
@@ -43,7 +70,7 @@
 - 自建表預設前綴改為 `biz_bridge_`(平台慣例);查詢鍵在表上的實體名為 `lookup_key`
 - owner / caller user 改以平台使用者 id(`ctx.user_id`)識別,不再以 email
 
-### Fixed
+#### Fixed
 - 綁定時 Bridge 回 500:平台自建表的 number 欄讀回來是字串,存放層現在依 schema 轉型
 - 沒有空白的英數輸出被遮罩扣到最後才送:保留量上限改為 64 字元(email 帳號部分的上限)
 - worker 超過 240 秒的工作被截斷卻回報完成:上限改為預設 1800 秒(`AIGO_BRIDGE_JOB_TIMEOUT_S`),

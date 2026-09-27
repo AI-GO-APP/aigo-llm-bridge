@@ -36,10 +36,18 @@ Anthropic 的條款與 Claude Code 文件對訂閱方案(Pro / Max / Team / Ente
 | 不做的事 | 為什麼 | 對應的程式行為 |
 |---|---|---|
 | 讓多位使用者共用一台 worker | 等同把一個人的方案額度提供給其他人 | 認領時比對 owner;不符就不發工單 |
-| 找不到本人 worker 時改派給別人 | 同上,而且是靜默的 | 回 `409 no_worker_for_user`,由呼叫端決定改用 API 後端 |
+| 找不到本人 worker 時改派給別人 | 同上,而且是靜默的 | `local/*` 回 `409 no_worker_for_user`;`auto` 改用**同一位使用者**的雲端後端,並在回應註明 |
 | 在伺服器、容器或 CI 裡跑 worker | 那不是「本人的電腦」 | worker 啟動時要求互動登入狀態;不支援 `CLAUDE_CODE_OAUTH_TOKEN` 模式 |
 | 讀取或搬運 Claude 憑證 | 憑證只屬於那台電腦上的 Claude Code | worker 只以子行程呼叫 `claude`,不接觸憑證檔 |
 | 以 Claude Code 的名義對外呈現 | 品牌規範不允許 | 文件與介面用「本人的 Claude」,不用產品名當功能名 |
+
+### 2.1 `auto` 與這條邊界
+
+`auto` 在本機與雲端之間主備切換,但**兩個方向都不會越過這條邊界**:
+
+- 雲端失敗改用本機時,交給的仍是**呼叫者本人**的 worker(同一個 owner 檢查)。
+- 本機失敗改用雲端時,用的是組織自己的 OpenRouter / Anthropic 金鑰,不是任何人的訂閱。
+- 優先順序由使用者本人選,app 不能替他預設。要不要用自己的方案額度,是使用者自己的決定。
 
 ## 4. 仍然要由使用組織負責的部分
 
@@ -55,4 +63,4 @@ Anthropic 的條款與 Claude Code 文件對訂閱方案(Pro / Max / Team / Ente
 - 要替多個使用者、或替系統本身產生內容(例如排程報表)
 - 需要可預期的吞吐量與 SLA
 
-以上情況請用 `anthropic/*` 或 `openrouter/*`,呼叫端程式不必改,只換 `model`。
+以上情況請直接指定 `openrouter/*` 或 `anthropic/*`,呼叫端程式不必改,只換 `model`。

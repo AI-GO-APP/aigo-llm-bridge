@@ -217,6 +217,45 @@ action 的 `timeout_ms` = 120000。
 - **有 worker 在線時,Bridge 不會縮到零**(S4 的結論在平台上也成立),等於長期佔一個執行個體的配額。
 - 背景分頁的計時器會被瀏覽器節流,在背景分頁量到的前端時間不可信;時間以 worker 日誌與 Bridge 端為準。
 
+### `auto`:本機與雲端主備(本機端到端 + 平台端到端)
+
+**本機**(`tools/e2e_auto.py`):真 Bridge(記憶體存放)+ 真 worker(本人登入的 Claude Code)+
+模擬 OpenRouter(`tools/mock_openrouter.py`,可以控制它故障),呼叫端是官方 `openai` 客戶端與
+`clients/python/aigo_bridge.py`。9/9 通過:
+
+| 項目 | 結果 |
+|---|---|
+| 沒選優先順序 | ✅ 409;openai SDK 以 `ConflictError` 呈現,`e.body["code"] == "priority_required"` |
+| 本機優先、電腦沒開 | ✅ 雲端回答,`fallback.reason = no_worker_for_user` |
+| 本機優先、電腦在線 | ✅ 本機回答(haiku、關 thinking)3.4 秒 |
+| 串流(本機) | ✅ 最後一段帶 `x_bridge`,openai SDK 以 `chunk.model_extra` 讀得到 |
+| 雲端優先、雲端正常 / 回 503 | ✅ 雲端回答 / 改用本機,`fallback.reason = provider_error` |
+| 串流時雲端 503 | ✅ 出字前切到本機,內容完整、沒有混到兩邊 |
+| 雲端回 400(請求錯誤) | ✅ 不切換,原樣回 `provider_bad_request` |
+| 兩邊都失敗 | ✅ 回雲端的 429,訊息與 `X-Bridge-Fallback` 註明本機先失敗 |
+
+**平台**:Bridge 部署成 Hosted App(冷啟動、平台自建表、**不設任何雲端金鑰**,雲端候選只有模型名稱),
+新版範例 Custom App 發布後,以 action 與 session token 走真實路徑。17/17 通過:
+
+| 項目 | 結果 |
+|---|---|
+| 還沒選 | ✅ `priority: null`,兩個選項都顯示目前不可用;`auto` 回 `priority_required` |
+| 選本機優先 | ✅ 存進平台表,讀回的時間是數字 |
+| 電腦沒開、雲端沒設 | ✅ 兩邊都失敗,訊息說明本機先失敗 |
+| 綁好但還沒 `run` | ✅ 顯示離線(修正前會被當成在線,工單空等 30 秒才判定離線) |
+| 本機優先、電腦在線 | ✅ 本機回答 |
+| 雲端優先、雲端沒設 | ✅ 改用本機,`fallback.reason = provider_not_configured` |
+| 瀏覽器路徑(session token) | ✅ 讀與改偏好(PUT)、`auto` 串流、CORS 允許 PUT 並公開 `X-Bridge-Priority` / `X-Bridge-Fallback` |
+| 用量帳 | ✅ 記到 `ok`、`error`、`fallback` 三種 |
+| 撤銷 | ✅ worker 收到 401 後以結束碼 0 結束(開機常駐不會無限重啟) |
+| 發布閘門 | ✅ 四支 action 都是「貼上的區塊」,閘門認得區塊裡的字面 slug |
+
+沒有驗到的:真的 OpenRouter(這輪刻意不用任何 AI 金鑰,雲端的轉送程式碼與前一版相同,並有單元測試);
+新版前端的畫面點擊(瀏覽器擴充套件當時沒有連線;前端在平台上編譯與發布成功,瀏覽器走的 API 已用 session token 驗過)。
+
+平台面的觀察:**刪除過的 Hosted App 的 slug 會被永久保留**,之後不能再用(平台說明是避免既有連結被別人接管)。
+測試用的 slug 請取一次性的名字。
+
 ### S4 · worker 輪詢縮到零的 Bridge
 
 量法:`spikes/cold-poll/probe.py`。Hosted App 為**冷啟動模式**(`always_on=false`,已讀回確認)。
@@ -250,6 +289,9 @@ action 的 `timeout_ms` = 120000。
 | 串流在 280 秒前由 Bridge 主動收尾並送 `[DONE]`,若工作還沒完成就在最後一個事件附上工單 id;呼叫端把「沒收到 `[DONE]`」視為不完整 | S5:300 秒一到連線直接被切,沒有錯誤狀態碼 |
 | Custom App 的呼叫端區塊必須同時處理「`ctx.http.call` 回傳錯誤」與「action 被砍」兩種逾時 | S3 |
 | 呼叫端區塊在 `ctx.http.call` 裡**寫死字面 slug** | 發布閘門只認得字面 slug;用常數傳入會被標成「動態 slug」而無法檢查授權 |
+| 本機與雲端同時支援,以 `model: "auto"` 主備切換;**優先順序由每位使用者自己選,沒選之前 `auto` 回 `priority_required`**,Bridge 不設預設 | 兩個選項的代價不同(本機用使用者自己的方案額度、要電腦開著;雲端用組織的帳單),取捨應由使用者本人決定;預設值會讓使用者在不知情下用掉自己的額度或組織的預算 |
+| 只有「換後端可能就會成功」的錯誤才切換;串流只在出字前切換 | 請求本身有問題換後端也一樣錯;出字後才切換會產生半段本機、半段雲端的回答 |
+| 綁定不等於在線,要等 `run` 的第一次心跳 | 平台端到端:剛綁好還沒執行的電腦被當成在線,`auto` 要空等 30 秒才切換 |
 | Bridge 的回應一律把實際型號與未套用的參數放進本體的 `x_bridge`(串流在最後一個 chunk) | 部署在平台上的端到端:`local/*` 串流的標頭送得比型號早;egress 的 `ctx.http.call` 拿不到回應標頭 |
 | worker 的單一工作上限預設 1800 秒,被砍或沒有結尾事件都算失敗,絕不交出半截內容 | 同上:寫死 240 秒時,截斷的內容被標成「完整」 |
 | worker 的擁有者以平台身分 `ctx.user_id` 為準,由 app 內的「連接我的電腦」流程綁定 | Server Action 拿得到的是 `ctx.user_id`,不是 email;身分來自平台而不是使用者自填 |
