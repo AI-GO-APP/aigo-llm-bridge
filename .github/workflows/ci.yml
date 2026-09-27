@@ -38,3 +38,15 @@ jobs:
           python-version: "3.12"
       - name: 編譯檢查所有 Python 檔
         run: python -m compileall -q tools spikes
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 安裝測試相依
+        run: pip install -r spikes/hosted-echo/requirements.txt httpx pytest
+      - name: pytest
+        run: python -m pytest spikes/hosted-echo -q

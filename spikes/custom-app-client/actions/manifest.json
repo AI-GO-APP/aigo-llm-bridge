@@ -1,0 +1,12 @@
+{
+  "spike_session": {
+    "description": "S2:換短效 session token,讓瀏覽器直連 Bridge 串流",
+    "timeout_ms": 15000,
+    "is_enabled": true
+  },
+  "spike_sync": {
+    "description": "S3:同步呼叫 Bridge,伺服端延遲 delay_ms 才回,量 egress 的實際上限",
+    "timeout_ms": 120000,
+    "is_enabled": true
+  }
+}

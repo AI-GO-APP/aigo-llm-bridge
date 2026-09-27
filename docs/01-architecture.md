@@ -55,7 +55,7 @@ AI GO 上的 app 呼叫 LLM,常見寫法是在 Server Action 或 Hosted App 裡�
 
 ## 4. 一次 `local/self` 呼叫的完整路徑
 
-1. 前端呼叫自己的 Server Action → action 用 `ctx.user_id` 查出使用者 email,
+1. 前端呼叫自己的 Server Action → action 以平台身分 `ctx.user_id` 當 caller user,
    向 Bridge `POST /bridge/session` 換短效 token(帶 source 金鑰與 caller user)。
 2. 前端帶 token 直連 `POST /v1/chat/completions`(`model: "local/self"`, `stream: true`)。
 3. Bridge 查 workers 表:有沒有 **owner = caller user** 且最近有心跳的 worker。
@@ -72,9 +72,70 @@ AI GO 上的 app 呼叫 LLM,常見寫法是在 Server Action 或 Hosted App 裡�
 
 ## 5. 實測依據
 
-P1 完成後,把下列四個數字與量測方法寫在這一節,後續設計以實測為準:
+後續設計以這一節的實測為準。腳本在 [`spikes/`](../spikes/),可以重跑;數字變了就回頭檢查第 3 節的決定。
 
-1. 本機 `claude -p` 的啟動時間、首 token 延遲、總時間(Windows / macOS)
-2. 瀏覽器從 Custom App 執行頁直連 Bridge 的 SSE 是否可行(CORS、token、斷線行為)
-3. Server Action 經 egress 同步呼叫 Bridge 的實際可用秒數
-4. worker 以固定間隔輪詢縮到零的 Bridge 時,冷啟動命中率與延遲
+### S1 · 本機 `claude -p` 延遲(Windows,Claude Code 2.1.258,訂閱登入)
+
+量法:`spikes/cli-latency/probe.py`,同一題重複執行,起點都是「行程啟動」,單位毫秒。
+旗標:`-p --tools "" --max-turns 1 --strict-mcp-config --setting-sources "" --system-prompt …
+--output-format stream-json --include-partial-messages --verbose`,**extended thinking 關閉**。
+
+| 模型 | 行程就緒 | 第一段文字 | 文字完成(`message_stop`) | `result` 事件 | 行程結束 | 每次成本(估) |
+|---|---|---|---|---|---|---|
+| haiku(n=5) | 930 | **1,620** | ≈2,400 | 3,509 | 4,046 | $0.0009 |
+| sonnet(n=3) | 916 | **2,064** | — | 3,729 | 4,265 | $0.0019 |
+
+同一題**開著 thinking**:首段文字 10,287 ms、1,399 個 thinking token、$0.0077,而且模型會忽略
+`--system-prompt` 裡的指令(關掉之後照做)。
+
+驗證項:
+
+| 項目 | 結果 |
+|---|---|
+| `--session-id` 開場、`--resume` 續問,記得上一輪 | ✅ |
+| `--system-prompt` 取代預設提示後照規則回答(thinking 關閉時) | ✅ |
+| 工具清單為空(`init.tools = []`) | ✅ |
+| 直接問「你看到哪些附加資訊」,回答不含 email / 本機路徑 / 作業系統 | ✅(有加「不得提及」條款時) |
+
+### S2 · 瀏覽器從 Custom App 執行頁直連 Bridge
+
+| 項目 | 結果 |
+|---|---|
+| 平台邊緣會不會緩衝 SSE | **不會**:伺服端每 400 ms 送一段,客戶端收到的間隔也是 400 ms |
+| Custom App 執行頁的 CSP | `connect-src 'self' https://ai-go.app https://*.ai-go.app …` —— Hosted App 的 `*.deploy.ai-go.app` **在允許範圍內** |
+| 從執行頁來源發出的 CORS 預檢 | 通過(`Access-Control-Allow-Origin: *`,允許 `Authorization`) |
+| Hosted App 改環境變數後生效 | 數秒內換上新實例(以 `/healthz` 的版本標記確認) |
+| 瀏覽器實際串流、錯誤可讀性、長連線截斷點 | 待補(需要在執行頁登入後操作) |
+
+### S3 · Server Action 經 egress 同步呼叫 Bridge
+
+量法:`spikes/custom-app-client` 的 `spike_sync`,Bridge 刻意延遲 N 秒才回;外部服務 `timeout_ms` = 30000,
+action 的 `timeout_ms` = 120000。
+
+| 伺服端延遲 | 結果 |
+|---|---|
+| 1 – 29 秒 | 成功;平台額外開銷約 70 – 150 ms |
+| 31 秒 | `ctx.http.call` **回傳**錯誤 `egress_upstream_error`(約 30.0 秒),action 本身繼續執行 |
+| 45 秒 | **整支 action 被砍**:`status: timeout`,`Action 執行超時(30000ms)` |
+
+另外:閒置後第一次呼叫 action,牆鐘 7.7 秒、實際執行 1.2 秒 —— action runner 冷啟動約 **6.5 秒**。
+
+### S4 · worker 輪詢縮到零的 Bridge
+
+量測中(`spikes/cold-poll/probe.py`)。
+
+### 由實測得出的決定
+
+| 決定 | 依據 |
+|---|---|
+| worker 預設**關閉 extended thinking**(以 `--settings '{"alwaysThinkingEnabled": false}'`),呼叫端可逐次開啟 | S1:延遲 6 倍、成本 9 倍,且系統提示不被遵守 |
+| worker 在 `message_stop` 就交付全文,`result` 到了再補 usage / cost | S1:兩者之間有約 1.3 秒的收尾摘要,另加 0.5 秒行程結束 |
+| worker 永遠在**專用的空目錄**執行、加「不得提及附加資訊」條款、並對輸出做**確定性遮罩**(帳號 email、本機路徑) | Claude Code 會在每一輪附上環境快照與登入帳號 email,且沒有設定可以關掉;條款在測試中有效,遮罩是第二道防線 |
+| Windows 上直接呼叫 `claude.exe`,不經 `claude.cmd` | `.cmd` 殼會重新解析引號,`--tools ""` 這類空字串參數有被吃掉的風險 |
+| 不用 `--bare` | `--bare` 不讀訂閱登入 |
+| **Bridge 必須留在 `*.ai-go.app` 網址,不能綁自訂網域** | S2:執行頁 CSP 只允許 `*.ai-go.app`;綁自訂網域後瀏覽器直連會被擋 |
+| 瀏覽器不能直接打任何模型供應者 | 同上,CSP 不允許 |
+| Server Action 同步模式的預設上限定在 **20 秒**,超過自動轉非同步 | S3:硬牆在 30 秒,而且撞牆時有兩種不同的失敗形狀,留 10 秒餘裕 |
+| 呼叫端必須同時處理「`ctx.http.call` 回傳錯誤」與「action 被砍」兩種逾時 | S3 |
+| 呼叫端區塊在 `ctx.http.call` 裡**寫死字面 slug** | 發布閘門只認得字面 slug;用常數傳入會被標成「動態 slug」而無法檢查授權 |
+| worker 的擁有者以平台身分 `ctx.user_id` 為準,由 app 內的「連接我的電腦」流程綁定 | Server Action 拿得到的是 `ctx.user_id`,不是 email;身分來自平台而不是使用者自填 |
