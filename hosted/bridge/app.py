@@ -20,6 +20,7 @@ from .providers.base import CallContext
 from .store import AigoStore, MemoryStore, Store, new_key, now
 
 BOOT = time.time()
+STREAM_CAP_S = 280.0   # Hosted 單一請求上限 300 秒(docs/01 S5),留 20 秒收尾
 INSTANCE = uuid.uuid4().hex[:8]
 
 
@@ -40,7 +41,7 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
     app = FastAPI(title="aigo-llm-bridge", version=s.version, docs_url=None, redoc_url=None)
     # Custom App 執行頁的 CSP 允許 *.ai-go.app;錯誤回應也要帶 CORS 標頭,瀏覽器才讀得到錯誤內容
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST", "OPTIONS"],
-                       allow_headers=["Authorization", "Content-Type", "X-Bridge-User", "X-Bridge-Session",
+                       allow_headers=["Authorization", "Content-Type", "X-Bridge-User", "X-Bridge-Session", "X-Bridge-Wait",
                                       "X-Bridge-Async", "X-Bridge-Source", "X-Bridge-Timestamp",
                                       "X-Bridge-Signature"],
                        expose_headers=["X-Bridge-Dropped", "X-Bridge-Served-By", "X-Bridge-Job", "Retry-After"])
@@ -121,6 +122,28 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
             out["X-Bridge-Job"] = ctx.job_id
         return out
 
+    async def finish_job(job: dict, backend: str, ctx: CallContext, started: float, task: asyncio.Task) -> None:
+        """背景把一個已經在跑的呼叫做完,結果寫回工單(非同步模式、同步逾時轉工單都走這裡)。"""
+        try:
+            result = await task
+            await store.update("jobs", job, {"status": "done", "done_ts": now(),
+                                             "result_json": {"completion": result}})
+            await record_usage(ctx, backend, "ok", 200, started, False)
+        except BridgeError as exc:
+            await store.update("jobs", job, {"status": "failed", "done_ts": now(),
+                                             "error_json": exc.body()["error"]})
+            await record_usage(ctx, backend, "error", exc.status, started, False)
+
+    def parse_wait(request: Request) -> float:
+        raw = request.headers.get("x-bridge-wait", "").strip()
+        if not raw:
+            return 0.0
+        try:
+            value = float(raw)
+        except ValueError:
+            raise BridgeError(400, "bad_wait", "X-Bridge-Wait 要是秒數(1–280)") from None
+        return max(1.0, min(value, STREAM_CAP_S))
+
     def spawn(coro) -> None:
         task = asyncio.create_task(coro)
         background.add(task)
@@ -184,7 +207,8 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
     async def run_chat(req: dict, caller: Caller, request: Request):
         backend, model = route_model(req.get("model"))
         ctx = CallContext(source=caller.source, user=caller.user, model_label=model_label(req.get("model")),
-                          session=request.headers.get("x-bridge-session", "").strip())
+                          session=request.headers.get("x-bridge-session", "").strip(),
+                          wait_s=parse_wait(request))
         started = time.monotonic()
         stream = bool(req.get("stream"))
 
@@ -192,19 +216,9 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
             if backend == "local":
                 job = await local.create_job(ctx, req)
             else:
+                task = asyncio.create_task(provider_for(backend).complete(req, model, ctx))
                 job = await local.create_job(ctx, req, provider=backend)
-
-                async def work():
-                    try:
-                        result = await provider_for(backend).complete(req, model, ctx)
-                        await store.update("jobs", job, {"status": "done", "done_ts": now(),
-                                                         "result_json": {"completion": result}})
-                        await record_usage(ctx, backend, "ok", 200, started, False)
-                    except BridgeError as exc:
-                        await store.update("jobs", job, {"status": "failed", "done_ts": now(),
-                                                         "error_json": exc.body()["error"]})
-                        await record_usage(ctx, backend, "error", exc.status, started, False)
-                spawn(work())
+                spawn(finish_job(job, backend, ctx, started, task))
             return JSONResponse({"id": job["key"], "status": job["status"]}, status_code=202,
                                 headers={"X-Bridge-Job": job["key"]})
 
@@ -213,7 +227,14 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
                 if backend == "local":
                     result = await local.complete(req, ctx)
                 else:
-                    result = await provider_for(backend).complete(req, model, ctx)
+                    # 等到呼叫端要求的秒數;還沒好就轉成工單在背景跑完,回 202 讓它之後查
+                    task = asyncio.create_task(provider_for(backend).complete(req, model, ctx))
+                    done, _ = await asyncio.wait({task}, timeout=ctx.wait_s or s.sync_timeout_s)
+                    if not done:
+                        job = await local.create_job(ctx, req, provider=backend)
+                        spawn(finish_job(job, backend, ctx, started, task))
+                        raise AsyncAccepted(job["key"])
+                    result = task.result()
             except AsyncAccepted as acc:
                 return JSONResponse({"id": acc.job_key, "status": "running"}, status_code=202,
                                     headers={"X-Bridge-Job": acc.job_key})
@@ -235,16 +256,32 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
             raise
 
         async def body():
+            # Hosted 單一請求 300 秒一到就直接斷線、不給錯誤狀態碼(docs/01 S5),所以自己在 280 秒收尾
+            deadline = started + STREAM_CAP_S
             ok = True
             try:
                 if first is not None:
                     ok = "error" not in first
                     yield _sse(first)
-                async for chunk in gen:
+                while True:
+                    remaining = deadline - time.monotonic()
+                    try:
+                        if remaining <= 0:
+                            raise asyncio.TimeoutError
+                        chunk = await asyncio.wait_for(gen.__anext__(), timeout=remaining)
+                    except StopAsyncIteration:
+                        break
+                    except asyncio.TimeoutError:
+                        ok = False
+                        yield _sse({"error": {"code": "stream_timeout", "provider_status": None,
+                                              "job_id": ctx.job_id or None,
+                                              "message": "串流達到單一連線上限而結束,內容可能不完整"}})
+                        break
                     ok = ok and "error" not in chunk
                     yield _sse(chunk)
                 yield _sse("[DONE]")
             finally:
+                await gen.aclose()
                 await record_usage(ctx, backend, "ok" if ok else "error", 200, started, True)
 
         return StreamingResponse(body(), media_type="text/event-stream", headers={

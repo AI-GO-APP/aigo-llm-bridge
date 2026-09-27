@@ -13,8 +13,8 @@ import sys
 args = sys.argv[1:]
 if os.environ.get("FAKE_CLAUDE_ARGS_OUT"):
     with open(os.environ["FAKE_CLAUDE_ARGS_OUT"], "w", encoding="utf-8") as f:
-        json.dump({"args": args, "stdin": None if args[:1] == ["auth"] else sys.stdin.buffer.read().decode("utf-8")},
-                  f, ensure_ascii=False)
+        json.dump({"args": args, "stdin": None if args[:1] == ["auth"] else sys.stdin.buffer.read().decode("utf-8"),
+                   "env_max_thinking": os.environ.get("MAX_THINKING_TOKENS")}, f, ensure_ascii=False)
 
 if args[:2] == ["auth", "status"]:
     print(json.dumps({"loggedIn": os.environ.get("FAKE_CLAUDE_LOGGED_IN", "1") == "1", "authMethod": "claude.ai",
@@ -31,7 +31,7 @@ def out(obj):
 text = os.environ.get("FAKE_CLAUDE_TEXT", "")
 fail = os.environ.get("FAKE_CLAUDE_FAIL") == "1"
 usage = {"input_tokens": 12, "output_tokens": 7}
-model_usage = {"claude-haiku-4-5": {}}
+model_usage = {os.environ.get("FAKE_CLAUDE_MODEL", "claude-haiku-4-5"): {}}
 
 if "--json-schema" in args:
     out({"type": "result", "is_error": fail, "result": text or "{}", "structured_output": {"answer": text or "ok"},

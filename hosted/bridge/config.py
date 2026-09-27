@@ -11,7 +11,8 @@
 
 選填
   BRIDGE_DEFAULT_MODEL      沒有前綴的 model 要路由到哪裡(例 anthropic/claude-opus-5);未設 = 400
-  BRIDGE_SYNC_TIMEOUT       同步呼叫最多等幾秒,預設 20(Server Action 經 egress 的硬牆是 30 秒)
+  BRIDGE_SYNC_TIMEOUT       同步呼叫預設最多等幾秒,預設 280(Hosted 單一請求上限 300 秒)。
+                            Custom App 經 egress 呼叫時硬牆是 30 秒,那一端要自己帶 X-Bridge-Wait: 20
   BRIDGE_TABLE_PREFIX       自建表名稱前綴,預設 biz_bridge_(平台慣例:自建表一律 biz_ 開頭)
   BRIDGE_STORE_PROMPTS      1 = 把提示與回應原文存進工單表(除錯用),預設不存
   BRIDGE_ANTHROPIC_FALLBACKS off = 不對 claude-opus-5 / claude-fable-5-1 帶拒答後備
@@ -39,7 +40,7 @@ class Settings:
     anthropic_api_key: str = ""
     openrouter_api_key: str = ""
     default_model: str = ""
-    sync_timeout_s: float = 20.0
+    sync_timeout_s: float = 280.0
     table_prefix: str = "biz_bridge_"
     store_prompts: bool = False
     anthropic_fallbacks: bool = True
@@ -75,9 +76,9 @@ def load(env: dict[str, str] | None = None) -> Settings:
     public = env.get("BRIDGE_PUBLIC_URL", "").strip().rstrip("/") or (
         f"https://{slug}.deploy.ai-go.app" if slug else "")
     try:
-        sync_timeout = float(env.get("BRIDGE_SYNC_TIMEOUT", "20") or 20)
+        sync_timeout = float(env.get("BRIDGE_SYNC_TIMEOUT", "280") or 280)
     except ValueError:
-        sync_timeout = 20.0
+        sync_timeout = 280.0
     return Settings(
         source_keys=keys,
         session_secret=secret,

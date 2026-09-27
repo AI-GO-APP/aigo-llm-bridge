@@ -161,24 +161,34 @@ class Redactor:
         return text
 
 
-def build_command(claude: list[str], job: dict, sessions: dict) -> tuple[list[str], bool]:
-    """回 (指令, 是否串流)。"""
-    alias = job.get("alias") or ""
-    if alias and alias not in ALIASES:
-        raise ValueError(f"不認得的模型別名 {alias}")
+EFFORTS = {"low", "medium", "high", "xhigh", "max"}
+FULL_ID = re.compile(r"^claude-[a-z0-9][a-z0-9.-]{2,60}$")
+CANNOT_DISABLE_THINKING = re.compile(r"^claude-(opus-5-5|fable|mythos)")
+
+
+def build_command(claude: list[str], job: dict, sessions: dict) -> tuple[list[str], bool, dict]:
+    """回 (指令, 是否串流, 額外環境變數)。
+
+    模型、effort、thinking 一律照工單指定;**沒指定就不帶**,照 Claude Code 與模型原本的行為
+    (docs/01 S1b:關掉 thinking 有快有慢的取捨,不該由 worker 替呼叫端決定)。
+    """
+    model = job.get("model") or job.get("alias") or ""      # alias 是 0.1.0 以前的欄位名
+    if model and model not in ALIASES and not FULL_ID.match(model):
+        raise ValueError(f"不認得的模型 {model}")
+    effort = job.get("effort")
+    if effort and effort not in EFFORTS:
+        raise ValueError(f"不認得的 effort {effort}")
     system = (job.get("system") or "").strip()
     system = (system + "\n\n" if system else "") + HYGIENE
     cmd = claude + ["-p", "--tools", "", "--max-turns", "1", "--strict-mcp-config", "--setting-sources", "",
                     "--system-prompt", system]
-    if alias:
-        cmd += ["--model", alias]
-    effort = job.get("effort")
-    if alias == "haiku" or (not alias and not effort):
-        # 實測(docs/01 S1):開著 thinking 延遲約 6 倍,而且系統提示可能不被遵守
-        cmd += ["--settings", json.dumps({"alwaysThinkingEnabled": False})]
-    else:
-        # 較新的 Opus 不能完全關掉 thinking,用低 effort 取代
-        cmd += ["--effort", effort or "low"]
+    env: dict = {}
+    if model:
+        cmd += ["--model", model]
+    if effort:
+        cmd += ["--effort", effort]
+    if job.get("thinking") == "off":
+        env["MAX_THINKING_TOKENS"] = "0"     # 官方文件:對 Opus 5.5 與 Fable 無效(會在結果裡註明)
     session = job.get("session") or ""
     if session:
         try:
@@ -191,9 +201,9 @@ def build_command(claude: list[str], job: dict, sessions: dict) -> tuple[list[st
     schema = job.get("json_schema")
     if schema:
         cmd += ["--output-format", "json", "--json-schema", json.dumps(schema, ensure_ascii=False)]
-        return cmd, False
+        return cmd, False, env
     cmd += ["--output-format", "stream-json", "--include-partial-messages", "--verbose"]
-    return cmd, True
+    return cmd, True, env
 
 
 class Worker:
@@ -219,13 +229,13 @@ class Worker:
         jid = job["job_id"]
         started = time.monotonic()
         try:
-            cmd, streaming = build_command(self.claude, job, self.sessions)
+            cmd, streaming, extra_env = build_command(self.claude, job, self.sessions)
         except ValueError as exc:
             call(self.base, f"/worker/jobs/{jid}/fail", {"code": "bad_job", "message": str(exc)}, self.key)
             return
-        log(f"工單 {jid[:8]} 開始(模型 {job.get('alias') or '預設'})")
+        log(f"工單 {jid[:8]} 開始(模型 {job.get('model') or job.get('alias') or '預設'})")
         proc = subprocess.Popen(cmd, cwd=RUN_DIR, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, env={**os.environ, "NO_COLOR": "1"})
+                                stderr=subprocess.PIPE, env={**os.environ, "NO_COLOR": "1", **extra_env})
         timer = threading.Timer(JOB_TIMEOUT_S, proc.kill)
         timer.start()
         try:
@@ -248,11 +258,13 @@ class Worker:
             self.sessions[str(uuid.UUID(job["session"]))] = int(time.time())
             save_private(SESSIONS, self.sessions)
         outcome["duration_ms"] = int((time.monotonic() - started) * 1000)
+        if job.get("thinking") == "off" and CANNOT_DISABLE_THINKING.match(outcome.get("model") or ""):
+            outcome["notes"] = ["thinking_off_not_applicable"]   # 這個模型關不掉思考,照實告訴呼叫端
         call(self.base, f"/worker/jobs/{jid}/result", outcome, self.key)
         log(f"工單 {jid[:8]} 完成({outcome['duration_ms']} ms)")
 
     def _consume_stream(self, jid: str, proc) -> dict:
-        text, sent_len, last_sent = "", 0, 0.0
+        text, sent_len, last_sent, init_model = "", 0, 0.0, ""
         result: dict = {}
         for raw in proc.stdout:
             try:
@@ -271,6 +283,8 @@ class Worker:
                         sent_len, last_sent = len(safe), time.monotonic()
                 elif inner.get("type") == "message_stop":
                     self._chunk(jid, self.redact(text))    # 文字已完整:先交付,不等收尾摘要
+            elif kind == "system" and ev.get("subtype") == "init":
+                init_model = str(ev.get("model") or "")
             elif kind == "result":
                 result = ev
         if result.get("is_error"):
@@ -279,7 +293,7 @@ class Worker:
         fallback = result.get("result") if isinstance(result.get("result"), str) else ""
         final = self.redact(text or fallback)
         return {"text": final, "usage": result.get("usage") or {}, "cost_usd": result.get("total_cost_usd"),
-                "model": self._model(result), "session": result.get("session_id") or ""}
+                "model": self._model(result) or init_model, "session": result.get("session_id") or ""}
 
     def _consume_json(self, proc) -> dict:
         raw = proc.stdout.read().decode("utf-8", errors="replace")

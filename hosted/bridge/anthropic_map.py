@@ -13,6 +13,8 @@ import uuid
 from dataclasses import dataclass, field
 
 from .errors import BridgeError
+from .reasoning import can_disable_thinking, supports_effort, uses_budget_thinking
+from .reasoning import normalize as normalize_reasoning
 
 DEFAULT_MAX_TOKENS_SYNC = 16000
 DEFAULT_MAX_TOKENS_STREAM = 64000
@@ -26,7 +28,6 @@ _NO_FORCED_TOOL = ("claude-fable-5-1", "claude-mythos-5-1", "claude-opus-5-5")
 _FALLBACK_DEFAULT = ("claude-opus-5", "claude-fable-5-1")
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
-_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 _DATA_URL = re.compile(r"^data:(image/[a-zA-Z0-9.+-]+);base64,(.+)$", re.S)
 
 _FINISH = {"end_turn": "stop", "stop_sequence": "stop", "max_tokens": "length",
@@ -187,12 +188,30 @@ def to_anthropic(req: dict, model: str, *, stream: bool, fallbacks: bool = True)
             else:
                 kw[name] = req[name]
 
+    # 思考與 effort:呼叫端沒指定就不送,照模型原本的行為(docs/01 S1b);指定了但模型不支援的記進 dropped
     output_config: dict = {}
-    effort = req.get("reasoning_effort")
-    if effort:
-        if effort not in _EFFORTS:
-            raise BridgeError(400, "bad_reasoning_effort", f"reasoning_effort 只接受 {', '.join(_EFFORTS)}")
-        output_config["effort"] = effort
+    thinking = normalize_reasoning(req)
+    if thinking["effort"]:
+        if supports_effort(model):
+            output_config["effort"] = thinking["effort"]
+        else:
+            prep.dropped.append("reasoning_effort")
+    if thinking["thinking"] == "off":
+        if uses_budget_thinking(model):
+            pass                                   # 舊世代:不帶 thinking 就是不思考
+        elif can_disable_thinking(model, thinking["effort"]):
+            kw["thinking"] = {"type": "disabled"}
+        else:
+            prep.dropped.append("thinking_off")    # Opus 5.5、Fable 關不掉,只能靠 effort
+    elif thinking["thinking"] == "on":
+        if uses_budget_thinking(model):
+            budget = min(max(thinking["budget"] or 4096, 1024), kw["max_tokens"] - 1)
+            if budget >= 1024:
+                kw["thinking"] = {"type": "enabled", "budget_tokens": budget}
+            else:
+                prep.dropped.append("thinking_on")  # max_tokens 太小,放不下最低 1024 的思考預算
+        else:
+            kw["thinking"] = {"type": "adaptive"}
 
     fmt = req.get("response_format") or {}
     if fmt.get("type") == "json_schema":

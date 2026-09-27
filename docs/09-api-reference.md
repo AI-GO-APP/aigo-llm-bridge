@@ -25,7 +25,7 @@
 | `claude-<…>`(沒有前綴) | 同上 | 等同 `anthropic/claude-<…>` |
 | `openrouter/<vendor>/<model>` | OpenRouter `chat/completions`,**原樣轉送** | 例:`openrouter/anthropic/claude-haiku-4.5`(想明確走 OpenRouter 時用) |
 | 其他 `<vendor>/<model>` | 有 OpenRouter 金鑰就原樣交給 OpenRouter | 例:`openai/gpt-5.4-mini`。讓既有 OpenRouter 呼叫端**只換 base URL 就能用** |
-| `local/self`、`local/self:<haiku\|sonnet\|opus\|fable>` | 呼叫者本人的 worker(本機 Claude Code) | 只支援文字與 JSON 輸出,見 §2.3。**沒有**指定他人電腦的寫法 |
+| `local/self`、`local/self:<別名或完整模型 ID>` | 呼叫者本人的 worker(本機 Claude Code) | 別名:haiku、sonnet、opus、fable;完整 ID 例 `local/self:claude-opus-5`。只支援文字與 JSON 輸出,見 §2.3。**沒有**指定他人電腦的寫法 |
 | 空字串或未帶 | `BRIDGE_DEFAULT_MODEL` | 未設定 = 400 |
 
 同時接受 OpenRouter 專有欄位(`models`、`provider`、`usage`、`transforms`)而不報錯:
@@ -42,7 +42,7 @@
 | `max_tokens` / `max_completion_tokens` | `max_tokens` | 沒給:非串流 16000、串流 64000 |
 | `stop`(字串或陣列) | `stop_sequences` | — |
 | `temperature`、`top_p`、`top_k` | — | **目前世代模型(Opus 5/5.5、Sonnet 5、Opus 4.7/4.8、Fable 系列)會以 400 拒收**,這些模型一律丟棄,並在回應標頭 `X-Bridge-Dropped` 列出;較舊的模型照傳 |
-| `reasoning_effort`(`low`/`medium`/`high`) | `output_config.effort` | 另接受 `xhigh`、`max`。不給就用模型預設 |
+| `reasoning_effort` / `reasoning` / `thinking` | `output_config.effort`、`thinking` | 見 §2.4。**沒指定就不送**,照模型原本的行為 |
 | `response_format: {type: json_schema, json_schema: {schema}}` | `output_config.format`(JSON schema) | — |
 | `response_format: {type: json_object}` | 系統提示加一句「只輸出一個 JSON 物件」 | 沒有 schema 就無法用結構化輸出強制 |
 | `user` | `metadata.user_id` | 只放不可逆的雜湊,不放原值 |
@@ -80,9 +80,42 @@
 
 - 找不到 **擁有者 = 呼叫者** 且最近 90 秒內有心跳的 worker → `409 {"error": {"code": "no_worker_for_user"}}`。
   不會改派給其他人的 worker。
-- `model` 可再指定模型別名:`local/self`(worker 預設)、`local/self:haiku`、`local/self:sonnet`、`local/self:opus`。
+- `model` 可再指定模型:`local/self`(照 worker 上 Claude Code 的預設)、`local/self:haiku` 等別名,或完整 ID。
+  **別名解析因帳號而異**(實測 `opus` 解析成 claude-opus-5,而非文件所說的 Opus 5.5),要結果可預期就傳完整 ID;
+  實際回答的型號在 `X-Bridge-Served-By` 回應標頭。
+- JSON 模式(`response_format`)下,若模型把 JSON 包在 ```json 外框裡,Bridge 會拿掉外框。
 - 對話延續:帶 `X-Bridge-Session: <uuid>`,同一個 UUID 會在同一台 worker 上接續同一段 Claude Code 對話。
-- 同步等待上限 `BRIDGE_SYNC_TIMEOUT`(預設 20 秒),超過回 `202 {"job_id"}`,改用 `GET /v1/jobs/{id}` 取結果。
+- 同步等待的規則見 §2.5。
+
+### 2.4 思考與 effort(三種寫法擇一或混用)
+
+| 寫法 | 例 |
+|---|---|
+| OpenAI | `reasoning_effort: "low" \| "medium" \| "high" \| "xhigh" \| "max"`;`minimal` 視為 `low`,`none` 視為關閉思考 |
+| OpenRouter | `reasoning: {"effort": …, "enabled": false, "max_tokens": 4096}` |
+| Anthropic | `thinking: {"type": "disabled" \| "adaptive" \| "enabled", "budget_tokens": …}` |
+
+**沒指定就不送任何思考參數**——照模型與 Claude Code 原本的行為(docs/01 S1b:關掉思考有快有慢的取捨,
+例如 haiku 快一倍但格式遵守變差,不該由 Bridge 替呼叫端決定)。指定了但模型做不到的,不會送出,
+並列在回應標頭 `X-Bridge-Dropped`:
+
+| 情況 | 處理 |
+|---|---|
+| effort 用在不支援的模型(Haiku 4.5 等舊世代) | 不送,`X-Bridge-Dropped: reasoning_effort` |
+| 關閉思考用在 Opus 5.5、Fable | 關不掉,`X-Bridge-Dropped: thinking_off`(local 由 worker 回報,同樣列出) |
+| 關閉思考用在 Opus 5 且 effort 為 xhigh / max | 同上(Opus 5 只在 effort ≤ high 時接受關閉) |
+| 開啟思考用在舊世代模型 | 轉成固定預算 `budget_tokens`(預設 4096,至少 1024,且小於 max_tokens;放不下就列 `thinking_on`) |
+
+`local` 後端的對應:模型 → `--model`、effort → `--effort`、關閉思考 → `MAX_THINKING_TOKENS=0`。
+
+### 2.5 同步等待與串流長度
+
+| 項目 | 規則 | 依據 |
+|---|---|---|
+| 同步呼叫最多等多久 | 預設 `BRIDGE_SYNC_TIMEOUT` = 280 秒;請求可帶 `X-Bridge-Wait: <秒>`(1–280)改短。等不到就回 `202 {"id"}`,工作繼續在背景做完,之後用 `GET /v1/jobs/{id}` 取 | Hosted 單一請求上限 300 秒(docs/01 S5) |
+| **Custom App 的 Server Action 呼叫時** | **一定要帶 `X-Bridge-Wait: 20`** | egress 閘道的硬牆是 30 秒,而且撞牆時有兩種不同的失敗形狀(docs/01 S3) |
+| 串流最長多久 | Bridge 在 280 秒時主動收尾:送一個 `{"error": {"code": "stream_timeout", "job_id": …}}` 事件,再送 `[DONE]` | 300 秒一到平台直接斷線、沒有錯誤狀態碼(docs/01 S5) |
+| 呼叫端怎麼判斷串流完整 | 收到 `[DONE]` 且之前沒有 `error` 事件 | 同上 |
 
 ## 3. 非同步
 

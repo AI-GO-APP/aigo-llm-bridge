@@ -217,7 +217,8 @@ def test_local_stream_end_to_end_and_other_owner_cannot_claim():
                     job = (await c.post("/worker/claim", headers=alice)).json()["job"]
                     if job:
                         break
-                assert job["alias"] == "haiku" and job["system"] == "sys"
+                assert job["model"] == "haiku" and job["system"] == "sys"
+                assert job["effort"] is None and job["thinking"] is None   # 沒指定就照模型原本的行為
                 assert "q1" in job["prompt"] and job["prompt"].rstrip().endswith("q2")
                 jid = job["job_id"]
                 assert (await c.post(f"/worker/jobs/{jid}/chunk", headers=bob, json={"text": "x"})).status_code == 404

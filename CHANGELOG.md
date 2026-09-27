@@ -31,5 +31,11 @@
 - `tools/provision_tables.py`:建立或補齊四張平台自建表(預設只列計畫)
 
 ### Changed
+- **思考與 effort 不再寫死**:worker 預設不帶任何 thinking / effort 參數;呼叫端以 `reasoning_effort`、
+  `reasoning`(OpenRouter)或 `thinking`(Anthropic)逐次指定,Bridge 依模型轉成實際參數,做不到的列在 `X-Bridge-Dropped`
+- `local/self:` 後面接受完整模型 ID;回報實際回答的型號
+- 同步等待預設改為 280 秒並新增 `X-Bridge-Wait`;anthropic / openrouter 同步呼叫逾時改為轉工單在背景完成(回 202)
+- 所有串流在 280 秒主動收尾(`stream_timeout` 事件 + `[DONE]`)
+- JSON 模式下拿掉模型多包的程式碼區塊外框
 - 自建表預設前綴改為 `biz_bridge_`(平台慣例);查詢鍵在表上的實體名為 `lookup_key`
 - owner / caller user 改以平台使用者 id(`ctx.user_id`)識別,不再以 email

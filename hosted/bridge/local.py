@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import secrets
 import time
 from typing import AsyncIterator
@@ -21,6 +22,7 @@ from .auth import hash_secret, new_secret
 from .config import Settings
 from .errors import BridgeError
 from .providers.base import CallContext
+from .reasoning import normalize as normalize_reasoning
 from .store import Store, new_key, now
 
 ALIASES = ("haiku", "sonnet", "opus", "fable")
@@ -71,16 +73,29 @@ class Hub:
             event.set()
 
 
-def parse_alias(model: str) -> str:
-    """local/self → "",local/self:haiku → "haiku"。"""
+_FULL_ID = re.compile(r"^claude-[a-z0-9][a-z0-9.-]{2,60}$")
+
+
+def parse_local_model(model: str) -> str:
+    """local/self → ""(worker 預設)、local/self:haiku → "haiku"、local/self:claude-opus-5 → 完整 ID。
+
+    別名解析因帳號而異(docs/01 S1b),要結果可預期就傳完整模型 ID。
+    """
     rest = model.removeprefix("local/")
-    name, _, alias = rest.partition(":")
+    name, _, spec = rest.partition(":")
     if name != "self":
         raise BridgeError(400, "unsupported_local_target",
                           "local 後端只接受 local/self(只能用你自己的電腦);沒有指定他人電腦的寫法")
-    if alias and alias not in ALIASES:
-        raise BridgeError(400, "bad_model_alias", f"local/self: 後面只接受 {', '.join(ALIASES)}")
-    return alias
+    if spec and spec not in ALIASES and not _FULL_ID.match(spec):
+        raise BridgeError(400, "bad_local_model",
+                          f"local/self: 後面接模型別名({', '.join(ALIASES)})或完整模型 ID(例 claude-opus-5)")
+    return spec
+
+
+def strip_json_fences(text: str) -> str:
+    """模型偶爾會把 JSON 包在 ```json … ``` 裡(docs/01 S1b 觀察到),JSON 模式下拿掉外框。"""
+    match = re.match(r"^\s*```(?:json)?\s*\n(.*?)\n?```\s*$", text, re.S)
+    return match.group(1) if match else text
 
 
 def _text(content) -> str:
@@ -96,7 +111,7 @@ def _text(content) -> str:
     return "".join(out)
 
 
-def render_for_worker(req: dict, alias: str) -> dict:
+def render_for_worker(req: dict, model: str) -> dict:
     """把 OpenAI 形狀的請求攤成 worker 要的「系統提示 + 單一提示」。"""
     if req.get("tools"):
         raise BridgeError(400, "local_no_tools", "local 後端不支援工具呼叫;請改用 anthropic/* 或 openrouter/*")
@@ -123,9 +138,9 @@ def render_for_worker(req: dict, alias: str) -> dict:
     schema = (fmt.get("json_schema") or {}).get("schema") if fmt.get("type") == "json_schema" else None
     if fmt.get("type") == "json_object":
         system.append("只輸出一個合法的 JSON 物件,不要加任何說明文字或程式碼區塊標記。")
-    effort = req.get("reasoning_effort")
-    return {"system": "\n\n".join(system), "prompt": prompt, "alias": alias, "json_schema": schema,
-            "effort": effort if effort in ("low", "medium", "high", "xhigh", "max") else None,
+    thinking = normalize_reasoning(req)   # 沒指定就是 None:照模型原本的行為(docs/01 S1b)
+    return {"system": "\n\n".join(system), "prompt": prompt, "model": model, "json_schema": schema,
+            "effort": thinking["effort"], "thinking": thinking["thinking"],
             "max_tokens": req.get("max_completion_tokens") or req.get("max_tokens")}
 
 
@@ -171,10 +186,11 @@ class LocalService:
         return rows[0] if rows else None
 
     async def create_job(self, ctx: CallContext, req: dict, *, provider: str = "local") -> dict:
-        if not ctx.user:
+        if provider == "local" and not ctx.user:
             raise BridgeError(400, "user_required", "local 後端需要呼叫者身分(X-Bridge-User 或 session token)")
-        alias = parse_alias(ctx.model_label) if provider == "local" else ""
-        payload = render_for_worker(req, alias) if provider == "local" else {}
+        spec = parse_local_model(ctx.model_label) if provider == "local" else ""
+        payload = render_for_worker(req, spec) if provider == "local" else {}
+        ctx.json_mode = (req.get("response_format") or {}).get("type") in ("json_object", "json_schema")
         if provider == "local" and not await self.online_worker(ctx.user):
             raise BridgeError(409, "no_worker_for_user",
                               "你的電腦目前沒有連線的 worker。請先在 app 內「連接我的電腦」並保持 worker 執行,"
@@ -242,7 +258,7 @@ class LocalService:
 
     async def complete(self, req: dict, ctx: CallContext) -> dict:
         job = await self.create_job(ctx, req)
-        async for event in self._events(job, self.s.sync_timeout_s):
+        async for event in self._events(job, ctx.wait_s or self.s.sync_timeout_s):
             if event["type"] == "done":
                 return self._finish(job["key"], event, ctx)
             if event["type"] == "failed":
@@ -253,8 +269,12 @@ class LocalService:
         result = event.get("result") or {}
         ctx.usage = usage_from_worker(result.get("usage"))
         ctx.served_by = f"local:{result.get('model') or 'claude'}"
-        return _completion(job_key, result.get("text") or event.get("text") or "", ctx.model_label, ctx.usage,
-                           result.get("structured"))
+        if "thinking_off_not_applicable" in (result.get("notes") or []):
+            ctx.dropped.append("thinking_off")
+        text = result.get("text") or event.get("text") or ""
+        if ctx.json_mode and result.get("structured") is None:
+            text = strip_json_fences(text)
+        return _completion(job_key, text, ctx.model_label, ctx.usage, result.get("structured"))
 
     async def stream(self, req: dict, ctx: CallContext) -> AsyncIterator[dict]:
         job = await self.create_job(ctx, req)
@@ -403,6 +423,7 @@ class LocalService:
     async def result(self, worker: dict, job_key: str, payload: dict) -> dict:
         job = await self._own_job(worker, job_key)
         result = {"text": str(payload.get("text") or ""), "structured": payload.get("structured"),
+                  "notes": [str(n)[:40] for n in (payload.get("notes") or [])][:5],
                   "usage": payload.get("usage") or {}, "cost_usd": payload.get("cost_usd"),
                   "model": payload.get("model"), "session": payload.get("session") or ""}
         await self.store.update("jobs", job, {"status": "done", "result_json": result, "done_ts": now(),

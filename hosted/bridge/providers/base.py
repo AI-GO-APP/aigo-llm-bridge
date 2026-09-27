@@ -22,6 +22,8 @@ class CallContext:
     served_by: str = ""
     usage: dict = field(default_factory=dict)
     job_id: str = ""                 # local:工單 id(非同步時回給呼叫端)
+    wait_s: float = 0.0              # 這次同步呼叫最多等幾秒(X-Bridge-Wait;0 = 用 Bridge 預設)
+    json_mode: bool = False          # 呼叫端要求 JSON 輸出(local 會拿掉模型多包的程式碼區塊外框)
 
 
 class Provider(Protocol):
