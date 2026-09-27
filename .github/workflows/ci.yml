@@ -37,7 +37,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: 編譯檢查所有 Python 檔
-        run: python -m compileall -q tools spikes hosted
+        run: python -m compileall -q tools spikes hosted worker
 
   tests:
     runs-on: ubuntu-latest
@@ -63,3 +63,19 @@ jobs:
       - name: pytest(Bridge)
         working-directory: hosted
         run: python -m pytest -q
+
+  worker:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 安裝 pytest(worker 本身只用標準函式庫)
+        run: pip install pytest
+      - name: pytest(worker)
+        working-directory: worker
+        run: python -m pytest tests -q -p no:cacheprovider

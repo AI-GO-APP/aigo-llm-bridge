@@ -120,6 +120,20 @@ action 的 `timeout_ms` = 120000。
 
 另外:閒置後第一次呼叫 action,牆鐘 7.7 秒、實際執行 1.2 秒 —— action runner 冷啟動約 **6.5 秒**。
 
+### 端到端(本機 Bridge + 真 worker + 官方 openai 客戶端)
+
+量法:`tools/e2e_local.py`,Bridge 以記憶體存放跑在本機,worker 以擁有者本人登入的 Claude Code 執行,
+呼叫端是官方 `openai` Python 客戶端(只改 `base_url`)。模型 `local/self:haiku`。
+
+| 項目 | 結果 |
+|---|---|
+| 同步回應 | ✅ 3.45 秒 |
+| 串流 | ✅ 第一段內容 1.6 秒、全文 4.9 秒 |
+| JSON schema(`response_format`) | ✅ 回傳符合 schema 的物件 |
+| 對話延續(`X-Bridge-Session`) | ✅ |
+| 問它看到哪些附加資訊 | ✅ 回答不含 email |
+| 別的使用者呼叫 `local/self` | ✅ 409 `no_worker_for_user` |
+
 ### S4 · worker 輪詢縮到零的 Bridge
 
 量測中(`spikes/cold-poll/probe.py`)。

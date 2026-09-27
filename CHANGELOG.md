@@ -20,6 +20,12 @@
   `/v1/jobs/{id}`;三種後端 `anthropic/*`(官方 SDK,含拒答後備、參數相容處理)、`openrouter/*`(原樣轉送)、
   `local/self`(本人 worker);source 金鑰 / HMAC / 瀏覽器 session token 三種驗證;worker 綁定碼、長輪詢認領、
   租約、逐段回傳、撤銷;平台自建表或記憶體兩種存放;用量帳
+- **Worker v1(`worker/aigo_bridge_worker.py`,只用標準函式庫)**:`enroll` / `run` / `status`;
+  啟動前確認是本人互動登入的 Claude Code、拒絕長效 token 模式;只領本人工單;`claude -p` 無工具模式、
+  haiku 關 thinking、其他模型改用低 effort;串流逐段回傳且在 `message_stop` 即交付;
+  帳號 email、同網域 email 與本機路徑的輸出遮罩(串流時只留可能還沒長完的尾巴不送);
+  JSON schema 走 `--json-schema`;對話延續(`--session-id` / `--resume`)
+- `tools/e2e_local.py`:以官方 openai 客戶端對 Bridge + 真 worker 做端到端檢查
 - docs/09 API 參考:轉譯規則、路由(相容既有 OpenRouter 呼叫端的 model 寫法)、錯誤形狀、表設計
 
 ### Changed
