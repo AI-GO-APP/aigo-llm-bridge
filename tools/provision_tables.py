@@ -27,7 +27,7 @@ from aigo_api import client, items  # noqa: E402
 from bridge.store import SCHEMA, AigoStore  # noqa: E402
 
 TABLE_LABELS = {"jobs": "LLM Bridge 工單", "workers": "LLM Bridge 電腦", "enrollments": "LLM Bridge 綁定碼",
-                "usage": "LLM Bridge 用量"}
+                "usage": "LLM Bridge 用量", "prefs": "LLM Bridge 優先順序"}
 FIELD_LABELS = {
     "lookup_key": "查詢鍵", "owner": "擁有者", "source": "來源 app", "provider": "後端", "model": "模型",
     "status": "狀態", "worker_key": "worker", "session": "對話 id", "request_json": "請求(暫存)",
@@ -37,7 +37,7 @@ FIELD_LABELS = {
     "last_seen_ts": "最後心跳(epoch 秒)", "code_hash": "綁定碼雜湊", "expires_ts": "到期(epoch 秒)",
     "used_ts": "使用時間(epoch 秒)", "served_by": "實際回答的模型", "http_status": "HTTP 狀態", "stream": "串流",
     "prompt_tokens": "輸入 token", "completion_tokens": "輸出 token", "cost_usd": "成本(美元)",
-    "duration_ms": "耗時(毫秒)",
+    "duration_ms": "耗時(毫秒)", "priority": "優先使用(local / cloud)", "updated_ts": "更新時間(epoch 秒)",
 }
 
 

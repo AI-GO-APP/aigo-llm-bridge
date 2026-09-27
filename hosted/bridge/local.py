@@ -342,7 +342,9 @@ class LocalService:
         worker = await self.store.insert("workers", {
             "key": new_key(), "owner": row["owner"], "key_hash": hash_secret(device_key), "name": name[:80],
             "os": os_name[:40], "version": version[:40], "models": models or [], "status": "active",
-            "last_seen_ts": now(), "created_ts": now()})
+            # 綁定不等於在線:要等 `run` 送出第一次心跳。否則剛綁好、還沒執行的電腦會被當成在線,
+            # 工單送出後要空等 30 秒才判定離線(端到端實測)
+            "last_seen_ts": 0, "created_ts": now()})
         await self.store.update("enrollments", row, {"used_ts": now(), "worker_key": worker["key"]})
         return {"worker_id": worker["key"], "device_key": device_key}
 

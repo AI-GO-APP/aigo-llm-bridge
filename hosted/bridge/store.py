@@ -51,6 +51,10 @@ SCHEMA: dict[str, dict[str, str]] = {
         "prompt_tokens": "number", "completion_tokens": "number", "cost_usd": "number",
         "duration_ms": "number", "created_ts": "number",
     },
+    # 使用者自己選的優先順序(auto 路由用),一個 app × 使用者一筆
+    "prefs": {
+        "key": "text", "owner": "text", "source": "text", "priority": "text", "updated_ts": "number",
+    },
 }
 
 

@@ -18,9 +18,11 @@ class FakeProvider:
     def __init__(self, name="anthropic", error=None, stream_error_first=None):
         self.name, self.error, self.stream_error_first = name, error, stream_error_first
         self.calls = []
+        self.last_req = None
 
     async def complete(self, req, model, ctx):
         self.calls.append(model)
+        self.last_req = req
         if self.error:
             raise self.error
         ctx.dropped = ["temperature"] if "temperature" in req else []
@@ -32,6 +34,7 @@ class FakeProvider:
 
     async def stream(self, req, model, ctx):
         self.calls.append(model)
+        self.last_req = req
         if self.stream_error_first:
             raise self.stream_error_first
         for piece in ("a", "b"):
@@ -40,9 +43,9 @@ class FakeProvider:
 
 
 def make(**overrides):
-    base = {"anthropic_api_key": "k", "openrouter_api_key": "k", "store_backend": "memory",
-            "sync_timeout_s": 3.0, "claim_wait_s": 1.0}
-    settings = Settings(source_keys={"APP": KEY}, session_secret="s" * 32, **{**base, **overrides})
+    base = {"source_keys": {"APP": KEY}, "anthropic_api_key": "k", "openrouter_api_key": "k",
+            "store_backend": "memory", "sync_timeout_s": 3.0, "claim_wait_s": 1.0}
+    settings = Settings(session_secret="s" * 32, **{**base, **overrides})
     providers = {"anthropic": FakeProvider("anthropic"), "openrouter": FakeProvider("openrouter")}
     app = create_app(settings, MemoryStore(), providers)
     return app, providers
@@ -174,7 +177,9 @@ def test_async_job_and_responses_endpoint():
 async def enroll(c, user):
     code = (await c.post("/bridge/enrollments", headers={**AUTH, "X-Bridge-User": user})).json()["code"]
     r = await c.post("/worker/enroll", json={"code": code, "name": f"{user}-pc", "os": "test", "version": "0"})
-    return {"Authorization": f"Bearer {r.json()['device_key']}"}
+    device = {"Authorization": f"Bearer {r.json()['device_key']}"}
+    await c.post("/worker/heartbeat", json={"version": "0"}, headers=device)   # 模擬 `run` 開始執行
+    return device
 
 
 def test_local_requires_own_worker_and_never_reroutes():
@@ -327,3 +332,22 @@ def test_no_worker_hint_only_points_to_configured_backends():
     bare = asyncio.run(message(anthropic_api_key="", openrouter_api_key=""))
     assert "anthropic" not in bare and "OpenRouter" not in bare
     assert "OpenRouter" in asyncio.run(message(anthropic_api_key=""))
+
+
+def test_enrolled_but_not_running_is_offline():
+    """綁好但還沒 run 的電腦不算在線(否則工單要空等 30 秒才判定離線)。"""
+    app, _ = make()
+
+    async def go():
+        async with client(app) as c:
+            code = (await c.post("/bridge/enrollments", headers={**AUTH, "X-Bridge-User": "alice"})).json()["code"]
+            key = (await c.post("/worker/enroll", json={"code": code})).json()["device_key"]
+            listed = (await c.get("/bridge/workers", headers={**AUTH, "X-Bridge-User": "alice"})).json()["workers"]
+            assert listed[0]["online"] is False
+            r = await c.post("/v1/chat/completions", json={**MSG, "model": "local/self"},
+                             headers={**AUTH, "X-Bridge-User": "alice"})
+            assert r.status_code == 409 and r.json()["error"]["code"] == "no_worker_for_user"
+            await c.post("/worker/heartbeat", json={}, headers={"Authorization": f"Bearer {key}"})
+            listed = (await c.get("/bridge/workers", headers={**AUTH, "X-Bridge-User": "alice"})).json()["workers"]
+            assert listed[0]["online"] is True
+    run(go())

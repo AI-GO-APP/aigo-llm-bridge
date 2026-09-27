@@ -4,10 +4,15 @@
   BRIDGE_KEY__<SOURCE>      每個呼叫端一把金鑰;SOURCE 用大寫英數底線(例 BRIDGE_KEY__SALES_APP)
   BRIDGE_SESSION_SECRET     簽 session token 與內部簽章用;沒設就由所有 source 金鑰衍生(換金鑰會讓舊 token 失效)
 
-後端(至少一個)
-  ANTHROPIC_API_KEY         anthropic/* 用
-  OPENROUTER_API_KEY        openrouter/* 用
+後端
   (local/* 不需要金鑰,靠使用者本人的 worker)
+  OPENROUTER_API_KEY        openrouter/* 用;auto 的雲端那一側通常是它
+  ANTHROPIC_API_KEY         anthropic/* 用(選填)
+
+auto(本機與雲端主備;優先順序由每位使用者自己選,Bridge 不設預設)
+  BRIDGE_AUTO_LOCAL         請求沒帶 models 時的本機候選,預設 local/self
+  BRIDGE_AUTO_CLOUD         請求沒帶 models 時的雲端候選(例 openrouter/anthropic/claude-sonnet-4.5);
+                            未設且請求也沒帶 = 沒有雲端備援
 
 選填
   BRIDGE_DEFAULT_MODEL      沒有前綴的 model 要路由到哪裡(例 anthropic/claude-opus-5);未設 = 400
@@ -18,6 +23,7 @@
   BRIDGE_ANTHROPIC_FALLBACKS off = 不對 claude-opus-5 / claude-fable-5-1 帶拒答後備
   BRIDGE_STORE              aigo(預設,容器內用平台自建表)或 memory(單機開發與測試)
   BRIDGE_PUBLIC_URL         對外網址(寫進 worker 安裝說明);沒設就由 AIGO_HOSTED_APP_SLUG 推
+  OPENROUTER_BASE_URL       OpenRouter 的 API 位址,預設 https://openrouter.ai/api/v1(測試或代理用)
 平台注入(不用自己設)
   AIGO_PLATFORM_API_URL、AIGO_API_TOKEN、AIGO_HOSTED_APP_SLUG
 """
@@ -29,7 +35,7 @@ import os
 import re
 from dataclasses import dataclass, field
 
-VERSION = "0.1.0-dev"
+VERSION = "0.1.0"
 _SOURCE_RE = re.compile(r"^BRIDGE_KEY__([A-Z0-9_]{1,40})$")
 
 
@@ -52,6 +58,10 @@ class Settings:
     lease_s: int = 60
     claim_wait_s: float = 25.0
     session_ttl_max_s: int = 3600
+    # model: "auto" 的兩個候選(請求沒帶 models 時用);優先順序由每位使用者自己選,Bridge 不設預設
+    auto_local_model: str = "local/self"
+    auto_cloud_model: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
     version: str = VERSION
 
 
@@ -93,4 +103,8 @@ def load(env: dict[str, str] | None = None) -> Settings:
         public_url=public,
         aigo_api_url=env.get("AIGO_PLATFORM_API_URL", "").strip().rstrip("/"),
         aigo_api_token=env.get("AIGO_API_TOKEN", "").strip(),
+        auto_local_model=env.get("BRIDGE_AUTO_LOCAL", "local/self").strip() or "local/self",
+        auto_cloud_model=env.get("BRIDGE_AUTO_CLOUD", "").strip(),
+        openrouter_base_url=(env.get("OPENROUTER_BASE_URL", "").strip().rstrip("/")
+                             or "https://openrouter.ai/api/v1"),
     )

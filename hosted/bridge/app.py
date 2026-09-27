@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from . import config as config_mod
+from . import routing
 from .auth import Caller, authenticate, mint_session
 from .errors import BridgeError
 from .local import AsyncAccepted, LocalService, _completion, usage_from_worker
@@ -22,6 +23,15 @@ from .store import AigoStore, MemoryStore, Store, new_key, now
 BOOT = time.time()
 STREAM_CAP_S = 280.0   # Hosted 單一請求上限 300 秒(docs/01 S5),留 20 秒收尾
 INSTANCE = uuid.uuid4().hex[:8]
+
+
+def _has_output(chunk: dict) -> bool:
+    """這一段有沒有真的內容(文字、工具呼叫或結束訊號);只有 role 的開頭段不算。"""
+    for choice in chunk.get("choices") or []:
+        delta = choice.get("delta") or {}
+        if delta.get("content") or delta.get("tool_calls") or choice.get("finish_reason"):
+            return True
+    return False
 
 
 def _sse(obj) -> bytes:
@@ -35,16 +45,18 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
         store = MemoryStore() if s.store_backend == "memory" else AigoStore(s.aigo_api_url, s.aigo_api_token,
                                                                            s.table_prefix)
     local = LocalService(s, store)
+    prefs = routing.Preferences(store)
     provider_cache: dict = dict(providers or {})
     background: set[asyncio.Task] = set()
 
     app = FastAPI(title="aigo-llm-bridge", version=s.version, docs_url=None, redoc_url=None)
     # Custom App 執行頁的 CSP 允許 *.ai-go.app;錯誤回應也要帶 CORS 標頭,瀏覽器才讀得到錯誤內容
-    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST", "OPTIONS"],
+    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST", "PUT", "OPTIONS"],
                        allow_headers=["Authorization", "Content-Type", "X-Bridge-User", "X-Bridge-Session", "X-Bridge-Wait",
                                       "X-Bridge-Async", "X-Bridge-Source", "X-Bridge-Timestamp",
                                       "X-Bridge-Signature"],
-                       expose_headers=["X-Bridge-Dropped", "X-Bridge-Served-By", "X-Bridge-Job", "Retry-After"])
+                       expose_headers=["X-Bridge-Dropped", "X-Bridge-Served-By", "X-Bridge-Job", "X-Bridge-Priority",
+                                      "X-Bridge-Fallback", "Retry-After"])
     app.state.settings, app.state.store, app.state.local = s, store, local
 
     @app.exception_handler(BridgeError)
@@ -62,7 +74,7 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
                 provider_cache[name] = AnthropicProvider(s.anthropic_api_key, fallbacks=s.anthropic_fallbacks)
             elif name == "openrouter":
                 from .providers.openrouter import OpenRouterProvider
-                provider_cache[name] = OpenRouterProvider(s.openrouter_api_key)
+                provider_cache[name] = OpenRouterProvider(s.openrouter_api_key, base_url=s.openrouter_base_url)
         return provider_cache[name]
 
     def route_model(model: str) -> tuple[str, str]:
@@ -120,6 +132,10 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
             out["X-Bridge-Served-By"] = ctx.served_by
         if ctx.job_id:
             out["X-Bridge-Job"] = ctx.job_id
+        if ctx.priority:
+            out["X-Bridge-Priority"] = ctx.priority
+        if ctx.fallback:
+            out["X-Bridge-Fallback"] = f"{ctx.fallback['from']}:{ctx.fallback['reason']}"
         return out
 
     async def finish_job(job: dict, backend: str, ctx: CallContext, started: float, task: asyncio.Task) -> None:
@@ -161,7 +177,8 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
     @app.get("/v1/models")
     async def models(request: Request):
         await caller_of(request, b"")
-        data = [{"id": "local/self", "object": "model", "owned_by": "local"}]
+        data = [{"id": "auto", "object": "model", "owned_by": "bridge"},
+                {"id": "local/self", "object": "model", "owned_by": "local"}]
         if s.anthropic_api_key:
             data += [{"id": f"anthropic/{m}", "object": "model", "owned_by": "anthropic"}
                      for m in ("claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5")]
@@ -195,6 +212,38 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
             raise BridgeError(400, "user_required", "需要使用者身分")
         return {"workers": await local.list_workers(caller.user)}
 
+    async def prefs_view(caller: Caller) -> dict:
+        row = await prefs.get(caller.source, caller.user)
+        worker = await local.online_worker(caller.user)
+        return {
+            "priority": (row or {}).get("priority") or None,
+            "updated_at": int((row or {}).get("updated_ts") or 0) or None,
+            "choices": [
+                {"id": "local", "label": routing.LABELS["local"], "model": s.auto_local_model,
+                 "available": bool(worker)},
+                {"id": "cloud", "label": routing.LABELS["cloud"], "model": s.auto_cloud_model or None,
+                 "available": cloud_ready(s.auto_cloud_model)},
+            ],
+        }
+
+    @app.get("/bridge/preferences")
+    async def get_preferences(request: Request):
+        caller = await caller_of(request, b"")
+        if not caller.user:
+            raise BridgeError(400, "user_required", "需要使用者身分")
+        return await prefs_view(caller)
+
+    @app.api_route("/bridge/preferences", methods=["PUT", "POST"])
+    async def set_preferences(request: Request):
+        raw = await request.body()
+        caller = await caller_of(request, raw)
+        try:
+            data = json.loads(raw or b"{}")
+        except json.JSONDecodeError:
+            raise BridgeError(400, "bad_json", "請求內容不是合法 JSON") from None
+        await prefs.set(caller.source, caller.user, str(data.get("priority") or ""))
+        return await prefs_view(caller)
+
     @app.post("/bridge/workers/{worker_id}/revoke")
     async def revoke(worker_id: str, request: Request):
         caller = await caller_of(request, await request.body())
@@ -204,67 +253,50 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
         return {"ok": True}
 
     # ── 相容端點 ──────────────────────────────────────────────────────────
-    async def run_chat(req: dict, caller: Caller, request: Request):
-        backend, model = route_model(req.get("model"))
-        ctx = CallContext(source=caller.source, user=caller.user, model_label=model_label(req.get("model")),
-                          session=request.headers.get("x-bridge-session", "").strip(),
-                          wait_s=parse_wait(request))
-        started = time.monotonic()
-        stream = bool(req.get("stream"))
+    def new_ctx(caller: Caller, request: Request, label: str) -> CallContext:
+        return CallContext(source=caller.source, user=caller.user, model_label=label,
+                           session=request.headers.get("x-bridge-session", "").strip(),
+                           wait_s=parse_wait(request))
 
-        if request.headers.get("x-bridge-async", "").lower() == "true":
-            if backend == "local":
-                job = await local.create_job(ctx, req)
-            else:
-                task = asyncio.create_task(provider_for(backend).complete(req, model, ctx))
-                job = await local.create_job(ctx, req, provider=backend)
-                spawn(finish_job(job, backend, ctx, started, task))
-            return JSONResponse({"id": job["key"], "status": job["status"]}, status_code=202,
-                                headers={"X-Bridge-Job": job["key"]})
+    async def sync_once(backend: str, model: str, req: dict, ctx: CallContext, started: float) -> dict:
+        """一個後端的同步呼叫。等太久會丟 AsyncAccepted(轉工單、回 202)。"""
+        if backend == "local":
+            return await local.complete(req, ctx)
+        # 等到呼叫端要求的秒數;還沒好就轉成工單在背景跑完,回 202 讓它之後查
+        task = asyncio.create_task(provider_for(backend).complete(req, model, ctx))
+        done, _ = await asyncio.wait({task}, timeout=ctx.wait_s or s.sync_timeout_s)
+        if not done:
+            job = await local.create_job(ctx, req, provider=backend)
+            spawn(finish_job(job, backend, ctx, started, task))
+            raise AsyncAccepted(job["key"])
+        return task.result()
 
-        if not stream:
-            try:
-                if backend == "local":
-                    result = await local.complete(req, ctx)
-                else:
-                    # 等到呼叫端要求的秒數;還沒好就轉成工單在背景跑完,回 202 讓它之後查
-                    task = asyncio.create_task(provider_for(backend).complete(req, model, ctx))
-                    done, _ = await asyncio.wait({task}, timeout=ctx.wait_s or s.sync_timeout_s)
-                    if not done:
-                        job = await local.create_job(ctx, req, provider=backend)
-                        spawn(finish_job(job, backend, ctx, started, task))
-                        raise AsyncAccepted(job["key"])
-                    result = task.result()
-            except AsyncAccepted as acc:
-                return JSONResponse({"id": acc.job_key, "status": "running"}, status_code=202,
-                                    headers={"X-Bridge-Job": acc.job_key})
-            except BridgeError as exc:
-                await record_usage(ctx, backend, "error", exc.status, started, False)
-                raise
-            await record_usage(ctx, backend, "ok", 200, started, False)
-            # 標頭之外也放進本體:Custom App 經 egress 的 ctx.http.call 拿不到回應標頭(E2E 實測)
-            result = {**result, "x_bridge": {"served_by": ctx.served_by, "dropped": list(ctx.dropped)}}
-            return JSONResponse(result, headers=headers_for(ctx))
+    def open_stream(backend: str, model: str, req: dict, ctx: CallContext) -> AsyncIterator[dict]:
+        return local.stream(req, ctx) if backend == "local" else provider_for(backend).stream(req, model, ctx)
 
-        gen: AsyncIterator[dict] = (local.stream(req, ctx) if backend == "local"
-                                    else provider_for(backend).stream(req, model, ctx))
-        # 先拿到第一段:在那之前發生的錯誤(驗證、找不到 worker、上游 4xx)回一般的錯誤回應
-        try:
-            first = await gen.__anext__()
-        except StopAsyncIteration:
-            first = None
-        except BridgeError as exc:
-            await record_usage(ctx, backend, "error", exc.status, started, True)
-            raise
+    def meta_of(ctx: CallContext) -> dict:
+        meta = {"served_by": ctx.served_by, "dropped": list(ctx.dropped)}
+        if ctx.priority:
+            meta["priority"] = ctx.priority
+            meta["fallback"] = ctx.fallback or None
+        return meta
 
+    def sync_response(result: dict, ctx: CallContext) -> JSONResponse:
+        # 標頭之外也放進本體:Custom App 經 egress 的 ctx.http.call 拿不到回應標頭(E2E 實測)
+        return JSONResponse({**result, "x_bridge": meta_of(ctx)}, headers=headers_for(ctx))
+
+    def accepted(job_key: str) -> JSONResponse:
+        return JSONResponse({"id": job_key, "status": "running"}, status_code=202, headers={"X-Bridge-Job": job_key})
+
+    def stream_response(gen: AsyncIterator[dict], head: list[dict], ctx: CallContext, backend: str,
+                        started: float) -> StreamingResponse:
         async def body():
             # Hosted 單一請求 300 秒一到就直接斷線、不給錯誤狀態碼(docs/01 S5),所以自己在 280 秒收尾
             deadline = started + STREAM_CAP_S
-            ok = True
+            ok = not any("error" in chunk for chunk in head)
             try:
-                if first is not None:
-                    ok = "error" not in first
-                    yield _sse(first)
+                for chunk in head:
+                    yield _sse(chunk)
                 while True:
                     remaining = deadline - time.monotonic()
                     try:
@@ -288,6 +320,155 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
 
         return StreamingResponse(body(), media_type="text/event-stream", headers={
             "Cache-Control": "no-cache", "X-Accel-Buffering": "no", **headers_for(ctx)})
+
+    async def run_chat(req: dict, caller: Caller, request: Request):
+        if (req.get("model") or "").strip() == "auto":
+            return await run_auto(req, caller, request)
+        backend, model = route_model(req.get("model"))
+        ctx = new_ctx(caller, request, model_label(req.get("model")))
+        started = time.monotonic()
+
+        if request.headers.get("x-bridge-async", "").lower() == "true":
+            return await start_async(backend, model, req, ctx, started)
+
+        if not req.get("stream"):
+            try:
+                result = await sync_once(backend, model, req, ctx, started)
+            except AsyncAccepted as acc:
+                return accepted(acc.job_key)
+            except BridgeError as exc:
+                await record_usage(ctx, backend, "error", exc.status, started, False)
+                raise
+            await record_usage(ctx, backend, "ok", 200, started, False)
+            return sync_response(result, ctx)
+
+        gen = open_stream(backend, model, req, ctx)
+        # 先拿到第一段:在那之前發生的錯誤(驗證、找不到 worker、上游 4xx)回一般的錯誤回應
+        try:
+            head = [await gen.__anext__()]
+        except StopAsyncIteration:
+            head = []
+        except BridgeError as exc:
+            await record_usage(ctx, backend, "error", exc.status, started, True)
+            raise
+        return stream_response(gen, head, ctx, backend, started)
+
+    async def start_async(backend: str, model: str, req: dict, ctx: CallContext, started: float) -> JSONResponse:
+        if backend == "local":
+            job = await local.create_job(ctx, req)
+        else:
+            task = asyncio.create_task(provider_for(backend).complete(req, model, ctx))
+            job = await local.create_job(ctx, req, provider=backend)
+            spawn(finish_job(job, backend, ctx, started, task))
+        return JSONResponse({"id": job["key"], "status": job["status"]}, status_code=202,
+                            headers={"X-Bridge-Job": job["key"]})
+
+    def cloud_ready(label: str) -> bool:
+        if not label:
+            return False
+        try:
+            backend, _ = route_model(label)
+        except BridgeError:
+            return False
+        return backend in provider_cache or bool(
+            s.openrouter_api_key if backend == "openrouter" else s.anthropic_api_key)
+
+    def combined(failures: list[tuple[str, BridgeError]], last: BridgeError) -> BridgeError:
+        """備援也失敗時:回最後一個錯誤,訊息與標頭帶上先前失敗的是誰、為什麼。"""
+        if not failures:
+            return last
+        before = ";".join(f"{label}:{exc.code}" for label, exc in failures)
+        return BridgeError(last.status, last.code, f"{last.message}(先試的 {before} 也失敗)",
+                           last.provider_status, {**last.headers, "X-Bridge-Fallback": before})
+
+    async def run_auto(req: dict, caller: Caller, request: Request):
+        """model: "auto":依使用者自己選的優先順序主備切換(bridge/routing.py)。"""
+        if not caller.user:
+            raise BridgeError(400, "user_required", "auto 需要使用者身分:本機那一側只替使用者本人運算")
+        priority = await prefs.priority(caller.source, caller.user)
+        order = routing.candidates(req, s).ordered(priority)
+        body = {k: v for k, v in req.items() if k != "models"}
+        started = time.monotonic()
+        failures: list[tuple[str, BridgeError]] = []
+
+        def attempt_ctx(label: str) -> CallContext:
+            ctx = new_ctx(caller, request, label)
+            ctx.priority = priority
+            if failures:
+                ctx.fallback = {"from": failures[0][0], "reason": failures[0][1].code}
+            return ctx
+
+        if request.headers.get("x-bridge-async", "").lower() == "true":
+            # 非同步:當下就要決定交給誰,所以先看哪一側「現在」可用
+            for side, label in order:
+                available = (await local.online_worker(caller.user)) if side == "local" else cloud_ready(label)
+                if available:
+                    backend, model = route_model(label)
+                    return await start_async(backend, model, body, attempt_ctx(label), started)
+                failures.append((label, BridgeError(409, "no_worker_for_user" if side == "local"
+                                                    else "provider_not_configured", "目前不可用")))
+            raise combined(failures, BridgeError(503, "no_backend_available", "兩個後端目前都不可用"))
+
+        for index, (_side, label) in enumerate(order):
+            is_last = index == len(order) - 1
+            ctx = attempt_ctx(label)
+            try:
+                backend, model = route_model(label)
+            except BridgeError as exc:
+                if is_last or not routing.can_fall_back(exc.code):
+                    raise combined(failures, exc)
+                failures.append((label, exc))
+                continue
+
+            if not req.get("stream"):
+                try:
+                    result = await sync_once(backend, model, body, ctx, started)
+                except AsyncAccepted as acc:
+                    return accepted(acc.job_key)
+                except BridgeError as exc:
+                    fall = not is_last and routing.can_fall_back(exc.code)
+                    await record_usage(ctx, backend, "fallback" if fall else "error", exc.status, started, False)
+                    if not fall:
+                        raise combined(failures, exc)
+                    failures.append((label, exc))
+                    continue
+                await record_usage(ctx, backend, "ok", 200, started, False)
+                return sync_response(result, ctx)
+
+            # 串流:在送出任何內容之前失敗才切換;一旦開始出字就不換了
+            gen = open_stream(backend, model, body, ctx)
+            head: list[dict] = []
+            failed: BridgeError | None = None
+            try:
+                while True:
+                    remaining = started + STREAM_CAP_S - time.monotonic()
+                    if remaining <= 0:
+                        break
+                    chunk = await asyncio.wait_for(gen.__anext__(), timeout=remaining)
+                    if "error" in chunk and not is_last and routing.can_fall_back(chunk["error"].get("code")):
+                        err = chunk["error"]
+                        failed = BridgeError(502, err.get("code") or "failed", err.get("message") or "")
+                        break
+                    head.append(chunk)
+                    if is_last or "error" in chunk or _has_output(chunk):
+                        break
+            except StopAsyncIteration:
+                pass
+            except asyncio.TimeoutError:
+                pass   # 到上限還沒出字:照樣回這個串流,body 會立刻送 stream_timeout 與工單 id
+            except BridgeError as exc:
+                if is_last or not routing.can_fall_back(exc.code):
+                    await gen.aclose()
+                    await record_usage(ctx, backend, "error", exc.status, started, True)
+                    raise combined(failures, exc)
+                failed = exc
+            if failed is not None:
+                await gen.aclose()
+                await record_usage(ctx, backend, "fallback", failed.status, started, True)
+                failures.append((label, failed))
+                continue
+            return stream_response(gen, head, ctx, backend, started)
+        raise BridgeError(503, "no_backend_available", "沒有可用的後端")   # 不會走到這裡(至少有本機候選)
 
     @app.post("/v1/chat/completions")
     async def chat(request: Request):
