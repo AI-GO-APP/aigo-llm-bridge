@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  macOS:launchd 使用者代理(登入後自動啟動、異常結束自動重啟)
+
+  安裝:
+    1. 把下面三個 /Users/YOUR_NAME/... 路徑改成你的(python3 用 `which python3`,claude 用 `which claude`)
+    2. cp com.aigo.llm-bridge-worker.plist ~/Library/LaunchAgents/
+    3. launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.aigo.llm-bridge-worker.plist
+  查看:tail -f ~/.aigo-llm-bridge/worker.log
+  移除:launchctl bootout gui/$(id -u)/com.aigo.llm-bridge-worker && rm ~/Library/LaunchAgents/com.aigo.llm-bridge-worker.plist
+
+  結束碼 0 = 正常結束或這台電腦已被撤銷 → 不重啟(KeepAlive/SuccessfulExit=false);其他 → 重啟
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.aigo.llm-bridge-worker</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>/Users/YOUR_NAME/.aigo-llm-bridge/aigo_bridge_worker.py</string>
+    <string>run</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>AIGO_BRIDGE_CLAUDE</key>
+    <string>/Users/YOUR_NAME/.local/bin/claude</string>
+    <key>PYTHONUNBUFFERED</key>
+    <string>1</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/YOUR_NAME/.aigo-llm-bridge/worker.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/YOUR_NAME/.aigo-llm-bridge/worker.log</string>
+</dict>
+</plist>

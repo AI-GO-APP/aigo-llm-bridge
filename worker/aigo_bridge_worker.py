@@ -7,6 +7,13 @@
   python aigo_bridge_worker.py run
   python aigo_bridge_worker.py status
 
+環境變數(都是選填):
+  AIGO_BRIDGE_WORKER_HOME   設定與對話紀錄放哪裡,預設 ~/.aigo-llm-bridge
+  AIGO_BRIDGE_CLAUDE        claude 執行檔的完整路徑(開機常駐時 PATH 常常找不到它)
+  AIGO_BRIDGE_JOB_TIMEOUT_S 單一工作的上限秒數,預設 1800
+
+結束碼:0 = 正常結束或這台電腦已被撤銷(開機常駐不要重啟);其他 = 異常,可以重啟。
+
 使用邊界(docs/02-compliance.md):
   - 這支程式只會領到「擁有者 = 你」的工單;Bridge 端也會再擋一次
   - 它呼叫的是你電腦上的 Claude Code 本體(`claude -p`),不讀取、不複製、不轉送任何 Claude 登入憑證
@@ -97,7 +104,9 @@ def call(base: str, path: str, body: dict | None = None, key: str = "", timeout:
 # ── Claude Code ───────────────────────────────────────────────────────────
 def resolve_claude() -> list[str]:
     """Windows 的 npm 安裝是 .cmd 殼;經 cmd 會重新解析引號,`--tools ""` 可能被吃掉,所以直接找 exe。"""
-    found = shutil.which("claude")
+    found = os.environ.get("AIGO_BRIDGE_CLAUDE") or shutil.which("claude")
+    if found and not Path(found).exists():
+        raise SystemExit(f"AIGO_BRIDGE_CLAUDE 指到的檔案不存在:{found}")
     if not found:
         raise SystemExit("找不到 claude 指令。請先安裝 Claude Code 並用你自己的帳號登入(執行 claude 一次)")
     if found.lower().endswith((".cmd", ".bat")):
@@ -232,7 +241,11 @@ class Worker:
         while not self.stop.wait(HEARTBEAT_S):
             try:
                 call(self.base, "/worker/heartbeat", {"version": VERSION, "models": sorted(ALIASES)}, self.key)
-            except (BridgeHTTPError, OSError) as exc:
+            except BridgeHTTPError as exc:
+                log(f"心跳失敗:{exc}")
+                if exc.status == 401:
+                    return      # 被撤銷:主迴圈下一次領工單時會收到同樣的 401 並結束
+            except OSError as exc:
                 log(f"心跳失敗:{exc}")
 
     def run_job(self, job: dict) -> None:
@@ -360,7 +373,10 @@ class Worker:
                 backoff = 1.0
             except BridgeHTTPError as exc:
                 if exc.status == 401:
-                    raise SystemExit("設備鑰匙已失效或被撤銷;請在 app 內重新「連接我的電腦」")
+                    # 結束碼 0:開機常駐(systemd / launchd / 工作排程器)只在異常結束時重啟,被撤銷不該無限重啟
+                    log("設備鑰匙已失效或被撤銷;請在 app 內重新「連接我的電腦」。worker 結束。")
+                    self.stop.set()
+                    raise SystemExit(0)
                 log(f"領工單失敗:{exc}")
                 job = None
                 time.sleep(backoff)

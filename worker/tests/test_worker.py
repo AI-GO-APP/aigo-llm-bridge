@@ -161,3 +161,26 @@ def test_stream_without_result_event_is_incomplete(w, monkeypatch):
     make_worker(w).run_job({"job_id": "j", "model": "haiku", "prompt": "q"})
     assert not any(p.endswith("/result") for p, _ in w.calls)
     assert next(b for p, b in w.calls if p.endswith("/fail"))["code"] == "claude_incomplete"
+
+
+def test_revoked_device_exits_cleanly_so_autostart_does_not_loop(w, monkeypatch):
+    def fake_call(base, path, body=None, key="", timeout=40):
+        if path == "/worker/claim":
+            raise w.BridgeHTTPError(401, {"error": {"code": "bad_device_key"}})
+        return {}
+
+    monkeypatch.setattr(w, "call", fake_call)
+    worker = make_worker(w)
+    with pytest.raises(SystemExit) as exit_info:
+        worker.loop()
+    assert exit_info.value.code == 0 and worker.stop.is_set()
+
+
+def test_claude_path_override(w, monkeypatch, tmp_path):
+    exe = tmp_path / "claude-custom.exe"
+    exe.write_text("x")
+    monkeypatch.setenv("AIGO_BRIDGE_CLAUDE", str(exe))
+    assert w.resolve_claude() == [str(exe)]
+    monkeypatch.setenv("AIGO_BRIDGE_CLAUDE", str(tmp_path / "missing"))
+    with pytest.raises(SystemExit, match="不存在"):
+        w.resolve_claude()

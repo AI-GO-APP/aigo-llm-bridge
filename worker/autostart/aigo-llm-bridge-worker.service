@@ -1,0 +1,29 @@
+# Linux:systemd 使用者服務(登入後自動啟動、異常結束自動重啟)
+#
+# 安裝(不需要 root):
+#   mkdir -p ~/.config/systemd/user
+#   cp aigo-llm-bridge-worker.service ~/.config/systemd/user/
+#   # 依你的環境改下面兩個路徑(python3 與 worker 檔的位置;claude 用 `which claude` 查)
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now aigo-llm-bridge-worker
+#   loginctl enable-linger "$USER"      # 選用:沒有登入桌面時也持續執行
+# 查看:systemctl --user status aigo-llm-bridge-worker ;journalctl --user -u aigo-llm-bridge-worker -f
+# 移除:systemctl --user disable --now aigo-llm-bridge-worker && rm ~/.config/systemd/user/aigo-llm-bridge-worker.service
+
+[Unit]
+Description=aigo-llm-bridge worker (runs your own Claude Code for your own jobs)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/.aigo-llm-bridge/aigo_bridge_worker.py run
+# 開機常駐時 PATH 常找不到 claude;填 `which claude` 的結果
+Environment=AIGO_BRIDGE_CLAUDE=%h/.local/bin/claude
+Environment=PYTHONUNBUFFERED=1
+# 結束碼 0 = 正常結束或這台電腦已被撤銷 → 不重啟;其他 → 60 秒後重啟
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=default.target
