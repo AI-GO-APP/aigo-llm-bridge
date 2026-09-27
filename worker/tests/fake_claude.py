@@ -5,10 +5,13 @@
   FAKE_CLAUDE_TEXT          要「生成」的文字(預設含 email 與路徑,用來測遮罩)
   FAKE_CLAUDE_FAIL=1        result 事件標 is_error
   FAKE_CLAUDE_ARGS_OUT      把收到的參數寫到這個檔
+  FAKE_CLAUDE_DELAY_S       每段文字之間停幾秒(測串流的連線上限用)
+  FAKE_CLAUDE_NO_RESULT=1   串流到一半就結束、不送 message_stop 與 result(模擬行程異常結束)
 """
 import json
 import os
 import sys
+import time
 
 args = sys.argv[1:]
 if os.environ.get("FAKE_CLAUDE_ARGS_OUT"):
@@ -39,9 +42,14 @@ if "--json-schema" in args:
     sys.exit(1 if fail else 0)
 
 out({"type": "system", "subtype": "init", "tools": []})
+delay = float(os.environ.get("FAKE_CLAUDE_DELAY_S") or 0)
 for i in range(0, len(text), 5):
+    if delay and i:
+        time.sleep(delay)
     out({"type": "stream_event", "event": {"type": "content_block_delta", "delta": {"type": "text_delta",
                                                                                      "text": text[i:i + 5]}}})
+if os.environ.get("FAKE_CLAUDE_NO_RESULT") == "1":
+    sys.exit(0)
 out({"type": "stream_event", "event": {"type": "message_stop"}})
 out({"type": "result", "subtype": "success", "is_error": fail, "result": "boom" if fail else text,
      "usage": usage, "total_cost_usd": 0.0009, "session_id": "sess-1", "modelUsage": model_usage})

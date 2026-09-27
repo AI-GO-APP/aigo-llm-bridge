@@ -144,10 +144,37 @@ class AigoStore:
     def _url(self, table: str, suffix: str = "") -> str:
         return f"{self.base}/{self.prefix}{table}/records{suffix}"
 
+    @staticmethod
+    def _coerce(kind: str | None, value: Any) -> Any:
+        """平台讀回來的 number 欄是十進位字串(例 "0"、"1790513946.341"),json 欄可能是字串。
+        轉回程式要的型別;MemoryStore 的測試看不到這件事,所以放在讀取的唯一出口。"""
+        if value is None or not isinstance(value, str):
+            return value
+        if kind == "number":
+            if value == "":
+                return None
+            try:
+                number = float(value)
+            except ValueError:
+                return value
+            return int(number) if number.is_integer() and "." not in value.rstrip("0").rstrip(".") else number
+        if kind == "boolean":
+            return value.strip().lower() in ("1", "true", "yes")
+        if kind == "json" and value[:1] in ("{", "["):
+            try:
+                return json.loads(value)
+            except ValueError:
+                return value
+        return value
+
     @classmethod
-    def _flat(cls, item: dict) -> dict:
+    def _flat(cls, item: dict, table: str | None = None) -> dict:
         data = item.get("data") if isinstance(item.get("data"), dict) else None
-        row = {cls.FIELD_UNMAP.get(k, k): v for k, v in (data if data is not None else item).items()}
+        kinds = SCHEMA.get(table or "", {})
+        row = {}
+        for k, v in (data if data is not None else item).items():
+            name = cls.FIELD_UNMAP.get(k, k)
+            row[name] = cls._coerce(kinds.get(name), v)
         return {**row, "id": item.get("id")}
 
     async def _send(self, method: str, url: str, **kw) -> Any:
@@ -172,7 +199,7 @@ class AigoStore:
 
     async def insert(self, table: str, data: dict) -> dict:
         body = await self._send("POST", self._url(table), json={"data": self._out(data)})
-        return self._flat(body) if isinstance(body, dict) else {**data, "id": None}
+        return self._flat(body, table) if isinstance(body, dict) else {**data, "id": None}
 
     async def update(self, table: str, row: dict, patch: dict) -> dict:
         await self._send("PATCH", self._url(table, f"/{row['id']}"), json={"data": self._out(patch)})
@@ -188,7 +215,7 @@ class AigoStore:
             desc, name = sort.startswith("-"), sort.lstrip("-")
             params["sort"] = ("-" if desc else "") + self.FIELD_MAP.get(name, name)
         body = await self._send("GET", self._url(table), params=params) or {}
-        return [self._flat(item) for item in body.get("items") or []]
+        return [self._flat(item, table) for item in body.get("items") or []]
 
     async def by_key(self, table, key):
         rows = await self.find(table, [("key", "eq", key)], limit=1)

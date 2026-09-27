@@ -242,6 +242,8 @@ def create_app(settings: config_mod.Settings | None = None, store: Store | None 
                 await record_usage(ctx, backend, "error", exc.status, started, False)
                 raise
             await record_usage(ctx, backend, "ok", 200, started, False)
+            # 標頭之外也放進本體:Custom App 經 egress 的 ctx.http.call 拿不到回應標頭(E2E 實測)
+            result = {**result, "x_bridge": {"served_by": ctx.served_by, "dropped": list(ctx.dropped)}}
             return JSONResponse(result, headers=headers_for(ctx))
 
         gen: AsyncIterator[dict] = (local.stream(req, ctx) if backend == "local"

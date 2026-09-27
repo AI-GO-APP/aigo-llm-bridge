@@ -40,9 +40,9 @@ class FakeProvider:
 
 
 def make(**overrides):
-    settings = Settings(source_keys={"APP": KEY}, session_secret="s" * 32, anthropic_api_key="k",
-                        openrouter_api_key="k", store_backend="memory", sync_timeout_s=3.0, claim_wait_s=1.0,
-                        **overrides)
+    base = {"anthropic_api_key": "k", "openrouter_api_key": "k", "store_backend": "memory",
+            "sync_timeout_s": 3.0, "claim_wait_s": 1.0}
+    settings = Settings(source_keys={"APP": KEY}, session_secret="s" * 32, **{**base, **overrides})
     providers = {"anthropic": FakeProvider("anthropic"), "openrouter": FakeProvider("openrouter")}
     app = create_app(settings, MemoryStore(), providers)
     return app, providers
@@ -102,6 +102,9 @@ def test_routing_keeps_openrouter_style_callers_working(model, provider, upstrea
             assert providers[provider].calls == [upstream]
             assert r.json()["model"] == model
             assert r.headers["x-bridge-dropped"] == "temperature"
+            # egress 的 ctx.http.call 拿不到標頭,所以本體也要有(E2E 實測)
+            assert r.json()["x_bridge"]["dropped"] == ["temperature"]
+            assert r.json()["x_bridge"]["served_by"] == r.headers.get("x-bridge-served-by")
     run(go())
 
 
@@ -234,6 +237,9 @@ def test_local_stream_end_to_end_and_other_owner_cannot_claim():
             text = "".join(ch["choices"][0]["delta"].get("content", "") for ch in chunks)
             assert text == "你好!"
             assert chunks[-1]["usage"]["prompt_tokens"] == 9
+            # 標頭送出時還不知道實際型號 → 放在最後一個 chunk(E2E 畫面上「實際型號」原本是空的)
+            assert chunks[-1]["model"] == "claude-haiku-4-5"
+            assert chunks[-1]["x_bridge"] == {"served_by": "local:claude-haiku-4-5", "dropped": []}
             usage_rows = app.state.store.tables["usage"]
             assert any(u["provider"] == "local" and u["owner"] == "alice" for u in usage_rows)
             job = app.state.store.tables["jobs"][0]
@@ -305,3 +311,19 @@ def test_local_rejects_tools_and_images():
                     {"type": "image_url", "image_url": {"url": "https://x/a.png"}}]}]})
             assert r.json()["error"]["code"] == "local_no_images"
     run(go())
+
+
+def test_no_worker_hint_only_points_to_configured_backends():
+    """沒設雲端金鑰時,409 不可以叫人改用一個會回 503 的後端(E2E 畫面上實際看到的死路)。"""
+    async def message(**keys):
+        app, _ = make(**keys)
+        async with client(app) as c:
+            r = await c.post("/v1/chat/completions", json={**MSG, "model": "local/self"},
+                             headers={**AUTH, "X-Bridge-User": "alice"})
+        assert r.status_code == 409
+        return r.json()["error"]["message"]
+
+    assert "anthropic/*" in asyncio.run(message())
+    bare = asyncio.run(message(anthropic_api_key="", openrouter_api_key=""))
+    assert "anthropic" not in bare and "OpenRouter" not in bare
+    assert "OpenRouter" in asyncio.run(message(anthropic_api_key=""))

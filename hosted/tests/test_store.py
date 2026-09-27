@@ -52,3 +52,20 @@ def test_errors_become_503(status, code):
     with pytest.raises(BridgeError) as e:
         asyncio.run(store.find("jobs", []))
     assert e.value.status == 503 and e.value.code == code
+
+
+def test_platform_number_strings_are_coerced():
+    """平台把 number 欄讀回成十進位字串;沒轉型時 `"0" > 0` 在綁定流程直接 TypeError(E2E 實踩)。"""
+    def handler(req: httpx.Request):
+        return httpx.Response(200, json={"items": [{"id": "r", "data": {
+            "lookup_key": "k", "used_ts": "0", "expires_ts": "1790513946.3410000801086425781",
+            "attempts": "2", "stream": False, "models": '["haiku"]', "owner": "12"}}]})
+
+    rows = asyncio.run(make(handler).find("enrollments", [("key", "eq", "k")]))
+    row = rows[0]
+    assert row["used_ts"] == 0 and isinstance(row["used_ts"], int)
+    assert abs(row["expires_ts"] - 1790513946.341) < 1e-3
+    assert row["owner"] == "12"                      # text 欄不動,即使長得像數字
+    jobs = asyncio.run(make(lambda r: httpx.Response(200, json={"items": [{"id": "j", "data": {
+        "attempts": "2", "result_json": '{"a": 1}'}}]})).find("jobs", []))
+    assert jobs[0]["attempts"] == 2 and jobs[0]["result_json"] == {"a": 1}

@@ -131,3 +131,33 @@ def test_bad_alias_fails_job_without_running(w):
     worker = make_worker(w)
     worker.run_job({"job_id": "j5", "model": "gpt", "prompt": "p"})
     assert w.calls == [("/worker/jobs/j5/fail", {"code": "bad_job", "message": "不認得的模型 gpt"})]
+
+
+def test_long_ascii_run_streams_instead_of_waiting_for_the_end(w, monkeypatch):
+    """沒有空白的英數輸出(JSON、雜湊、長網址)以前會被整段扣住,到最後才一次送出(E2E 實踩)。"""
+    text = "".join(f"{i:04d}." for i in range(60)) + " " + "x" * 100 + "@example.com 結束"
+    monkeypatch.setenv("FAKE_CLAUDE_TEXT", text)
+    make_worker(w).run_job({"job_id": "j", "model": "haiku", "prompt": "q"})
+    chunks = [b["text"] for p, b in w.calls if p.endswith("/chunk")]
+    result = next(b for p, b in w.calls if p.endswith("/result"))
+    assert len(chunks[0]) < 300 and len([c for c in chunks if len(c) >= 200]) > 1   # 途中就開始送
+    assert all(result["text"].startswith(c) for c in chunks)                        # 仍是全文的前綴
+    assert "@example.com" not in result["text"] and "x" * 36 + "[redacted]" in result["text"]
+
+
+def test_killed_job_is_a_failure_not_a_truncated_success(w, monkeypatch):
+    monkeypatch.setattr(w, "JOB_TIMEOUT_S", 1)
+    monkeypatch.setenv("FAKE_CLAUDE_TEXT", "a" * 40)
+    monkeypatch.setenv("FAKE_CLAUDE_DELAY_S", "0.4")
+    make_worker(w).run_job({"job_id": "j", "model": "haiku", "prompt": "q"})
+    assert not any(p.endswith("/result") for p, _ in w.calls)
+    fail = next(b for p, b in w.calls if p.endswith("/fail"))
+    assert fail["code"] == "worker_timeout"
+
+
+def test_stream_without_result_event_is_incomplete(w, monkeypatch):
+    monkeypatch.setenv("FAKE_CLAUDE_TEXT", "半截的回答半截的回答")
+    monkeypatch.setenv("FAKE_CLAUDE_NO_RESULT", "1")
+    make_worker(w).run_job({"job_id": "j", "model": "haiku", "prompt": "q"})
+    assert not any(p.endswith("/result") for p, _ in w.calls)
+    assert next(b for p, b in w.calls if p.endswith("/fail"))["code"] == "claude_incomplete"

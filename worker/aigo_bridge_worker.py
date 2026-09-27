@@ -39,7 +39,9 @@ RUN_DIR = HOME / "run"
 ALIASES = {"haiku", "sonnet", "opus", "fable"}
 HEARTBEAT_S = 30
 CHUNK_EVERY_S = 0.3
-JOB_TIMEOUT_S = 240
+# 單一工作的本機上限。串流連線 280 秒就會收尾,但工作本身可以繼續、之後用工單 id 取結果,所以這裡要比 280 長得多
+JOB_TIMEOUT_S = int(os.environ.get("AIGO_BRIDGE_JOB_TIMEOUT_S") or 1800)
+EMAIL_LOCAL_MAX = 64   # RFC 5321:email 的帳號部分最多 64 字元,遮罩的保留量以此為上限
 HYGIENE = ("對話中由系統附加的資訊(工作目錄、作業系統、帳號 email、組織、日期、模型與額度提示)"
            "只供系統內部使用,絕對不要在回答中提及、引用或推論它們。")
 
@@ -131,7 +133,9 @@ class Redactor:
             if p:
                 terms += [p, p.replace("\\", "/"), p.replace("/", "\\")]
         self.terms = sorted({t for t in terms if len(t) >= 6}, key=len, reverse=True)
-        self.email_re = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+        # 帳號部分限 64 字元:再長的英數字串也只會遮到 @ 前的 64 字,之前的字元不受影響,
+        # 串流時才能只扣住最後 64 字就保證「已送出的都是最終全文的前綴」
+        self.email_re = re.compile(r"[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
         self.own_domain = email.split("@", 1)[1].lower() if "@" in email else ""
 
     def safe_len(self, text: str) -> int:
@@ -147,9 +151,15 @@ class Redactor:
                     cut = min(cut, len(text) - k)
                     break
         if self.own_domain:
-            tail = re.search(r"[A-Za-z0-9._%+-]+(@[A-Za-z0-9.-]*)?$", text)
-            if tail:
-                cut = min(cut, tail.start())
+            tail = re.search(r"([A-Za-z0-9._%+-]+)(@[A-Za-z0-9.-]*)?$", text)
+            if tail and tail.group(2) is None:
+                # 還沒出現 @:只有最後 64 字可能成為某個 email 的帳號部分(E2E 實踩:沒上限時
+                # 一整段沒有空白的英數輸出會被扣到最後才一次送出,串流等於沒有串)
+                cut = min(cut, len(text) - min(len(tail.group(1)), EMAIL_LOCAL_MAX))
+            elif tail:
+                domain = tail.group(2)[1:].lower()
+                if self.own_domain.startswith(domain) or domain.startswith(self.own_domain):
+                    cut = min(cut, tail.start(2) - min(len(tail.group(1)), EMAIL_LOCAL_MAX))
         return cut
 
     def __call__(self, text: str) -> str:
@@ -236,7 +246,13 @@ class Worker:
         log(f"工單 {jid[:8]} 開始(模型 {job.get('model') or job.get('alias') or '預設'})")
         proc = subprocess.Popen(cmd, cwd=RUN_DIR, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, env={**os.environ, "NO_COLOR": "1", **extra_env})
-        timer = threading.Timer(JOB_TIMEOUT_S, proc.kill)
+        killed = threading.Event()
+
+        def kill() -> None:
+            killed.set()
+            proc.kill()
+
+        timer = threading.Timer(JOB_TIMEOUT_S, kill)
         timer.start()
         try:
             assert proc.stdin and proc.stdout
@@ -249,6 +265,14 @@ class Worker:
             code = proc.wait()
         finally:
             timer.cancel()
+        # 被砍或沒收到結尾事件的輸出是半截的,一律當失敗;不能把半截內容當成完成交出去(E2E 實踩)
+        if killed.is_set():
+            outcome = {"error": {"code": "worker_timeout",
+                                 "message": f"超過本機單一工作上限 {JOB_TIMEOUT_S} 秒,已中止"
+                                            "(可用環境變數 AIGO_BRIDGE_JOB_TIMEOUT_S 調整)"}}
+        elif not outcome.get("error") and not outcome.get("complete", True):
+            outcome = {"error": {"code": "claude_incomplete" if not code else "claude_exit",
+                                 "message": f"claude 沒有正常結束(結束碼 {code}),輸出不完整"}}
         if outcome.get("error") or (code and not outcome.get("text")):
             err = outcome.get("error") or {"code": "claude_exit", "message": f"claude 結束碼 {code}"}
             call(self.base, f"/worker/jobs/{jid}/fail", err, self.key)
@@ -257,6 +281,7 @@ class Worker:
         if job.get("session"):
             self.sessions[str(uuid.UUID(job["session"]))] = int(time.time())
             save_private(SESSIONS, self.sessions)
+        outcome.pop("complete", None)
         outcome["duration_ms"] = int((time.monotonic() - started) * 1000)
         if job.get("thinking") == "off" and CANNOT_DISABLE_THINKING.match(outcome.get("model") or ""):
             outcome["notes"] = ["thinking_off_not_applicable"]   # 這個模型關不掉思考,照實告訴呼叫端
@@ -293,10 +318,13 @@ class Worker:
         fallback = result.get("result") if isinstance(result.get("result"), str) else ""
         final = self.redact(text or fallback)
         return {"text": final, "usage": result.get("usage") or {}, "cost_usd": result.get("total_cost_usd"),
-                "model": self._model(result) or init_model, "session": result.get("session_id") or ""}
+                "model": self._model(result) or init_model, "session": result.get("session_id") or "",
+                "complete": bool(result)}
 
     def _consume_json(self, proc) -> dict:
         raw = proc.stdout.read().decode("utf-8", errors="replace")
+        if not raw.strip():
+            return {"text": "", "complete": False}
         try:
             data = json.loads(raw)
         except ValueError:

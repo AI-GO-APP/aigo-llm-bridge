@@ -192,9 +192,13 @@ class LocalService:
         payload = render_for_worker(req, spec) if provider == "local" else {}
         ctx.json_mode = (req.get("response_format") or {}).get("type") in ("json_object", "json_schema")
         if provider == "local" and not await self.online_worker(ctx.user):
-            raise BridgeError(409, "no_worker_for_user",
-                              "你的電腦目前沒有連線的 worker。請先在 app 內「連接我的電腦」並保持 worker 執行,"
-                              "或改用 anthropic/* 後端")
+            message = "你的電腦目前沒有連線的 worker。請先在 app 內「連接我的電腦」並保持 worker 執行"
+            # 只在 Bridge 真的設了雲端金鑰時才指這條路,否則是死路(那個後端會回 503 provider_not_configured)
+            if self.s.anthropic_api_key:
+                message += ",或改用 anthropic/* 模型"
+            elif self.s.openrouter_api_key:
+                message += ",或改用 OpenRouter 的模型"
+            raise BridgeError(409, "no_worker_for_user", message)
         job = await self.store.insert("jobs", {
             "key": new_key(), "owner": ctx.user, "source": ctx.source, "provider": provider,
             "model": ctx.model_label, "status": "pending" if provider == "local" else "running",
@@ -288,7 +292,10 @@ class LocalService:
                     yield {**base, "choices": [{"index": 0, "delta": {"content": event["text"]}, "finish_reason": None}]}
                 elif event["type"] == "done":
                     final = self._finish(job["key"], event, ctx)
-                    last = {**base, "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]}
+                    # 標頭在 worker 回報型號之前就送出了,所以實際型號與未套用的參數放在最後一個 chunk
+                    served = ctx.served_by.removeprefix("local:") if ctx.served_by else ctx.model_label
+                    last = {**base, "model": served, "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+                            "x_bridge": {"served_by": ctx.served_by, "dropped": list(ctx.dropped)}}
                     if include_usage:
                         last["usage"] = final["usage"]
                     yield last

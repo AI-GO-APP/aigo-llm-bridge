@@ -108,6 +108,9 @@ def main() -> int:
             logs = c.get(f"/api/v1/hosted-apps/{app_id}/deployments/{dep_id}/logs").json()
             for line in (logs.get("lines") or [])[-40:]:
                 print("  ", line if isinstance(line, str) else json.dumps(line, ensure_ascii=False)[:300])
+            # 原因放在最後一行:建置日誌的尾巴常是空行或 buildkit 收尾訊息,只看結尾會以為沒事
+            # 共用池租戶的常見原因是配額:每個執行個體的記憶體上限是平台常數,部署時新舊兩個會同時存在
+            print(f"部署失敗({status}):{d.get('failure_reason') or '見上方日誌'}")
             return 1
         detail = c.get(f"/api/v1/hosted-apps/{app_id}").json()
         print("完成:", json.dumps({k: detail.get(k) for k in ("id", "slug", "visibility", "url", "app_url")},

@@ -82,7 +82,9 @@
   不會改派給其他人的 worker。
 - `model` 可再指定模型:`local/self`(照 worker 上 Claude Code 的預設)、`local/self:haiku` 等別名,或完整 ID。
   **別名解析因帳號而異**(實測 `opus` 解析成 claude-opus-5,而非文件所說的 Opus 5.5),要結果可預期就傳完整 ID;
-  實際回答的型號在 `X-Bridge-Served-By` 回應標頭。
+  實際回答的型號在 `X-Bridge-Served-By` 回應標頭。`local/*` 的串流在標頭送出時還不知道型號,
+  所以另外放在最後一個 chunk:`model` 是實際型號,`x_bridge` 帶 `served_by` 與 `dropped`。
+  非串流回應的本體也一律帶同樣的 `x_bridge`:Custom App 經 egress 呼叫時拿不到回應標頭,要讀本體。
 - JSON 模式(`response_format`)下,若模型把 JSON 包在 ```json 外框裡,Bridge 會拿掉外框。
 - 對話延續:帶 `X-Bridge-Session: <uuid>`,同一個 UUID 會在同一台 worker 上接續同一段 Claude Code 對話。
 - 同步等待的規則見 §2.5。
