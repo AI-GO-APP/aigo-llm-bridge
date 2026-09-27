@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-terms:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 也要檢查 commit 訊息
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 禁字檢查
+        env:
+          BANNED_TERMS: ${{ vars.BANNED_TERMS }}
+        run: |
+          # 本 repo 必須設定清單;fork 沒有清單時只警告、不擋
+          if [ "${{ github.repository }}" = "AI-GO-APP/aigo-llm-bridge" ]; then
+            python tools/lint_terms.py --commits --require
+          else
+            python tools/lint_terms.py --commits
+          fi
+
+  python-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 編譯檢查所有 Python 檔
+        run: python -m compileall -q tools spikes

@@ -1,0 +1,30 @@
+# 禁字清單只放本機(見 tools/lint_terms.py)
+.banned-terms
+
+# 平台憑證與本機設定,一律不進 repo
+.aigo/
+.aigo-*/
+*.env
+!*.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+
+# 實測輸出(數字整理進 docs/01 後保留腳本,不保留原始輸出)
+spikes/**/out/
+
+# 編輯器 / 系統
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
