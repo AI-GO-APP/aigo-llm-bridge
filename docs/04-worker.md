@@ -17,8 +17,26 @@ worker 讓 app 可以用「你電腦上、你自己登入的 Claude Code」處�
 ## 2. 綁定(一次)
 
 1. 在 app 裡打開「連接我的電腦」,按「產生綁定碼」。碼 10 分鐘內有效、只能用一次。
-2. 下載 [`worker/aigo_bridge_worker.py`](../worker/aigo_bridge_worker.py),建議放在 `~/.aigo-llm-bridge/`。
-3. 執行畫面上給的指令:
+2. 下載 worker,放在 `~/.aigo-llm-bridge/`(開機自動啟動的範本預設就找這個位置)。
+   網址永遠指向最新發布的版本;要固定版本,把 `latest/download` 換成 `download/vX.Y.Z`。
+
+   macOS / Linux:
+
+   ```bash
+   mkdir -p ~/.aigo-llm-bridge && cd ~/.aigo-llm-bridge
+   curl -fsSLO https://github.com/AI-GO-APP/aigo-llm-bridge/releases/latest/download/aigo_bridge_worker.py
+   ```
+
+   Windows(PowerShell):
+
+   ```powershell
+   New-Item -ItemType Directory -Force "$env:USERPROFILE\.aigo-llm-bridge" | Out-Null; Set-Location "$env:USERPROFILE\.aigo-llm-bridge"
+   Invoke-WebRequest https://github.com/AI-GO-APP/aigo-llm-bridge/releases/latest/download/aigo_bridge_worker.py -OutFile aigo_bridge_worker.py
+   ```
+
+   也可以直接從 [Releases](https://github.com/AI-GO-APP/aigo-llm-bridge/releases) 頁面下載,或用 repo 裡的
+   [`worker/aigo_bridge_worker.py`](../worker/aigo_bridge_worker.py)。**只從這兩個地方取得**,不要用別人轉傳的檔案。
+3. 在 `~/.aigo-llm-bridge/` 執行畫面上給的指令:
 
 ```bash
 python aigo_bridge_worker.py enroll --bridge https://<your-bridge>.deploy.ai-go.app --code ABCD-EFGH
@@ -38,19 +56,23 @@ python aigo_bridge_worker.py status    # 檢查設定與 Claude Code 登入狀�
 
 ## 4. 開機自動啟動
 
-範本在 [`worker/autostart/`](../worker/autostart)。三種都是「登入後自動啟動、異常結束 1 分鐘後重啟」;
+範本在 [`worker/autostart/`](../worker/autostart),每一版的 Release 也附上同名檔案
+(下載網址同 §2,把檔名換掉)。三種都是「登入後自動啟動、異常結束 1 分鐘後重啟」;
 **被撤銷時 worker 以結束碼 0 正常結束,不會被無限重啟**。
 
 | 系統 | 範本 | 安裝 |
 |---|---|---|
-| Windows | `install-windows-task.ps1`(工作排程器,只為目前使用者) | `powershell -ExecutionPolicy Bypass -File worker\autostart\install-windows-task.ps1` |
+| Windows | `install-windows-task.ps1`(工作排程器,只為目前使用者) | 在 repo 裡:`powershell -ExecutionPolicy Bypass -File worker\autostart\install-windows-task.ps1`;單獨下載的話加 `-Worker "$env:USERPROFILE\.aigo-llm-bridge\aigo_bridge_worker.py"` |
 | macOS | `com.aigo.llm-bridge-worker.plist`(launchd 使用者代理) | 改檔內三個路徑 → 複製到 `~/Library/LaunchAgents/` → `launchctl bootstrap gui/$(id -u) <plist>` |
 | Linux | `aigo-llm-bridge-worker.service`(systemd 使用者服務) | 複製到 `~/.config/systemd/user/` → `systemctl --user enable --now aigo-llm-bridge-worker` |
 
 開機常駐時 PATH 常常找不到 `claude`,所以範本都設了 `AIGO_BRIDGE_CLAUDE`(Windows 安裝腳本會自動找)。
 紀錄檔在 `~/.aigo-llm-bridge/worker.log`(Linux 用 `journalctl --user -u aigo-llm-bridge-worker`)。
 
-## 5. 撤銷、換電腦、移除
+## 5. 撤銷、換電腦、更新、移除
+
+- **更新**:用 §2 同一個指令重新下載蓋掉舊檔,再重啟(前景執行的按 Ctrl+C 後重跑;開機常駐的重新登入或重啟服務)。
+  綁定不受影響。舊版 worker 通常仍可運作,除非 [CHANGELOG](../CHANGELOG.md) 另有說明;目前版本看 `status` 的 `worker_version`。
 
 - **撤銷**:在 app「連接我的電腦」按「撤銷」。那台電腦的 worker 下一次輪詢就收到 401 並自行結束。
 - **換電腦**:在新電腦重新綁定即可。可以同時綁多台,工作由先來領的那一台處理;不用的那台記得撤銷。

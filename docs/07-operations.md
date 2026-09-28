@@ -35,6 +35,7 @@
 | worker 的設備鑰匙 | 使用者在 app 撤銷後重新綁定 | 只影響那台電腦 |
 
 金鑰外洩時先換,再查 `biz_bridge_usage` 那段時間 `source` 的呼叫量。
+每把金鑰該放在哪裡、絕不能出現在哪裡,見 [docs/11](11-security.md)。
 
 ## 4. 資料保存
 
@@ -58,12 +59,19 @@
 
 ## 6. 升級
 
-先確認差多少:`curl -s https://<your-bridge>.deploy.ai-go.app/healthz` 的 `version` 是線上的 Bridge,
-repo 根目錄的 `VERSION` 是最新版(用 Skill 的話,安裝目錄會自動同步到最新,見 README「保持更新」)。
-想固定在某一版部署,先 `git checkout vX.Y.Z`。
+沒有任何東西會自動更新:線上的 Bridge、使用者的 worker、複製進 app 的客戶端,都由負責的人決定何時換。
+想收到新版通知,在 GitHub 上 Watch → Custom → Releases。
 
-1. 看 [CHANGELOG](../CHANGELOG.md) 從線上版本到最新版之間**每一版**的 Changed / Fixed;有「破壞性」字樣的先讀。
-2. 有新表或新欄位時先跑 `python tools/provision_tables.py --apply`(只補缺的,不動既有資料)。
-3. 部署 Bridge(`deploy_hosted.py`)。
-4. worker 有新版時,請使用者換掉 `aigo_bridge_worker.py` 並重啟(開機常駐的話重新登入或重啟服務)。
-   舊版 worker 仍可運作,除非 CHANGELOG 另有說明。
+先確認差多少:`curl -s https://<your-bridge>.deploy.ai-go.app/healthz` 的 `version` 是線上的 Bridge,
+[Releases](https://github.com/AI-GO-APP/aigo-llm-bridge/releases) 最上面是最新版。
+
+1. 看 [CHANGELOG](../CHANGELOG.md) 從線上版本到目標版本之間**每一版**的「升級影響」;有「破壞性」字樣的先讀。
+2. 取得要部署的版本:`git fetch --tags && git checkout vX.Y.Z`。
+3. 有新表或新欄位時先跑 `python tools/provision_tables.py`(預覽)再加 `--apply`(只補缺的,不動既有資料)。
+4. 有新的環境變數時,寫一個只含新 key 的檔案跑 `hosted_env.py`(只合併你給的 key)。
+5. 部署 Bridge(`deploy_hosted.py`),再看一次 `/healthz` 的 `version`。
+6. worker 有新版時,請使用者照 docs/04 §5 更新。舊版 worker 仍可運作,除非 CHANGELOG 另有說明。
+7. 客戶端(`bridge.ts`、`bridge_block.py`、`aigo_bridge.py`)有變動時,各 app 的開發者重新複製並發布。
+
+退版:`git checkout` 上一版再部署。`provision_tables.py` 只新增表與欄位、從不刪除,所以通常不必動表;
+CHANGELOG 若註明某一版不能退,照那一版的說明做。
