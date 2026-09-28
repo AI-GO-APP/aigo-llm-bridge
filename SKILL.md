@@ -71,14 +71,14 @@ python tools/check_update.py     # 在 skill 目錄下執行;macOS / Linux 用 p
 ## 寫呼叫端的硬規則
 
 1. **預設 `model: "auto"`**,第一次使用時處理 `409 priority_required`:顯示選擇卡,
-   使用者選完呼叫 `PUT /bridge/preferences`。不要在程式裡替他選(`docs/05` §3.2)。
+   使用者選完呼叫 `PUT /bridge/preferences`。不要在程式裡替他選(`docs/05-callers.md` §3.2)。
 2. **整份複製 `clients/` 的正本,不要自己手寫 HTTP**。Server Action 貼 `bridge_block.py` 的
    「從這裡開始貼」到「到此為止」整段(egress slug 必須是字面字串,所以不能 import);前端整檔複製 `bridge.ts`。
 3. **source 金鑰只放伺服器端**(Custom App 的 secrets、Hosted App 的環境變數)。瀏覽器改用
    `bridge_session` action 換來的短效 session token。
 4. **使用者身分來自平台**(Server Action 的 `ctx.user_id`),不能讓瀏覽器自己宣稱。
 5. **Server Action 有 30 秒硬牆**:同步呼叫帶 `X-Bridge-Wait: 20`,並處理回來的 `pending`(區塊已處理)。
-   要逐字顯示就走前端直連串流(`docs/06`)。
+   要逐字顯示就走前端直連串流(`docs/06-frontend-streaming.md`)。
 6. **`ctx.http.call` 拿不到回應標頭**:`served_by`、`fallback` 從本體的 `x_bridge` 讀。
 7. **瀏覽器直連用 `https://<your-bridge>.deploy.ai-go.app`**,不要用自訂網域(會被 CSP 擋)。
 8. 串流沒收到 `[DONE]` 就是不完整;`stream_timeout` 事件帶 `job_id`,用 `/v1/jobs/{id}` 取全文。
@@ -104,7 +104,7 @@ python tools/check_update.py     # 在 skill 目錄下執行;macOS / Linux 用 p
 | 已部署的 Bridge | `curl -s https://<your-bridge>.deploy.ai-go.app/healthz` 的 `version` |
 | 使用者的 worker | `python aigo_bridge_worker.py status` 的 `worker_version`;Bridge 端看電腦清單 |
 
-Bridge 比 Skill 舊時,先看 `CHANGELOG.md` 中間各版的 Changed／Fixed,再照 `docs/07` §6 升級
+Bridge 比 Skill 舊時,先看 `CHANGELOG.md` 中間各版的 Changed／Fixed,再照 `docs/07-operations.md` §6 升級
 (部署前同樣先徵得同意)。舊版 worker 仍可運作,除非 CHANGELOG 另有說明。
 
 ## 回報前自我檢查
