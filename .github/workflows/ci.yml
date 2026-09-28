@@ -66,6 +66,46 @@ jobs:
         working-directory: hosted
         run: python -m pytest -q
 
+  skill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 版本號一致(VERSION、三個常數、CHANGELOG 段落)
+        run: python tools/version.py --check
+      - name: 安裝 pytest(工具本身只用標準函式庫)
+        run: pip install pytest
+      - name: pytest(SKILL.md、版本工具、更新檢查)
+        run: python -m pytest tools/tests -q -p no:cacheprovider
+
+  version-bump:
+    # 使用者端只比對 VERSION;改了使用者拿得到的內容卻沒 bump,合併後沒有人收得到
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 改到發布內容就必須 bump VERSION
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          changed=$(git diff --name-only "$BASE_SHA"...HEAD \
+            | grep -vE '^(\.github/|spikes/|hosted/tests/|worker/tests/|tools/tests/)' || true)
+          if [ -z "$changed" ]; then
+            echo "只改了 CI、spikes 或測試,不需要發版"
+            exit 0
+          fi
+          echo "會送到使用者端的檔案:"
+          echo "$changed" | sed 's/^/  /'
+          base_version=$(git show "$BASE_SHA:VERSION" | head -n1 | tr -d '\r ')
+          python tools/version.py --newer-than "$base_version"
+
   worker:
     runs-on: ${{ matrix.os }}
     strategy:
