@@ -26,6 +26,9 @@ Bridge、worker、客戶端的行為沒有變。
 - README 改寫:兩種用法(裝成 Skill／直接當套件)、安裝 Skill、保持更新、版本、參與開發
 - docs/07 §6 升級:先比對線上 `/healthz` 與 `VERSION`,可用 tag 固定部署版本
 
+### Fixed
+- 禁字清單改由 repository secret 提供:原本的 repository variable 會以明文印在公開的 CI 紀錄裡
+
 ## [0.1.0] - 2026-09-27
 
 第一個可用版本:本機 Claude Code 與 OpenRouter 並用,由每位使用者自己選優先順序。

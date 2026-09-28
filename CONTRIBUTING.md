@@ -71,7 +71,7 @@ PR 標題結尾帶上新版本號,合併後一眼就能對回 CHANGELOG。
 ## 5. 不能出現在 repo 裡的東西
 
 - **任何特定客戶、租戶、專案或人名**(含 commit 訊息)。範例一律用 `<your-tenant>`、`<your-bridge>`。
-  CI 的 `lint-terms` 會擋;清單在 GitHub 的 repository variable `BANNED_TERMS`,本機放 `.banned-terms`(已 gitignore)。
+  CI 的 `lint-terms` 會擋;清單在 GitHub 的 repository **secret** `BANNED_TERMS`(不能用 variable:會以明文印在公開的 CI 紀錄裡),本機放 `.banned-terms`(已 gitignore)。
 - 金鑰、token、`.env`、`bridge.env`。
 - `examples/` 裡客戶端副本的手改——一律改 `clients/` 正本再跑 `sync_clients.py`。
 

@@ -20,7 +20,9 @@ jobs:
           python-version: "3.12"
       - name: 禁字檢查
         env:
-          BANNED_TERMS: ${{ vars.BANNED_TERMS }}
+          # 一定要用 secret:repository variable 會以明文印在公開的 CI 紀錄裡(步驟開頭的 env 區塊),
+          # 等於把清單公告了;secret 會被遮成 ***。fork 的 PR 拿不到 secret,下面只警告不擋。
+          BANNED_TERMS: ${{ secrets.BANNED_TERMS }}
         run: |
           # 本 repo 必須設定清單;fork 沒有清單時只警告、不擋
           if [ "${{ github.repository }}" = "AI-GO-APP/aigo-llm-bridge" ]; then
