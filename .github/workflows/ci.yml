@@ -68,7 +68,19 @@ jobs:
         working-directory: hosted
         run: python -m pytest -q
 
-  skill:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 連 commit 歷史一起查
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 機敏資訊檢查(輸出不顯示命中的內容)
+        run: python tools/scan_secrets.py --history
+
+  docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -79,11 +91,11 @@ jobs:
         run: python tools/version.py --check
       - name: 安裝 pytest(工具本身只用標準函式庫)
         run: pip install pytest
-      - name: pytest(SKILL.md、版本工具、更新檢查)
+      - name: pytest(文件連結、版本工具、機敏資訊掃描)
         run: python -m pytest tools/tests -q -p no:cacheprovider
 
   version-bump:
-    # 使用者端只比對 VERSION;改了使用者拿得到的內容卻沒 bump,合併後沒有人收得到
+    # 每次合併都要對得回一個 tag 與 Release;改了部署者或使用者拿得到的內容就必須 bump
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:

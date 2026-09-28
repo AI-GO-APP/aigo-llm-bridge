@@ -1,7 +1,7 @@
 """版本號的單一來源是根目錄的 `VERSION`;這支工具把它同步到程式碼裡的常數,並檢查 CHANGELOG。
 
 為什麼要這支:版本號同時出現在四個地方,任何一個沒跟上都會出事——
-- `VERSION`                        skill 的更新檢查(tools/check_update.py)比對的就是它
+- `VERSION`                        tag、Release 與 CHANGELOG 段落都以它為準
 - `hosted/bridge/config.py`         Bridge 的 `/healthz` 與 `/worker/heartbeat` 回報
 - `worker/aigo_bridge_worker.py`    worker 的心跳與 User-Agent
 - `clients/python/aigo_bridge.py`   Python 客戶端的 User-Agent(examples/ 的副本由 sync_clients 同步)
@@ -40,7 +40,7 @@ UNRELEASED = "## [Unreleased]"
 
 
 def parse(v: str) -> tuple:
-    """與 tools/check_update.py 同一套比較規則:pre-release 排在同版號正式版之前。"""
+    """SemVer 比較:pre-release 排在同版號正式版之前。"""
     base, _, pre = v.partition("-")
     return (tuple(int(c) for c in base.split(".")), 0 if pre else 1, pre)
 

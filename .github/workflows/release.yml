@@ -1,7 +1,8 @@
 name: release
 
 # main 上的 VERSION 是新的版本號時,自動打 tag vX.Y.Z 並建立 GitHub Release。
-# 使用者端的更新靠 VERSION 本身(tools/check_update.py),不靠 tag;tag 與 Release 是給人看、給釘版本用的。
+# Release 附上使用者會單獨下載的檔案,讓 docs/04 與 README 的
+# releases/latest/download/<檔名> 網址永遠指向最新版。
 
 on:
   push:
@@ -22,8 +23,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: 版本號一致
-        run: python tools/version.py --check
+      - name: 版本號一致、範例與正本一致
+        run: |
+          python tools/version.py --check
+          python tools/sync_clients.py --check
       - name: 建立 tag 與 Release(已存在就略過)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -37,4 +40,12 @@ jobs:
           python tools/version.py --notes > notes.md
           prerelease=""
           case "$version" in *-*) prerelease="--prerelease" ;; esac
-          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md $prerelease
+          # 檔名在各資料夾間不重複,直接以原檔名附上
+          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md $prerelease \
+            worker/aigo_bridge_worker.py \
+            worker/autostart/install-windows-task.ps1 \
+            worker/autostart/com.aigo.llm-bridge-worker.plist \
+            worker/autostart/aigo-llm-bridge-worker.service \
+            clients/browser/bridge.ts \
+            clients/custom-app/bridge_block.py \
+            clients/python/aigo_bridge.py

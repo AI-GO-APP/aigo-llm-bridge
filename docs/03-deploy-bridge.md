@@ -25,7 +25,8 @@ Bridge 是一個 AI GO Hosted App。一個租戶部署一個,給這個租戶裡�
 
 ## 2. 產生金鑰
 
-每個會呼叫 Bridge 的 app 一把 source 金鑰,名稱用大寫英數底線。先寫在一個**不進版控**的檔案裡:
+每個會呼叫 Bridge 的 app 一把 source 金鑰,名稱用大寫英數底線。先寫在一個**不進版控**的檔案裡
+(建議放在 repo 外;設定完成後把值存進密碼管理工具,這個檔案就可以刪掉,見 [docs/11 §3](11-security.md)):
 
 ```bash
 python - <<'EOF' > bridge.env

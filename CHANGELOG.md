@@ -5,6 +5,40 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-28
+
+**破壞性:移除 0.2.0 加入的 Agent Skill 包裝與自動同步。** 這個 repo 是可部署的產品與範例,不是 skill;
+自動強制同步對部署用的 clone 有風險。裝過 0.2.0 SessionStart hook 的人,請把設定裡指向
+`tools/check_update.py` 的那一項拿掉,用 `npx skills add` 裝過的副本可以直接刪掉。
+取而代之的是完整的使用說明:依角色的閱讀路線、取得與更新、機敏資訊、本機開發、工具總覽。
+
+### 升級影響
+- Bridge:不需要重新部署(程式行為沒有變,只有版本號)
+- 表、環境變數:不需要
+- worker、客戶端:不需要更新;從這一版起可從 Release 直接下載
+- 裝過 0.2.0 skill 或 hook 的人:照上面拿掉
+
+### Added
+- `docs/11-security.md`:每把金鑰放哪裡、不能放哪裡、保存什麼資料、公開 repo 的防線、外洩怎麼辦
+- `docs/12-local-development.md`:本機跑 Bridge(記憶體存放)與模擬 OpenRouter、接 worker、端到端檢查
+- `tools/README.md`:每支工具做什麼、動不動正式資源、需要什麼憑證
+- `tools/scan_secrets.py` 與 CI 的 `secrets`:擋金鑰、token、`*.env` 之類的檔案,連 commit 歷史一起查;輸出不顯示命中的內容
+- Release 附上 `aigo_bridge_worker.py`、三個開機自動啟動範本與三種客戶端,
+  `releases/latest/download/<檔名>` 永遠指向最新版
+- README:這個 repo 裡有什麼、依角色從哪裡開始、取得與更新
+- docs/04:下載 worker 的指令(macOS／Linux／Windows)、更新 worker
+- CI 的 `docs`:所有 Markdown 的相對連結都要存在、每份文件都列在 README
+
+### Changed
+- CHANGELOG 每一版固定寫「升級影響」(CONTRIBUTING §4)
+- docs/07 §6 升級:改為逐步的升級與退版流程
+- `examples/hosted-app-caller`:補前置條件;本機試跑改用 env 檔,不把金鑰放在指令列
+- docs/03:`bridge.env` 放 repo 外、設完存進密碼管理工具後可刪
+- `tools/provision_tables.py` 的說明更正為五張表
+
+### Removed
+- `SKILL.md`、`tools/check_update.py`、`resources/hooks/`,以及 README 的「安裝 Skill」「保持更新」
+
 ## [0.2.0] - 2026-09-28
 
 這個 repo 同時是一個 **Agent Skill**:`npx skills add AI-GO-APP/aigo-llm-bridge` 安裝後,

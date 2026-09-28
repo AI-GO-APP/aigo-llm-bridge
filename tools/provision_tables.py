@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""建立(或補齊)Bridge 需要的四張平台自建表。
+"""建立(或補齊)Bridge 需要的五張平台自建表(jobs、workers、enrollments、usage、prefs)。
 
   python tools/provision_tables.py            # 只列出計畫,不動任何東西
   python tools/provision_tables.py --apply    # 真的建表 / 補欄位
