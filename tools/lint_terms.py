@@ -3,7 +3,8 @@
 
 為什麼字詞清單不放在 repo 裡:清單本身就是那些字詞。所以清單從外部讀——
 
-  1. 環境變數 BANNED_TERMS(CI 用;設成 GitHub Actions 的 repository variable)
+  1. 環境變數 BANNED_TERMS(CI 用;設成 GitHub Actions 的 repository secret——
+     不能用 variable,variable 會以明文印在公開的 CI 紀錄裡)
   2. 本機檔案 .banned-terms(已列入 .gitignore)
 
 格式:一行一個,或以逗號分隔;`#` 開頭的行是註解。

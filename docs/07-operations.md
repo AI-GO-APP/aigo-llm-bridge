@@ -58,7 +58,11 @@
 
 ## 6. 升級
 
-1. 看 [CHANGELOG](../CHANGELOG.md) 的 Changed / Fixed。
+先確認差多少:`curl -s https://<your-bridge>.deploy.ai-go.app/healthz` 的 `version` 是線上的 Bridge,
+repo 根目錄的 `VERSION` 是最新版(用 Skill 的話,安裝目錄會自動同步到最新,見 README「保持更新」)。
+想固定在某一版部署,先 `git checkout vX.Y.Z`。
+
+1. 看 [CHANGELOG](../CHANGELOG.md) 從線上版本到最新版之間**每一版**的 Changed / Fixed;有「破壞性」字樣的先讀。
 2. 有新表或新欄位時先跑 `python tools/provision_tables.py --apply`(只補缺的,不動既有資料)。
 3. 部署 Bridge(`deploy_hosted.py`)。
 4. worker 有新版時,請使用者換掉 `aigo_bridge_worker.py` 並重啟(開機常駐的話重新登入或重啟服務)。

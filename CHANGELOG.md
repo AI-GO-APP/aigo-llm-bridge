@@ -5,6 +5,30 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-28
+
+這個 repo 同時是一個 **Agent Skill**:`npx skills add AI-GO-APP/aigo-llm-bridge` 安裝後,
+AI agent 會依 `SKILL.md` 協助部署、接上與營運 Bridge,並與 aigo-builder 同樣自動保持最新。
+Bridge、worker、客戶端的行為沒有變。
+
+### Added
+- `SKILL.md`:Skill 主文件——自我更新(Phase -1)、使用邊界、意圖分流、呼叫端與部署的硬規則、版本對照
+- `tools/check_update.py`:與 aigo-builder 相同的更新檢查(3 小時節流、多安裝註冊、發現新版即強制同步);
+  狀態檔 `~/.aigo/llm_bridge_update_check.json`,與 aigo-builder 分開
+- `resources/hooks/`:Claude Code 與 Codex 的 SessionStart hook 範本
+- `tools/version.py`:`VERSION` 為單一來源,同步 Bridge、worker、Python 客戶端的版本常數;
+  `--bump` 同時把 CHANGELOG 的 [Unreleased] 改成新版段落
+- `CONTRIBUTING.md` 與 PR 範本:分支 → PR → CI → 合併的維護流程、bump 規則、CHANGELOG 寫法
+- CI:`skill`(版本一致、SKILL.md 指到的路徑都存在)、`version-bump`(PR 改到發布內容就必須 bump)
+- `release` workflow:`main` 上的 `VERSION` 變了就自動建立 tag `vX.Y.Z` 與 GitHub Release
+
+### Changed
+- README 改寫:兩種用法(裝成 Skill／直接當套件)、安裝 Skill、保持更新、版本、參與開發
+- docs/07 §6 升級:先比對線上 `/healthz` 與 `VERSION`,可用 tag 固定部署版本
+
+### Fixed
+- 禁字清單改由 repository secret 提供:原本的 repository variable 會以明文印在公開的 CI 紀錄裡
+
 ## [0.1.0] - 2026-09-27
 
 第一個可用版本:本機 Claude Code 與 OpenRouter 並用,由每位使用者自己選優先順序。

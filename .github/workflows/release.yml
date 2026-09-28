@@ -1,0 +1,40 @@
+name: release
+
+# main 上的 VERSION 是新的版本號時,自動打 tag vX.Y.Z 並建立 GitHub Release。
+# 使用者端的更新靠 VERSION 本身(tools/check_update.py),不靠 tag;tag 與 Release 是給人看、給釘版本用的。
+
+on:
+  push:
+    branches: [main]
+    paths: [VERSION]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 版本號一致
+        run: python tools/version.py --check
+      - name: 建立 tag 與 Release(已存在就略過)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(head -n1 VERSION | tr -d '\r ')
+          tag="v$version"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag 已存在,略過"
+            exit 0
+          fi
+          python tools/version.py --notes > notes.md
+          prerelease=""
+          case "$version" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md $prerelease
