@@ -64,4 +64,6 @@ $created.integration.prompt | Set-Clipboard
 
 最後必須完成 [第三方串接驗收](THIRD-PARTY-INTEGRATION.md)。安裝、Cloudflare 部署與真實訂閱推論各是獨立檢查；登入或 Keychain 不可用時明確回報未完成。
 
+若下一階段要以新Mac取代現有Windows作為Cloud常駐供應端，依[供應裝置交接](AI-EA-CLOUD-BEST-PRACTICE.md#下一階段改用另一台-mac-作常駐供應端)先建獨立profile並驗外部HTTPS、模型／成本、工具與錯誤，再切Cloud registry。保留原Windows URL／key作回退；本段不是Mac實機驗收或Mac release。
+
 macOS 儲存與啟動依據：[Apple Keychain](https://developer.apple.com/documentation/security/seckeychainfindgenericpassword(_:_:_:_:_:_:_:_:))、[Apple LaunchAgents](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html)。
