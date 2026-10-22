@@ -14,10 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # 也要檢查所有實際 commit 的訊息與作者
-          # GitHub's temporary PR merge author is not part of repository history.
-          # Scan the actual reviewed head; real authors/content keep the full policy.
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0   # 也要檢查 commit 訊息
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
