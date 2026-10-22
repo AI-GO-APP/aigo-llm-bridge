@@ -97,8 +97,9 @@ def test_source_installer_preserves_identity_across_reinstall(tmp_path,monkeypat
     from tools import install as installer
     # Runtime acceptance installs real dependencies; the unit test only verifies profile ownership.
     monkeypatch.setattr(installer.venv.EnvBuilder,'create',lambda self,path:Path(path).mkdir())
-    root=tmp_path/'source install';data=tmp_path/'device profile'
+    root=tmp_path/'source install 測試';data=tmp_path/'device profile 資料'
     first=installer.install(root,data,dependencies=False)
+    if os.name=='nt':(root/'Bridge.cmd').read_text(encoding='ascii')
     store=Store(data);device=store.get('device_id');_,key=store.create_key('preserve');store.set('public_url','https://fixed.example.test');store.close()
     second=installer.install(root,dependencies=False)
     assert second['data_dir']==first['data_dir'] and second['app']!=first['app']

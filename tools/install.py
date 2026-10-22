@@ -50,7 +50,9 @@ def install(root, data_dir=None, *, dependencies=True):
     value={'version':version['__version__'],'python':str(python),'app':str(release),'data_dir':str(data),'launcher':str(launcher),'install_root':str(root)}
     temporary=manifest.with_suffix('.tmp');temporary.write_text(json.dumps(value,indent=2),encoding='utf-8');os.replace(temporary,manifest)
     if os.name=='nt':
-        (root/'Bridge.cmd').write_text('@echo off\r\n"'+str(python)+'" "'+str(launcher)+'" %*\r\n',encoding='utf-8')
+        # ASCII script with runtime-expanded paths also works under CP950/CP1252
+        # when the Windows user/install directory contains non-ASCII characters.
+        (root/'Bridge.cmd').write_text('@echo off\r\n"%~dp0runtime\\Scripts\\python.exe" "%~dp0Bridge.pyw" %*\r\n',encoding='ascii')
     else:
         import shlex
         command=root/'Bridge.command'
