@@ -24,10 +24,11 @@ Content-Type: application/json
 最小 request: {json.dumps(payload,ensure_ascii=False)}
 
 這是 OpenRouter 的部分相容介面。使用可自訂 base_url 的 OpenAI Chat Completions/HTTP adapter；不要預設選擇鎖定 openrouter.ai 的專用 adapter。
-停用串流及自動工具呼叫。不要自動送 temperature、top_p、max_tokens、max_completion_tokens、tools、tool_choice、provider、plugins 等預設值；不支援的非 null 參數會回 400 unsupported_parameter，不會忽略。若 IDE 必須使用串流或工具才能工作，請明確回報不相容，不能宣稱已整合。
+停用串流及自動工具呼叫。不要自動送 temperature、top_p、max_tokens、max_completion_tokens、tools、tool_choice、plugins 等預設值；不支援的非 null 參數會回 400 unsupported_parameter。0.6 起接受 provider.data_collection=deny/allow 作路由相容欄位，不影響接單，也不代表驗證訂閱資料政策。可另行啟用文字工具提案 tools/tool_choice，參數以 JSON Schema 驗證，工具由呼叫端執行；請先通過工具多輪驗收。需要串流的 IDE 仍不相容。
 成功回傳 choices[0].message.content 及 usage；usage.cost 是依實際 token 與 OpenRouter 公開牌價換算的 USD 估值，不是實際扣款。不要使用 OpenRouter 帳務/key introspection、Responses API 或全模型目錄假設。
 保留 TLS 憑證驗證。若 Python urllib 的 Windows CA store 尚未就緒，使用 certifi 的公開 CA bundle（或有效的 SSL_CERT_FILE），不可用 verify=false 繞過。
 先 GET models，確認目標模型；再以最小 request 做真實 POST，檢查非空文字與數值型 usage.cost。只有真正通過才回報成功，不要只憑 HTTP 200 或程式設定判斷。
+AI EA Cloud 整合另見 docs/AI-EA-CLOUD-BEST-PRACTICE.md；該 Cloud 直接以 usage.cost 作會員消耗，不需另一成本欄。
 一般 POST 約 90 秒上限；客戶端 timeout 設 100 秒，自動重試設 0，408/斷線不自動重送以免重複推論。較長工作另接 /bridge/v1/jobs 的 POST + GET（此擴充不是 OpenRouter 規格）。401 檢查 key（新建同步可能約 20 秒）；403 檢查來源 scope；429 檢查頻率/訂閱；503 檢查裝置在線、CLI 訂閱登入與牌價來源。
 雲端/Web IDE 應從服務端呼叫並將 key 存入 server secret；不要放進瀏覽器 bundle 或公開 repo。此服務未提供瀏覽器跨域 CORS，不能直接由跨來源網頁前端呼叫。
 裝置需保持開機、登入且 Bridge 運作；不必在這台呼叫端電腦安裝或登入 Claude/Codex。不要修改供應端的登入、Worker、URL 或輪替 key。'''

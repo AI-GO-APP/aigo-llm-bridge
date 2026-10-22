@@ -22,7 +22,7 @@ New-Item -ItemType Directory -Path $setupRoot -Force | Out-Null
 Get-ChildItem -LiteralPath dist/byo-setup/AIGO-Bridge-Setup -Force | Copy-Item -Destination $setupRoot -Recurse -Force
 Copy-Item -LiteralPath AGENTS.md,CLAUDE.md -Destination $appRoot -Force
 foreach ($folder in @('docs','skills/byo-cloudflare','cloudflare/src')) { New-Item -ItemType Directory -Path (Join-Path $appRoot $folder) -Force | Out-Null }
-Copy-Item -LiteralPath docs/BYO-QUICKSTART.md,docs/DEVICE-IDENTITY.md,docs/AI-AGENT-SETUP.md,docs/P1-Windows-guide.md,docs/OPENROUTER-PRICING.md,docs/THIRD-PARTY-INTEGRATION.md,docs/CROSS-PLATFORM-INSTALL.md -Destination (Join-Path $appRoot 'docs') -Force
+Copy-Item -LiteralPath docs/BYO-QUICKSTART.md,docs/DEVICE-IDENTITY.md,docs/AI-AGENT-SETUP.md,docs/P1-Windows-guide.md,docs/OPENROUTER-PRICING.md,docs/THIRD-PARTY-INTEGRATION.md,docs/AI-EA-CLOUD-BEST-PRACTICE.md,docs/CROSS-PLATFORM-INSTALL.md -Destination (Join-Path $appRoot 'docs') -Force
 Copy-Item -LiteralPath skills/byo-cloudflare/SKILL.md -Destination (Join-Path $appRoot 'skills/byo-cloudflare') -Force
 Copy-Item -LiteralPath cloudflare/src/worker.js -Destination (Join-Path $appRoot 'cloudflare/src') -Force
 Copy-Item -LiteralPath cloudflare/wrangler.jsonc -Destination (Join-Path $appRoot 'cloudflare') -Force

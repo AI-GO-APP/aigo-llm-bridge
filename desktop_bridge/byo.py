@@ -163,7 +163,15 @@ def publish(store,config,cloud,*,url=None,code=True,repair=False):
     if not target:raise SetupError('請先 deploy，或以 pair --url 明確指定自有 Worker。')
     # Only encrypted bytes reach disk; never a plaintext secrets file or argv token.
     secret.save(store.directory,token,pending=True)
-    cloud.run(['secret','put','DEVICE_KEY'],input=(token+'\n').encode())
+    # Rewriting an unchanged secret immediately after deploy can activate a
+    # stale Worker version at Cloudflare. An ordinary upgrade needs code only.
+    # Explicit repair still publishes the new credential, then the current code.
+    secret_written = not (existing and current and token == current and not repair)
+    if secret_written:
+        cloud.run(['secret','put','DEVICE_KEY'],input=(token+'\n').encode())
+        if code and existing:
+            output=cloud.run(['deploy'])
+            if target not in output:raise SetupError('配對後程式部署網址不一致；已保留加密 pending 憑證。')
     if not existing and hasattr(cloud,'wait_pairing'):cloud.wait_pairing(target,token)
     secret.commit_pending(store.directory)
     with store.lock,store.db:

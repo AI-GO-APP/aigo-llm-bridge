@@ -85,8 +85,8 @@ export class DeviceRelay {
         return error(404,"not_found","Unknown agent endpoint.");
       }
       if(path==="/health")return Response.json({ok:true,device_online:Date.now()-this.lastSeen<35_000,version:"0.3.4-relay"},{headers:{"Cache-Control":"no-store"}});
-      const allowed=(request.method==="POST"&&["/api/v1/chat/completions","/v1/chat/completions","/bridge/v1/jobs"].includes(path))
-        ||(request.method==="GET"&&(["/api/v1/models","/v1/models"].includes(path)||/^\/bridge\/v1\/jobs\/[a-f0-9]{32}$/.test(path)));
+      const allowed=(request.method==="POST"&&["/api/v1/chat/completions","/v1/chat/completions","/bridge/v1/jobs","/bridge/v1/preflight"].includes(path))
+        ||(request.method==="GET"&&(["/api/v1/models","/v1/models"].includes(path)||/^\/bridge\/v1\/jobs\/[a-f0-9]{32}$/.test(path)||/^\/bridge\/v1\/receipts\/[a-f0-9-]{36}$/i.test(path)));
       if(!allowed)return error(404,"not_found","Unknown API endpoint.");
       const authorization=request.headers.get("Authorization")||"";
       if(!authorization.startsWith("Bearer ")||authorization.length>263)return error(401,"authentication","Invalid API key.");
@@ -95,13 +95,16 @@ export class DeviceRelay {
       if(this.pending.size>=9)return error(429,"queue_full","Device queue is full.");
       const body=request.method==="POST"?await this.body(request):"";
       const id=crypto.randomUUID();
-      const work={id,path,method:request.method,authorization,body};
+      const deadline=Math.min(Date.now()+90_000,Number(request.headers.get("X-Bridge-Deadline"))||Date.now()+90_000);
+      const requestId=request.headers.get("X-AIEA-Request-Id");
+      if(requestId&&!/^[a-f0-9-]{36}$/i.test(requestId))return error(400,"invalid_request","Invalid request ID.");
+      const work={id,path,method:request.method,authorization,body,deadline,request_id:requestId};
       return await new Promise(resolve=>{
         const timer=setTimeout(()=>{
           const item=this.pending.get(id);this.pending.delete(id);
           if(item)item.work=null;
           resolve(error(408,"timeout","Device response timed out. Use /bridge/v1/jobs for long work."));
-        },90_000);
+        },Math.max(1,deadline-Date.now()+2000));
         const item={work,resolve,timer,dispatched:false};this.pending.set(id,item);
         if(this.waiter){item.dispatched=true;this.waiter(work);}
       });

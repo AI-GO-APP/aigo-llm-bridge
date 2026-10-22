@@ -45,6 +45,22 @@ test('unknown keys are rejected before dispatch',async()=>{
  assert.equal(r.pending.size,0);
 });
 
+test('preflight and request deadline reach the device without inference or storage',async()=>{
+ const r=new DeviceRelay({storage:{put(){throw Error('payload storage forbidden')}}},{DEVICE_KEY:device});
+ const key='routing-client';r.keys=new Set([await digest(key)]);r.lastSeen=Date.now();
+ const request=req('/bridge/v1/preflight',{model:'synthetic'},key);
+ const requestId=crypto.randomUUID(),deadline=Date.now()+15_000;
+ request.headers.set('X-AIEA-Request-Id',requestId);
+ request.headers.set('X-Bridge-Deadline',String(deadline));
+ const external=r.fetch(request);
+ await new Promise(resolve=>setTimeout(resolve,10));
+ const poll=await r.fetch(req('/agent/poll',{key_digests:[await digest(key)]}));
+ const item=(await poll.json()).request;
+ assert.equal(item.path,'/bridge/v1/preflight');assert.equal(item.request_id,requestId);assert.equal(item.deadline,deadline);
+ await r.fetch(req('/agent/result',{id:item.id,status:200,body:'{"ready":true}'}));
+ assert.equal((await (await external).json()).ready,true);assert.equal(r.pending.size,0);
+});
+
 test('restart releases a stale dispatched request without replay or payload storage',async()=>{
  const r=new DeviceRelay({storage:{put(){throw Error('payload storage forbidden')}}},{DEVICE_KEY:device});
  const key='restart-client';const keys=[await digest(key)];

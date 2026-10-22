@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import hashlib
 import select
 import socket
 import threading
@@ -30,6 +31,7 @@ class Task:
     error: BridgeError | None = None
     completed: float | None = None
     pricing_headers: dict = field(default_factory=dict)
+    deadline: float | None = None
 
 
 class Runtime:
@@ -50,22 +52,42 @@ class Runtime:
         if caller is None: raise BridgeError(401,"authentication","API key 無效或已撤銷。")
         return caller
 
-    def submit(self,body,caller,input_bytes):
+    def preflight(self,body,caller):
+        spec=validate(body,self.store,caller)
+        if self.stopped or not self.store.get("accepting"):
+            raise BridgeError(503,"device_paused","服務目前暫停接單。")
+        with self.lock:
+            if sum(not t.done.is_set() for t in self.tasks.values())>=9:
+                raise BridgeError(429,"queue_full","工作佇列已滿。")
+        return spec
+
+    def submit(self,body,caller,input_bytes,request_id=None,deadline=None):
         spec=validate(body,self.store,caller)
         if self.stopped or not self.store.get("accepting"):
             raise BridgeError(503,"device_paused","本機目前暫停接單。")
         with self.lock:
             self.cleanup()
+            if request_id:
+                try: request_id=str(uuid.UUID(request_id))
+                except (ValueError,TypeError): raise BridgeError(400,"invalid_request","請求識別碼無效。") from None
+                digest=hashlib.sha256((caller["id"]+json.dumps(body,sort_keys=True,separators=(",",":"))).encode()).hexdigest()
+                with self.store.lock:
+                    row=self.store.db.execute("select id,request_digest from requests where key_id=? and client_request_id=?",(caller["id"],request_id)).fetchone()
+                if row:
+                    if row["request_digest"]!=digest:raise BridgeError(409,"request_conflict","請求識別碼已用於其他內容。")
+                    task=self.tasks.get(row["id"])
+                    if task:return task
+                    raise BridgeError(409,"request_already_processed","請求已受理，不會重新執行。")
             now=time.monotonic(); history=self.rate[caller["id"]]
             while history and history[0]<now-60: history.popleft()
             if len(history)>=caller["rpm"]: raise BridgeError(429,"rate_limit_exceeded","這把 key 已達每分鐘上限。")
             if not self.slots.acquire(blocking=False): raise BridgeError(429,"queue_full","工作佇列已滿，請稍後再試。")
             history.append(now)
             rid=uuid.uuid4().hex
-            task=Task(rid,caller["id"],time.time())
+            task=Task(rid,caller["id"],time.time(),deadline=deadline)
             try:
                 self.store.insert_request({"id":rid,"key_id":caller["id"],"model":spec.model["id"],"provider":spec.model["provider"],
-                    "created_ts":task.created,"status":"queued","input_bytes":input_bytes})
+                    "created_ts":task.created,"status":"queued","input_bytes":input_bytes},(request_id,digest) if request_id else None)
                 self.tasks[rid]=task
                 self.pool.submit(self.execute,task,spec)
             except Exception:
@@ -82,7 +104,16 @@ class Runtime:
             if key is None or key[0] is not None: raise BridgeError(401,"authentication","API key 已撤銷。")
             self.store.update_request(task.id,status="running",started_ts=time.time())
             quote=self.pricing.quote(spec.model)
-            text,usage,finish=self.runner(spec,self.store,task.cancel)
+            settings=self.store
+            if task.deadline is not None:
+                remaining=task.deadline-time.time()
+                if remaining<=0:raise BridgeError(408,"timeout","請求期限已過。")
+                store=self.store
+                class DeadlineSettings:
+                    def get(self,name):
+                        return min(store.get(name),remaining) if name=="timeout_s" else store.get(name)
+                settings=DeadlineSettings()
+            text,usage,finish=self.runner(spec,settings,task.cancel)
             if task.cancel.is_set(): raise BridgeError(499,"cancelled","請求已取消。")
             if not isinstance(text,str): raise BridgeError(502,"invalid_provider_response","模型未返回文字內容。")
             if spec.format in {"json_object","json_schema"}:
@@ -96,8 +127,12 @@ class Runtime:
             prompt=usage['prompt_tokens'];completion=usage['completion_tokens']
             task.pricing_headers=quote.headers
             if finish not in {"stop","length","content_filter"}: finish="stop"
+            message={"role":"assistant","content":text}
+            if spec.tool_proposals:
+                from .tool_contract import proposal_message
+                message,finish=proposal_message(json.loads(text))
             task.result={"id":"gen-"+task.id,"object":"chat.completion","created":int(task.created),"model":spec.model["id"],
-                "system_fingerprint":None,"choices":[{"index":0,"message":{"role":"assistant","content":text},"finish_reason":finish}],
+                "system_fingerprint":None,"choices":[{"index":0,"message":message,"finish_reason":finish}],
                 "usage":usage}
             self.store.update_request(task.id,status="completed",http_status=200,finished_ts=time.time(),
                 duration_ms=round((time.monotonic()-start)*1000),output_bytes=len(text.encode()),prompt_tokens=prompt,completion_tokens=completion,
@@ -128,6 +163,20 @@ class Runtime:
             elif row["status"] in {"interrupted","failed","cancelled"}:
                 result["error"]={"code":row["http_status"] or 503,"message":"工作已結束或因程序重啟中斷；本機不保存原始內容。"}
             return result
+
+    def receipt(self,request_id,caller):
+        try:request_id=str(uuid.UUID(request_id))
+        except ValueError:raise BridgeError(404,"not_found","找不到請求。") from None
+        with self.store.lock:
+            row=self.store.db.execute('select * from requests where key_id=? and client_request_id=?',
+                                      (caller['id'],request_id)).fetchone()
+        if row is None:raise BridgeError(404,"not_found","找不到請求。")
+        result=self.get_job(row['id'],caller)
+        if row['cost_usd'] is not None:
+            result['billing']={'generation_id':'gen-'+row['id'],'model':row['pricing_model'],
+                               'usage':{'prompt_tokens':row['prompt_tokens'],'completion_tokens':row['completion_tokens'],
+                                        'cost':row['cost_usd']}}
+        return result
 
     def cleanup(self):
         for rid,task in list(self.tasks.items()):
@@ -178,9 +227,11 @@ class ApiServer:
                     if not is_post and path=="/health":
                         return self.reply(200,{"ok":True,"version":__version__,"accepting":rt.store.get("accepting")})
                     caller=rt.authorize(self.headers.get("Authorization",""))
+                    if not is_post and path.startswith('/bridge/v1/receipts/'):
+                        return self.reply(200,rt.receipt(path.removeprefix('/bridge/v1/receipts/'),caller))
                     if not is_post and path in {"/api/v1/models","/v1/models"}:
                         data=[{"id":m["id"],"name":m["id"],"object":"model","owned_by":m["provider"],
-                               "supported_parameters":["response_format","reasoning","reasoning_effort"]}
+                               "supported_parameters":["response_format","reasoning","reasoning_effort","tools","tool_choice","parallel_tool_calls"]}
                               for m in rt.store.get("models") if m["provider"] in caller["providers"]]
                         return self.reply(200,{"object":"list","data":data})
                     if not is_post and path.startswith("/bridge/v1/jobs/"):
@@ -188,7 +239,7 @@ class ApiServer:
                         if not len(rid)==32 or any(c not in "0123456789abcdef" for c in rid):
                             raise BridgeError(404,"not_found","找不到工作。")
                         return self.reply(200,rt.get_job(rid,caller))
-                    if not is_post or path not in {"/api/v1/chat/completions","/v1/chat/completions","/bridge/v1/jobs"}:
+                    if not is_post or path not in {"/api/v1/chat/completions","/v1/chat/completions","/bridge/v1/jobs","/bridge/v1/preflight"}:
                         raise BridgeError(404,"not_found","找不到端點。")
                     if self.headers.get("Transfer-Encoding"):
                         raise BridgeError(400,"invalid_request","請使用 Content-Length，P1 不接受 chunked request。")
@@ -202,7 +253,16 @@ class ApiServer:
                     if len(raw)!=length: raise BridgeError(400,"invalid_request","Request body 不完整。")
                     try: body=json.loads(raw)
                     except (ValueError,UnicodeError): raise BridgeError(400,"invalid_request","Request body 不是合法 JSON。") from None
-                    task=rt.submit(body,caller,length)
+                    if path=="/bridge/v1/preflight":
+                        spec=rt.preflight(body,caller)
+                        return self.reply(200,{"ready":True,"model":spec.model["id"],"subscription_verified":False,"expires_in_s":5})
+                    deadline=None
+                    if self.headers.get("X-Bridge-Deadline"):
+                        try:
+                            deadline=float(self.headers["X-Bridge-Deadline"])/1000
+                            if not 0<deadline<1e14:raise ValueError()
+                        except ValueError:raise BridgeError(400,"invalid_request","請求期限無效。") from None
+                    task=rt.submit(body,caller,length,self.headers.get("X-AIEA-Request-Id"),deadline)
                     raw=None; body=None
                     if path=="/bridge/v1/jobs":
                         return self.reply(202,{"id":task.id,"status":"queued","created":int(task.created)})
@@ -214,7 +274,8 @@ class ApiServer:
                         except OSError: task.cancel.set(); return
                     if task.error: raise task.error
                     self.reply(200,task.result,task.pricing_headers)
-                    with rt.lock: rt.tasks.pop(task.id,None)
+                    if not self.headers.get("X-AIEA-Request-Id"):
+                        with rt.lock: rt.tasks.pop(task.id,None)
                 except BridgeError as error:
                     if is_post and task is None:
                         # Even rejected inference requests leave only fixed-category metadata.
@@ -223,7 +284,10 @@ class ApiServer:
                                 "created_ts":time.time(),"finished_ts":time.time(),"status":"rejected",
                                 "http_status":error.status,"error_code":error.category,"input_bytes":max(0,min(length,3_000_000))})
                         except Exception: pass
-                    self.reply(error.status,error.body())
+                    error_body=error.body()
+                    if task is not None and task.done.is_set() and error.status==408:
+                        error_body['error']['metadata']['execution_state']='terminated'
+                    self.reply(error.status,error_body)
                 except (OSError,TimeoutError): pass
                 except Exception: self.reply(500,BridgeError(500,"server","服務無法完成請求。請檢查本機狀態。").body())
         class Server(ThreadingHTTPServer):
