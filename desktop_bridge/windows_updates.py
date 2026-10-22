@@ -239,7 +239,8 @@ def apply(cfg, directory, timeout=180):
         if (asset['Type'] != 'Full' or asset['Version'] != policy['version'] or asset['PackageId'] != cfg['pack_id']
                 or not re.fullmatch('[a-zA-Z0-9_.-]+', name)):
             raise UpdateError('Release feed target mismatch.')
-        manager = velopack.UpdateManager(base, velopack.UpdateOptions(False, 0, cfg['framework_channel']))
+        # A github.com string selects GithubSource, not this immutable static feed.
+        manager = velopack.UpdateManager(velopack.HttpSource(base), velopack.UpdateOptions(False, 0, cfg['framework_channel']))
         info = manager.check_for_updates()
         if (not info or info.TargetFullRelease.Version != policy['version'] or info.TargetFullRelease.FileName != name
                 or info.TargetFullRelease.PackageId != cfg['pack_id'] or info.TargetFullRelease.Size != asset['Size']

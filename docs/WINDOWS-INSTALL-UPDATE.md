@@ -28,6 +28,8 @@ LocalProbe 的 `--console-probe` 只在不可分發包啟用，以隱藏的實�
 
 `update check` 驗證固定公鑰簽署的 policy；`update apply` 再驗一次、下載並驗證完整包，排空本設定檔、備份 metadata SQLite／DPAPI、正常停止此 Bridge，交給 Velopack 套用並用相同 data-dir 重啟。`update status` 顯示重啟後完成結果。沒有 Worker 部署或訂閱登入動作。
 
+0.7.2 修正固定 GitHub Release 網址必須使用 Velopack `HttpSource` 的問題。0.7.0／0.7.1 的檢查可正常顯示新版，但直接套用 GitHub 更新會因 SDK 自動選擇儲存庫來源而失敗，服務與資料不會被停止或清除。這兩版需先正常停止 Bridge，以新版 Setup 在同一原生安裝目錄升級並沿用原 data-dir；既有版本檔案不覆寫。之後使用 0.7.2 的正常簽章更新流程。
+
 程式啟動時與常駐期間每六小時檢查，管理介面亦可手動檢查；有更新時顯示跨頁提示，不自動安裝。GUI 背景檢查失敗不停止現有服務；已驗證最低版本限制會暫停新接單，管理功能與已完成工作的查詢仍開放，不中斷進行中的推論。重啟或之後斷網也保留已取得的限制，不能用一般「恢復接單」略過；完成更新後恢復限制前的接單設定。從未連上更新站的裝置無法得知新限制，不宣稱可離線遠端強制更新。
 
 下載／驗證失敗發生在停止服務前；排空超時恢復原接單狀態。若套用或啟動失敗，`updates/pending.json` 與 metadata 備份保留；不要讓舊版讀取不相容 schema，也不要重播未知請求。結果只在 RAM，更新會清除 RAM 回覆，已知 token／cost receipt 仍在 metadata DB。
