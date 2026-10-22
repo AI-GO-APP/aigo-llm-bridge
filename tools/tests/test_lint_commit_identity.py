@@ -1,5 +1,6 @@
 """Identity metadata follows the existing author-email exception, not a content bypass."""
 import importlib.util
+import hashlib
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location("lint_terms", Path(__file__).resolve().parents[1] / "lint_terms.py")
@@ -29,3 +30,12 @@ def test_malformed_coauthor_is_not_exempt():
 
 def test_body_content_remains_scanned_with_valid_trailer():
     assert hits("Mention blockedidentityqzx.\n\nCo-authored-by: Contributor <safe@example.com>\n")
+
+
+def test_existing_author_baseline_is_bound_to_exact_commit_and_identity(monkeypatch):
+    identity = 'blockedidentityqzx'
+    monkeypatch.setattr(lint,'PUBLISHED_AUTHOR_BASELINE',{'a'*40:hashlib.sha256(identity.encode()).hexdigest()})
+    assert not lint.scan_text('author',lint.commit_author_text('a'*40,identity),patterns)
+    assert lint.scan_text('author',lint.commit_author_text('b'*40,identity),patterns)
+    assert lint.commit_author_text('a'*40,'different identity')=='different identity'
+    assert lint.scan_text('body',identity,patterns)

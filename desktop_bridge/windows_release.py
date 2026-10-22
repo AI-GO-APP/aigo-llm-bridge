@@ -13,18 +13,25 @@ def config():
 
 
 def profile(cfg, explicit=None):
+    def checked(path):
+        selected = Path(path).resolve()
+        if getattr(sys, 'frozen', False):
+            install_root = Path(sys.executable).resolve().parent.parent
+            if (install_root / 'Update.exe').is_file() and selected.is_relative_to(install_root):
+                raise ValueError('Keep the device profile outside the replaceable/uninstallable application directory.')
+        return selected
     if explicit:
-        return Path(explicit).resolve()
+        return checked(explicit)
     if getattr(sys, 'frozen', False):
         binding = Path(sys.executable).resolve().parent.parent / 'windows-profile.json'
         if binding.is_file():
             value = json.loads(binding.read_text(encoding='utf-8'))
             if value['pack_id'] != cfg['pack_id']:
                 raise ValueError('Profile binding belongs to another installer.')
-            return Path(value['data_dir']).resolve()
+            return checked(value['data_dir'])
     if cfg['local_probe']:
         if cfg.get('probe_data_dir'):
-            return Path(cfg['probe_data_dir']).resolve()
+            return checked(cfg['probe_data_dir'])
         return Path(os.environ['LOCALAPPDATA']) / 'AIGO LLM Bridge Probes' / cfg['pack_id'] / 'data'
     from .paths import default_directory
     return default_directory().resolve()

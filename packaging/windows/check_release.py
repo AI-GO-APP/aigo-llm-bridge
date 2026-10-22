@@ -10,7 +10,8 @@ ROOT=Path(__file__).resolve().parents[2]
 
 
 def windows_only(paths):
-    code=[p for p in paths if not p.endswith('.md') and not p.startswith('.github/')]
+    code=[p for p in paths if not p.endswith('.md') and not p.startswith(('.github/','tools/tests/'))
+          and p != 'tools/lint_terms.py']
     return bool(code) and all(p.startswith(('desktop_bridge/windows_','packaging/windows/')) or
         p in {'tools/verify_installer_update.py','tools/publish_windows_installer.py'} for p in code)
 

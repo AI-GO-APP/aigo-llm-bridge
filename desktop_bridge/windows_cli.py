@@ -126,7 +126,11 @@ def main(argv=None):
     if argv[:1] == ['byo']:
         from .byo import main as byo_main
         values = argv[1:]
-        if '--data-dir' not in values:
+        selector = argparse.ArgumentParser(add_help=False)
+        selector.add_argument('--data-dir')
+        selected, _ = selector.parse_known_args(values)
+        profile(cfg, selected.data_dir)
+        if not selected.data_dir:
             values += ['--data-dir', str(profile(cfg))]
         return byo_main(values)
     p = argparse.ArgumentParser(description='Windows LLM Bridge: installer-owned profile and signed updates.')

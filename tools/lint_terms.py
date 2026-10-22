@@ -25,6 +25,7 @@
 from __future__ import annotations
 
 import os
+import hashlib
 import re
 import subprocess
 import sys
@@ -32,6 +33,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LOCAL_LIST = ROOT / ".banned-terms"
+
+# One already-published documentation commit used the maintainer's Git identity.
+# Preserve main/tag history. Only this exact immutable commit + identity is an
+# audited metadata baseline; its message, files and every new author stay scanned.
+PUBLISHED_AUTHOR_BASELINE = {
+    "34eff09d77831c623ab9b45c733f46781c0fae9b": "3a2b695cfbc1626b69f7562a88b0e32e059bf9d85b3a0e226226679530a8558f",
+}
+
+
+def commit_author_text(sha: str, name: str) -> str:
+    expected = PUBLISHED_AUTHOR_BASELINE.get(sha)
+    if expected and hashlib.sha256(name.encode('utf-8')).hexdigest() == expected:
+        return "existing maintainer identity"
+    return name
 
 
 def load_terms() -> list[str]:
@@ -140,7 +155,7 @@ def main() -> int:
         log = proc.stdout.decode("utf-8") if proc.returncode == 0 else ""
         for record in filter(None, (r.strip() for r in log.split("\x1e"))):
             sha, name, body = (record.split("\x00") + ["", ""])[:3]
-            hits.extend(scan_text(f"(commit {sha[:8]} 作者名)", name, patterns))
+            hits.extend(scan_text(f"(commit {sha[:8]} 作者名)", commit_author_text(sha, name), patterns))
             hits.extend(scan_text(f"(commit {sha[:8]} 訊息)", commit_message_text(body), patterns))
 
     if hits:

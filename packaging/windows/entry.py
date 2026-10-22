@@ -30,7 +30,12 @@ def main():
     argv = sys.argv[1:]
     if cfg['local_probe'] and not argv:
         argv = ['--background']
-    if '--data-dir' not in argv:
+    import argparse
+    selector = argparse.ArgumentParser(add_help=False)
+    selector.add_argument('--data-dir')
+    selected, _ = selector.parse_known_args(argv)
+    profile(cfg, selected.data_dir)
+    if not selected.data_dir:
         argv += ['--data-dir', str(profile(cfg))]
     sys.argv = [sys.argv[0], *argv]
     from desktop_bridge import management
