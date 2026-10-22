@@ -34,12 +34,17 @@ jobs:
           python -m venv .desktop-build/venv
           .desktop-build/venv/Scripts/python -m pip install -r packaging/windows/requirements-lock.txt
           dotnet tool install --tool-path "$env:RUNNER_TEMP/bridge-vpk" vpk --version 1.2.161
+      - name: Disposable-runner WebView2 prerequisite
+        shell: pwsh
+        run: ./packaging/windows/ensure_ci_webview.ps1
       - name: Core, policy and relay regression
         shell: pwsh
         run: |
           .desktop-build/venv/Scripts/python -m pytest desktop_bridge/tests packaging/windows/tests -q
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node --test cloudflare/test/relay.test.js
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node --test packaging/windows/tests/platform.test.js
       - name: Real isolated Setup and A-to-B native update
         shell: pwsh
         run: .desktop-build/venv/Scripts/python tools/verify_installer_update.py --output "$env:RUNNER_TEMP/bridge-update-proof" --vpk "$env:RUNNER_TEMP/bridge-vpk/vpk.exe"

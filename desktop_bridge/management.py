@@ -64,6 +64,7 @@ class ManagementServer:
                     return self.reply(403, {"error": "不允許跨來源管理操作。"})
                 path = urlsplit(self.path).path
                 assets = {"/": ("index.html", "text/html; charset=utf-8"),
+                          "/platform.js": ("platform.js", "text/javascript; charset=utf-8"),
                           "/app.js": ("app.js", "text/javascript; charset=utf-8"),
                           "/integration.js": ("integration.js", "text/javascript; charset=utf-8"),
                           "/style.css": ("style.css", "text/css; charset=utf-8")}
@@ -191,8 +192,9 @@ class ManagementServer:
             self.store.set("accepting", data["accepting"])
         elif path == "/manage/auth": self.refresh_auth()
         elif path == "/manage/keys/create":
-            if not isinstance(data.get("providers"), list) or not all(isinstance(p, str) for p in data["providers"]): raise ValueError()
-            kid, token = self.store.create_key(data["label"], data["providers"], int(data["rpm"]))
+            allowed = data.get("providers", ["claude", "codex"])
+            if not isinstance(allowed, list) or not all(isinstance(p, str) for p in allowed): raise ValueError()
+            kid, token = self.store.create_key(data["label"], allowed, int(data.get("rpm", 30)))
             return {"id": kid, "token": token}
         elif path in {"/manage/keys/revoke", "/manage/keys/rotate"}:
             kid = data["id"]

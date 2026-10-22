@@ -15,6 +15,8 @@ def test_shared_runtime_or_mac_changes_still_require_core_gate():
     assert not gate.windows_only(['desktop_bridge/service.py','packaging/windows/entry.py'])
     assert not gate.windows_only(['packaging/macos/build.py'])
     assert not gate.windows_only(['README.md','.github/workflows/ci.yml'])
+    assert not gate.windows_only(['desktop_bridge/web/app.js'])
+    assert gate.windows_only(['desktop_bridge/web/app.js','desktop_bridge/web/platform.js','desktop_bridge/windows_console.py'])
 
 
 def test_installed_profile_cannot_be_deleted_by_native_update_or_uninstall(tmp_path,monkeypatch):

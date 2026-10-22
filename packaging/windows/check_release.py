@@ -10,9 +10,13 @@ ROOT=Path(__file__).resolve().parents[2]
 
 
 def windows_only(paths):
-    code=[p for p in paths if not p.endswith('.md') and not p.startswith(('.github/','tools/tests/'))
+    # Browser-neutral platform seam; only eligible alongside a Windows package change.
+    frontend={'desktop_bridge/web/platform.js','desktop_bridge/web/app.js',
+              'desktop_bridge/web/index.html','desktop_bridge/management.py'}
+    code=[p for p in paths if not p.endswith('.md') and not p.startswith(('.github/','tools/tests/','desktop_bridge/tests/'))
           and p != 'tools/lint_terms.py']
-    return bool(code) and all(p.startswith(('desktop_bridge/windows_','packaging/windows/')) or
+    native=any(p.startswith(('desktop_bridge/windows_','packaging/windows/')) for p in code)
+    return bool(code) and native and all(p.startswith(('desktop_bridge/windows_','packaging/windows/')) or p in frontend or
         p in {'tools/verify_installer_update.py','tools/publish_windows_installer.py'} for p in code)
 
 

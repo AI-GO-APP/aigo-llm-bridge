@@ -103,6 +103,12 @@ def main():
             req=urllib.request.Request('http://127.0.0.1:'+str(port)+'/api/v1/models',headers={'Authorization':'Bearer '+key})
             with opener.open(req,timeout=5) as response:return json.load(response)
         checks['a_original_key_authenticates']=bool(wait(models)['data'])
+        run([installed/'current/AIGO-LLM-Bridge.exe','--console-probe','--data-dir',data],
+            capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=120)
+        console_report=json.loads((data/'windows-console-probe.json').read_text())
+        assert console_report['success'],console_report['stage']
+        checks.update({'console_'+k:v for k,v in console_report['checks'].items()})
+        checks['closed_console_keeps_same_key_service']=bool(models()['data'])
         atomic_json(web/'policy.json',policy_b)
         checks['new_version_detected']=cli(executable,'update','check','--data-dir',data)['latest']=='0.7.1'
         def rejected_update():
@@ -156,9 +162,13 @@ def main():
         except urllib.error.HTTPError as error:
             checks['mandatory_policy_cannot_resume_old_version']=error.code==400 and blocked()
         print('APPLY B (native download and restart)',flush=True)
+        view=subprocess.Popen([str(installed/'current/AIGO-LLM-Bridge.exe'),'--console','--console-hidden',
+            '--data-dir',str(data)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        wait(lambda:json.loads((data/'windows-console.json').read_text()).get('mode')=='webview2')
         cli(executable,'update','apply','--data-dir',data,timeout=180)
         result=wait(lambda:json.loads((data/'updates/last-result.json').read_text()) if (data/'updates/last-result.json').is_file() else None,90)
         checks['native_restarted_to_b']=result['target']=='0.7.1' and cli(executable,'version')['version']=='0.7.1'
+        checks['open_console_exits_for_update']=view.wait(timeout=30)==0
         checks['b_same_key_authenticates']=bool(wait(models)['data'])
         store=Store(data,startup=False)
         checks['same_device']=store.get('device_id')==device

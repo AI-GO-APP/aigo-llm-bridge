@@ -19,7 +19,7 @@
 
 預設真實測試選 Codex 模型，先以 models GET 與訂閱狀態確認；不要呼叫正在使用中的 Claude 來測試。不要聲稱任何 AI IDE 的內建 agent 都相容：須能自訂 Chat Completions base URL、關閉串流與 tools。
 
-驗收完成後另建給我實際服務使用的長效 key：key-create --providers codex --label 'My service' --handoff。此 key 保留有效，僅測試 key 要撤銷。一次性輸出直接交給我保存到服務端 secret，不存 repo／檔案或驗收紀錄。交付 public_url + /api/v1、完整 key 及 integration.prompt，讓我可複製給第三方電腦的 AI IDE／Web IDE。若要放在持久聊天，改交不含 key 的 handoff 訊息，明文 key 由我在本機管理台取得。若 Cloudflare／訂閱／macOS 主機不可用，要分開列出尚未驗證範圍，不得宣稱全流程完成。
+驗收完成後另建給我實際服務使用的長效 key：key-create --label 'My service' --handoff。此 key 保留有效，僅測試 key 要撤銷。一次性輸出直接交給我保存到服務端 secret，不存 repo／檔案或驗收紀錄。交付 public_url + /api/v1、完整 key 及 integration.prompt，讓我可複製給第三方電腦的 AI IDE／Web IDE。若要放在持久聊天，改交不含 key 的 handoff 訊息，明文 key 由我在本機管理台取得。若 Cloudflare／訂閱／macOS 主機不可用，要分開列出尚未驗證範圍，不得宣稱全流程完成。
 ```
 
 repo 使用 `python tools/byo_setup.py ...`；安裝版使用 `BYO-Setup\AIGO-Bridge-Setup.exe ...`。不要將歷史報告中的實測網址當成自己的入口。

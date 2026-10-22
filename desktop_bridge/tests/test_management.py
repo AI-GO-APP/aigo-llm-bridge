@@ -44,7 +44,7 @@ def test_local_boundary_and_static_assets(console):
     assert request(manager, headers={"Host": "rebind.example"})[0] == 403
     assert request(manager, "/manage/accepting", {"accepting": False}, {"Origin":"https://external.example"})[0] == 403
     assert manager.store.get("accepting") is True
-    for path in ("/", "/app.js", "/integration.js", "/style.css"):
+    for path in ("/", "/app.js", "/platform.js", "/integration.js", "/style.css"):
         code, body, headers = request(manager, path, headers={"Authorization":""})
         assert code == 200 and body
         assert "frame-ancestors 'none'" in headers["Content-Security-Policy"]
@@ -69,6 +69,22 @@ def test_key_lifecycle_and_no_secret_readback(console):
     assert request(m, "/manage/keys/revoke", {"id":rotated["id"]})[0] == 200
     assert m.store.authenticate(rotated["token"]) is None
     assert request(m, "/manage/keys/rotate", {"id":rotated["id"]})[0] == 400
+
+
+def test_new_keys_default_to_all_providers_and_future_registered_models(console):
+    m,_=console
+    code,created,_=request(m,'/manage/keys/create',{'label':'All models by default'})
+    assert code==200
+    caller=m.store.authenticate(created['token'])
+    assert caller['providers']==['claude','codex']
+    models=m.store.get('models')+[{'id':'synthetic/new-model','provider':'codex','native':'synthetic-new'}]
+    m.store.set('models',models)
+    assert all(item['provider'] in caller['providers'] for item in models)
+    assert request(m,'/manage/keys/create',{'label':'Explicit empty is invalid','providers':[]})[0]==400
+    _,restricted,_=request(m,'/manage/keys/create',{'label':'Restricted','providers':['codex']})
+    assert m.store.authenticate(restricted['token'])['providers']==['codex']
+    _,rotated,_=request(m,'/manage/keys/rotate',{'id':restricted['id']})
+    assert m.store.authenticate(rotated['token'])['providers']==['codex']
 
 
 def test_settings_validate_before_writing_and_persist(console):
