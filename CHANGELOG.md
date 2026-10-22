@@ -5,6 +5,15 @@
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-10-22
+
+- Windows：preflight、request ID 去重、執行期限及文字工具提案／工具結果歷史；工具仍由呼叫端執行。
+- 新增同 KEY 的唯讀 receipt，復原 RAM 結果與已知 token／cost，不保存原文或重複推論。
+- BYO 升級不重寫相同 transport secret，避免啟用舊 Worker；裝置 URL 與 client KEY 保留。
+- OpenRouter 非等價參數仍明確拒絕，串流與完整 IDE agent 相容性不列為已支援。
+- Windows 真實更新、重啟與訂閱成本核對通過；AI EA 原生安裝 UI 仍獨立待驗，macOS 不發布。
+- 舊 Hosted／worker／Python client 僅同步版本常數，無行為變更或部署。
+
 ## [0.5.0] - 2026-10-22
 
 Windows 新版改採裝置擁有的 BYO Cloudflare 公開 HTTPS 入口，提供本機管理台、長效 API key 及可交給遠端 IDE 的串接訊息。macOS BYO 實機流程仍待驗證，本版只發布 Windows 原生安裝包。
