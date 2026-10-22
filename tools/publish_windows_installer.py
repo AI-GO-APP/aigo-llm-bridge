@@ -18,7 +18,7 @@ from desktop_bridge.windows_updates import canonical, verify, fetch, version
 
 
 def gh(*args,check=True):
-    return subprocess.run(['gh',*map(str,args)],check=check,capture_output=True,text=True)
+    return subprocess.run(['gh',*map(str,args)],check=check,capture_output=True,text=True,encoding='utf-8')
 
 
 def same_release_action(old, new, now=None):

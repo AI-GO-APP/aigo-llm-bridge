@@ -110,3 +110,22 @@ def test_recovery_refuses_changed_schema_then_restores_only_compatible_old_binar
     store.db.execute('drop table fixture_change');store.db.commit();store.close()
     assert updates.recover(cfg,tmp_path)['recovered']
     store=Store(tmp_path,startup=False);assert store.get('accepting');store.close()
+def test_immutable_github_release_uses_explicit_http_source(tmp_path,monkeypatch):
+    """A string chooses GithubSource and 404s; the loopback A/B test cannot catch that."""
+    import hashlib
+    import json
+    import velopack
+    from desktop_bridge import windows_updates as updates
+    raw=json.dumps({'Assets':[{'Type':'Full','Version':'0.7.2','PackageId':'fixture','FileName':'fixture-full.nupkg'}]}).encode()
+    policy={'release_url':'https://github.com/example/project/releases/download/fixed-tag',
+            'feed_sha256':hashlib.sha256(raw).hexdigest(),'version':'0.7.2'}
+    monkeypatch.setattr(updates,'check',lambda *_:{'available':True,'policy':policy})
+    monkeypatch.setattr(updates,'fetch',lambda *_:raw)
+    class ReachedNativeSource(Exception):pass
+    def manager(source,options):
+        assert isinstance(source,velopack.HttpSource)
+        assert options.ExplicitChannel=='windows-x64-internal'
+        raise ReachedNativeSource()
+    monkeypatch.setattr(velopack,'UpdateManager',manager)
+    with pytest.raises(ReachedNativeSource):
+        updates.apply({'pack_id':'fixture','framework_channel':'windows-x64-internal'},tmp_path)

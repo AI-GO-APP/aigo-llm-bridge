@@ -239,7 +239,8 @@ def apply(cfg, directory, timeout=180):
         if (asset['Type'] != 'Full' or asset['Version'] != policy['version'] or asset['PackageId'] != cfg['pack_id']
                 or not re.fullmatch('[a-zA-Z0-9_.-]+', name)):
             raise UpdateError('Release feed target mismatch.')
-        manager = velopack.UpdateManager(base, velopack.UpdateOptions(False, 0, cfg['framework_channel']))
+        # A github.com string selects GithubSource, not this immutable static feed.
+        manager = velopack.UpdateManager(velopack.HttpSource(base), velopack.UpdateOptions(False, 0, cfg['framework_channel']))
         info = manager.check_for_updates()
         if (not info or info.TargetFullRelease.Version != policy['version'] or info.TargetFullRelease.FileName != name
                 or info.TargetFullRelease.PackageId != cfg['pack_id'] or info.TargetFullRelease.Size != asset['Size']
@@ -297,6 +298,8 @@ def apply(cfg, directory, timeout=180):
                     if time.monotonic() >= until:
                         raise UpdateError('Service did not shut down; no process was killed.')
                     time.sleep(.2)
+                from .windows_console import wait_for_exit
+                wait_for_exit(directory)
             manager.apply_updates_and_restart_with_args(info, ['--data-dir', str(directory), '--background'])
             return {'applying': True, 'target': policy['version']}
         except Exception:

@@ -168,7 +168,8 @@ def main():
         cli(executable,'update','apply','--data-dir',data,timeout=180)
         result=wait(lambda:json.loads((data/'updates/last-result.json').read_text()) if (data/'updates/last-result.json').is_file() else None,90)
         checks['native_restarted_to_b']=result['target']=='0.7.1' and cli(executable,'version')['version']=='0.7.1'
-        checks['open_console_exits_for_update']=view.wait(timeout=30)==0
+        checks['open_console_exits_for_update']=(view.wait(timeout=30)==0 and
+            json.loads((data/'windows-console.json').read_text())['mode']=='closed')
         checks['b_same_key_authenticates']=bool(wait(models)['data'])
         store=Store(data,startup=False)
         checks['same_device']=store.get('device_id')==device

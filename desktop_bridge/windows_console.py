@@ -142,6 +142,32 @@ def launch(directory, browser=False):
     return process.pid
 
 
+def wait_for_exit(directory, timeout=20):
+    """Wait for this profile's exact viewer process, not just its released event."""
+    path=Path(directory)/'windows-console.json'
+    if not path.is_file():return
+    pid=json.loads(path.read_text()).get('pid')
+    if type(pid) is not int or pid<=0:return
+    kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+    kernel.OpenProcess.argtypes=[wintypes.DWORD,wintypes.BOOL,wintypes.DWORD];kernel.OpenProcess.restype=wintypes.HANDLE
+    kernel.QueryFullProcessImageNameW.argtypes=[wintypes.HANDLE,wintypes.DWORD,wintypes.LPWSTR,ctypes.POINTER(wintypes.DWORD)]
+    kernel.WaitForSingleObject.argtypes=[wintypes.HANDLE,wintypes.DWORD];kernel.WaitForSingleObject.restype=wintypes.DWORD
+    kernel.CloseHandle.argtypes=[wintypes.HANDLE]
+    process=kernel.OpenProcess(0x101000,False,pid)
+    if not process:
+        if ctypes.get_last_error()==87:return  # Already exited.
+        raise OSError('Cannot verify viewer exit.')
+    try:
+        image=ctypes.create_unicode_buffer(32768);size=wintypes.DWORD(len(image))
+        if not kernel.QueryFullProcessImageNameW(process,0,image,ctypes.byref(size)):
+            raise OSError('Cannot verify viewer identity.')
+        if Path(image.value).resolve()!=Path(sys.executable).resolve().with_name('AIGO-LLM-Bridge.exe'):
+            return  # A stale PID now belongs to another program; never touch it.
+        if kernel.WaitForSingleObject(process,int(timeout*1000))!=0:
+            raise OSError('Viewer did not exit; no process was terminated.')
+    finally:kernel.CloseHandle(process)
+
+
 def ensure_service(directory):
     cfg=config()
     try:
@@ -173,7 +199,7 @@ def run(directory, browser=False, probe=False, hidden=False):
     instance=Instance(directory/'console')
     if not instance.primary:
         instance.notify();instance.close();return 0
-    stopped=threading.Event();window=None
+    stopped=threading.Event();window=None;watcher=None
     try:
         if not runtime_available():raise ValueError('WebView2 runtime not installed.')
         import logging
@@ -206,7 +232,8 @@ def run(directory, browser=False, probe=False, hidden=False):
                 except (OSError,ValueError):
                     window.destroy();break
                 if instance.requested():window.restore();window.show()
-        threading.Thread(target=watch,daemon=True,name='console-owner-watch').start()
+        watcher=threading.Thread(target=watch,daemon=True,name='console-owner-watch')
+        watcher.start()
         if probe:
             from .windows_console_probe import acceptance
             callback=lambda: acceptance(window,api,directory,value)
@@ -226,4 +253,6 @@ def run(directory, browser=False, probe=False, hidden=False):
         _open_browser(session_url(value))
         return 0
     finally:
-        stopped.set();instance.close()
+        stopped.set()
+        if watcher:watcher.join(timeout=2)
+        instance.close()
