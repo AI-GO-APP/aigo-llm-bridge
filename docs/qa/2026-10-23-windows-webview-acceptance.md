@@ -35,3 +35,6 @@ CSV 測試以固定測試檔案路徑代替 Save 對話框的選擇結果，之�
 0.7.1 公開包的匿名下載、實際 Setup、重啟與資料保留 18／18 通過。正式接管 0.6.3→0.7.0 後，才發現 GitHub 上的原生 apply 回 404；原先的 loopback A→B 不會觸發此 SDK 行為。錯誤發生在排空／停止前，接管後的服務已恢復原接單狀態，既有 KEY 與資料保留。
 
 Velopack 把 github.com 的字串來源自動當作 GithubSource，無法代表固定 Release 目錄。以官方 `HttpSource` 明確讀取同一真 HTTPS feed，已成功取得目標 0.7.1；0.7.2 修正呼叫並加入使用實際 SDK source 類別的回歸保護。同時固定 Windows 發布工具 subprocess 的 UTF-8 解碼。142 passed、2 skipped，Node 9 passed。已發布 0.7.1 產物保持不可變；0.7.0／0.7.1 需要一次 Setup 或受控簽章修復流程，不能宣稱舊客戶端自行更新成功。正式最終版本及公開 HTTPS 套用結果記在 Release 驗收紀錄。
+
+
+0.7.2 回歸另發現「視窗事件已釋放，但程序仍在結束」的競爭；Velopack log 明確記錄強制終止該 viewer PID。更新現在會核對本設定檔 viewer 的 PID 及精確執行檔，等待 OS 程序退出後才套用，並等待自有 watcher 結束；不終止其他設定檔或供應商程序。驗收同時要求視窗收據為 closed 且退出碼為 0，不能只用事件釋放或更新成功判定關窗通過。

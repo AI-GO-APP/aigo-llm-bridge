@@ -298,6 +298,8 @@ def apply(cfg, directory, timeout=180):
                     if time.monotonic() >= until:
                         raise UpdateError('Service did not shut down; no process was killed.')
                     time.sleep(.2)
+                from .windows_console import wait_for_exit
+                wait_for_exit(directory)
             manager.apply_updates_and_restart_with_args(info, ['--data-dir', str(directory), '--background'])
             return {'applying': True, 'target': policy['version']}
         except Exception:
