@@ -42,7 +42,7 @@ Cloud deadline 下傳供應端，包含排隊與執行；request ID 隔離於 AP
 
 1. 新Mac從repo的[安裝流程](CROSS-PLATFORM-INSTALL.md)建立自己的裝置profile與BYO Worker，先核對安裝者自己的Cloudflare帳戶。新裝置有自己的device_id、HTTPS URL與長效client key；不要搬Windows DPAPI、覆寫原Windows profile或將原網址當預設。Codex訂閱登入與裝置key獨立，同一profile切訂閱不應改URL/key，須在Mac實測。
 2. 由Mac擁有者完成Codex訂閱登入，檢查Keychain可用。先從異地GET models、preflight、真實POST驗外部HTTPS，不以本機localhost或relay在線當成功。模型依實際可用清單與OpenRouter對應牌價設定，不沿用其他裝置的模型假設。
-3. 新增獨立Cloud secret（例如AIEA_BRIDGE_KEY_MAC_PRIMARY）；key僅在可信服務端secret安全輸入，不貼聊天／repo／log。registry可用新裝置別名bridge:mac-primary，base_url只填origin；依實際模型明確設定主串、Jev用途與其他舊模型映射。保留舊Windows registry設定與secret作回退，Mac尚未驗收前不撤銷原key。
-4. 正式切換前用獨立合成帳號與候選設定驗文字、JSON、多輪、完整131工具／結果、typed判斷與Gate次要題／必要題、錯誤不登出、已知錯誤成本與receipt。逐筆讀回實際provider、實際model、token、cost_usd、quota delta及預扣歸零；不能只看200或答案。只存metadata，清理本輪帳號與暫用key。
+3. 新增獨立Cloud secret（例如AIEA_BRIDGE_KEY_MAC_PRIMARY）；key僅在可信服務端secret安全輸入，不貼聊天／repo／log。registry可用新裝置別名bridge:mac-primary，base_url只填origin。候選階段只加測試別名，例如probe/mac-main→Mac實際主模型、probe/mac-judge→Mac實際小模型，不搶走舊Windows的正式模型映射。Cloud先按request model篩選候選，因此獨立測試可直接用這些別名，同一Cloud URL／原版client即可，其他正式呼叫仍走原供應端。保留舊Windows registry與secret，Mac尚未驗收前不撤銷原key。
+4. 正式切換前用獨立合成帳號與候選別名驗文字、JSON、多輪、完整131工具／結果、typed判斷與Gate次要題／必要題、錯誤不登出、已知錯誤成本與receipt。Gate的judge_model可在驗收程式設定為測試別名，不修改AI EA產品程式。逐筆讀回實際provider、實際model、token、cost_usd、quota delta及預扣歸零；不能只看200或答案。只存metadata，清理本輪帳號與暫用key。
 5. 驗同一profile重啟Bridge、更新及同帳戶重部署後URL/key不變；測斷網重連、睡眠／喚醒、CLI登入失效及Keychain鎖定。LaunchAgent是登入後啟動，不是未登入開機即服務；常駐機需供電與合適睡眠設定，須由Mac擁有者決定。未知已派送工作不得在重連時重播。
 6. 驗收後才將Cloud正式registry切到Mac，保留OpenRouter fallback。先排空Windows已派送工作，再核對正式流量的provider和成本帳；失敗時恢復舊registry／secret，或停用Bridge切回OpenRouter。不改會員原帳本，也不自動輪替原Windows key。雙方確認穩定後才決定舊機退役。
