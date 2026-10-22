@@ -87,6 +87,16 @@ def test_settings_validate_before_writing_and_persist(console):
     reader.close()
 
 
+def test_settings_save_preserves_default_provider_and_explicit_owner_choice(console):
+    m,_=console
+    assert m.store.get('default_model')=='openai/gpt-6-astra'
+    assert request(m,'/manage/settings',{**m.state()['settings'],'startup':False})[0]==200
+    assert m.store.get('default_model')=='openai/gpt-6-astra'
+    m.store.set('default_model','anthropic/claude-haiku-4.5')
+    assert request(m,'/manage/settings',{**m.state()['settings'],'startup':False})[0]==200
+    assert m.store.get('default_model')=='anthropic/claude-haiku-4.5'
+
+
 def test_filters_export_clear_and_pause(console):
     m, done = console
     import time

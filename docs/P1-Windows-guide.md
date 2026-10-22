@@ -70,7 +70,7 @@ jobs 結果只在本機 RAM 約保留 10 分鐘。過期 GET 以 HTTP 200 回工
 
 ## 相容範圍
 
-沿用 OpenRouter 支援欄位的名稱與型別，JSON object 欄位順序不作協定要求。省略 model 使用本機第一個模型；auto／openrouter/auto 為此預設模型別名，沒有付費 fallback。預設模型：`anthropic/claude-haiku-4.5`、`openai/gpt-6-astra`。登錄模型不代表訂閱一定有使用權。
+沿用 OpenRouter 支援欄位的名稱與型別，JSON object 欄位順序不作協定要求。省略 model 使用已保存的預設模型；新安裝預設 `openai/gpt-6-astra`（Codex），一般設定儲存不會改掉既有明確選擇。auto／openrouter/auto 是此預設模型的別名，沒有付費 fallback。預設登錄 `anthropic/claude-haiku-4.5` 與 `openai/gpt-6-astra`。登錄模型不代表訂閱一定有使用權。
 
 | 參數／功能 | P1 |
 |---|---|

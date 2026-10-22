@@ -33,6 +33,14 @@ def test_failed_handoff_creates_no_orphan_key(tmp_path,capsys):
     store=Store(tmp_path,startup=False);assert not store.keys();store.close();capsys.readouterr()
 
 
+def test_new_install_default_never_calls_claude_when_model_is_omitted(tmp_path):
+    from desktop_bridge.contract import validate
+    store=Store(tmp_path);_,key=store.create_key('codex only',['codex'])
+    spec=validate({'messages':[{'role':'user','content':'synthetic'}]},store,store.authenticate(key))
+    assert spec.model['provider']=='codex'
+    store.close()
+
+
 def test_windows_npm_codex_uses_native_binary_without_running_shell(tmp_path):
     from desktop_bridge.providers import executable
     from desktop_bridge.errors import BridgeError

@@ -16,12 +16,17 @@ DEFAULT_MODELS = [
     {"id": "openai/gpt-6-astra", "provider": "codex", "native": "gpt-6-astra"},
 ]
 DEFAULTS = {"port": 8920, "accepting": True, "retention_days": 30, "timeout_s": 180,
-            "public_url": "", "default_model": DEFAULT_MODELS[0]["id"], "models": DEFAULT_MODELS,
+            "public_url": "", "default_model": DEFAULT_MODELS[1]["id"], "models": DEFAULT_MODELS,
             "claude_path": "", "codex_path": "", "tunnel_kind": "none", "tunnel_name": "", "relay_enabled":False}
 DEFAULTS.update(device_id="",cloudflare_account_id="",cloudflare_worker_name="")
 LOG_COLUMNS = ("id", "key_id", "model", "provider", "created_ts", "started_ts", "finished_ts",
                "status", "http_status", "error_code", "duration_ms", "input_bytes", "output_bytes",
                "prompt_tokens", "completion_tokens", "cost_usd", "pricing_model", "pricing_fetched_ts")
+
+
+def keep_default(models,current):
+    if any(m['id']==current for m in models):return current
+    return next((m['id'] for m in models if m['provider']=='codex'),models[0]['id'])
 
 
 class Store:

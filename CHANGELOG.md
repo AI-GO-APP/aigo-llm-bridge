@@ -24,6 +24,7 @@ Windows 新版改採裝置擁有的 BYO Cloudflare 公開 HTTPS 入口，提供�
 - Windows CI 實際建置、原生 EXE 隔離 smoke、文件連結及隱私檢查，發布 manifest 含來源 commit 與 SHA256。
 
 ### Fixed
+- 新設定檔與新建 UI key 預設 Codex；一般設定儲存保留既有明確的預設模型，不意外切到 Claude。
 - Windows 中文 CLI 輸出統一 UTF-8；Python 呼叫端需使用有效 CA bundle，保留 TLS 驗證。
 
 

@@ -79,4 +79,3 @@ class Relay:
                 result=None
             except Exception:
                 self.state="回傳中斷／等待下一筆請求"
-

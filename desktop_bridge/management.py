@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
 from . import __version__, providers, secret
-from .store import LOG_COLUMNS
+from .store import LOG_COLUMNS,keep_default
 from .tunnel import Tunnel
 from .connection_test import probe
 from .handoff import integration
@@ -240,7 +240,7 @@ class ManagementServer:
         if len({m["id"] for m in clean}) != len(clean): raise ValueError()
         if type(data.get("startup")) is not bool or type(data.get("relay_enabled")) is not bool: raise ValueError()
         if data["relay_enabled"] and (not values["public_url"] or not secret.load(self.store.directory)): raise ValueError()
-        values.update(models=clean, default_model=clean[0]["id"], relay_enabled=data["relay_enabled"])
+        values.update(models=clean, default_model=keep_default(clean,self.store.get('default_model')), relay_enabled=data["relay_enabled"])
         old_url, old_relay = self.store.get("public_url"), self.store.get("relay_enabled")
         if data["startup"] != startup_enabled(self.store.directory): set_startup(data["startup"], self.store.directory)
         with self.store.lock, self.store.db:

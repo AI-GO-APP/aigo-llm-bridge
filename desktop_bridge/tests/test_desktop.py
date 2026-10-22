@@ -153,7 +153,7 @@ def test_response_format_failure_is_not_success(system):
 def test_claude_history_rejected_and_codex_preserved(system):
     s,rt,api,key,calls=system
     history={"messages":[{"role":"user","content":"a"},{"role":"assistant","content":"b"},{"role":"user","content":"c"}]}
-    assert request(api,key,history)[0]==400
+    assert request(api,key,{**history,'model':'anthropic/claude-haiku-4.5'})[0]==400
     assert request(api,key,{**history,"model":"openai/gpt-6-astra"})[0]==200
     assert len(calls[-1].messages)==3
 

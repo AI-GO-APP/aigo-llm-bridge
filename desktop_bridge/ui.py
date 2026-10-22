@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 from . import __version__, providers, secret
 from .tunnel import Tunnel
 from .windows import startup_enabled,set_startup
+from .store import keep_default
 
 
 def date(ts): return time.strftime("%m/%d %H:%M:%S",time.localtime(ts)) if ts else "—"
@@ -216,7 +217,8 @@ class App:
             if not models or len({m["id"] for m in models})!=len(models): raise ValueError("請至少登錄一個模型，且 slug 不可重複。")
             if os.name=="nt": set_startup(self.autostart.get(),self.store.directory)
             for name,value in values.items(): self.store.set(name,value)
-            self.store.set("models",models); self.store.set("default_model",models[0]["id"]); self.store.prune()
+            default=keep_default(models,self.store.get('default_model'))
+            self.store.set("models",models); self.store.set("default_model",default); self.store.prune()
             self.store.set("relay_enabled",self.relay_enabled.get())
             if self.relay:
                 self.relay.stop()

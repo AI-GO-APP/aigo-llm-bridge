@@ -38,7 +38,7 @@ $headers = @{ Authorization = 'Bearer ' + $created.key }
 # 首次 agent poll 最多約 20 秒；若剛建立 key 暫回 401，稍等重試。
 Invoke-RestMethod ($status.public_url + '/health')
 Invoke-RestMethod ($status.public_url + '/api/v1/models') -Headers $headers
-$body = @{model='anthropic/claude-haiku-4.5'; messages=@(@{role='user';content='Reply OK.'}); stream=$false} | ConvertTo-Json -Depth 8
+$body = @{model='openai/gpt-6-astra'; messages=@(@{role='user';content='Reply OK.'}); stream=$false} | ConvertTo-Json -Depth 8
 Invoke-RestMethod ($status.public_url + '/api/v1/chat/completions') -Method Post -ContentType 'application/json' -Headers $headers -Body $body
 ```
 
