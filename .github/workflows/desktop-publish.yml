@@ -50,8 +50,15 @@ jobs:
           assert package.name == f'aigo-llm-bridge-{target}-{version}.zip'
           assert package.stat().st_size == manifest['size']
           assert hashlib.sha256(package.read_bytes()).hexdigest() == manifest['sha256']
+          if target == 'windows':
+              assert manifest['format'] == 'windows-native-byo' and manifest['requires_python'] is False
           tag = f'desktop-{target}-v{version}'
+          assets = [str(package), str(root / f'{target}-manifest.json')]
+          if target == 'windows':
+              checksum = root / (package.name + '.sha256')
+              assert checksum.read_text().strip() == manifest['sha256'] + '  ' + package.name
+              assets.append(str(checksum))
           subprocess.run(['gh', 'release', 'create', tag, '--target', commit, '--prerelease',
-                          '--title', tag, '--notes', '個人本機端點原始碼安裝包。需要 Python 3.10+ 與已登入的 CLI；未簽章。',
-                          str(package), str(root / f'{target}-manifest.json')], check=True)
+                          '--title', tag, '--notes', ('Windows BYO Cloudflare 原生安裝包。部署需要 Node.js 22+ 與自己的 Cloudflare 帳戶；CLI 訂閱自行登入。未簽章。' if target == 'windows' else '個人本機端點原始碼安裝包。需要 Python 3.10+ 與已登入的 CLI；未簽章。'),
+                          *assets], check=True)
           PY

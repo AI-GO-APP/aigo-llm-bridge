@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light"><title>LLM Bridge · 管理台</title>
+  <link rel="stylesheet" href="/style.css"><script src="/integration.js" defer></script><script src="/app.js" defer></script>
+</head>
+<body>
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+<symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="8" r="5"/><path d="m12 12 9 9m-4-4 3-3m-6 0 3-3"/></symbol>
+<symbol id="i-pulse" viewBox="0 0 24 24"><path d="M2 12h5l3-8 4 16 3-8h5"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="m12 3 9 5v9l-9 5-9-5V8Zm0 10v9M3 8l9 5 9-5M8 5l9 5"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h16M4 18h16M8 3v6m8 6v6"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="18" r="2"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="m10 14 4-4m-6 7-1 1a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0m0 10a4 4 0 0 0 6 0l5-5a4 4 0 0 0-6-6l-1 1"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Zm-4 9 3 3 5-6"/></symbol>
+</defs></svg>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#overview" aria-label="LLM Bridge 首頁"><span class="brand-mark">b<span>•</span></span><span>LLM Bridge<small>AI GO / LOCAL CONSOLE</small></span></a>
+    <div class="workspace"><span class="device-icon">⌘</span><div>本機工作空間<small>Personal workspace</small></div><span class="tiny-dot"></span></div>
+    <div class="nav-caption">工作空間</div>
+    <nav aria-label="主要導覽">
+      <button data-page="overview" class="nav-item active"><svg><use href="#i-grid"/></svg>總覽</button>
+      <button data-page="integration" class="nav-item"><svg><use href="#i-link"/></svg>串接指南</button>
+      <button data-page="keys" class="nav-item"><svg><use href="#i-key"/></svg>API 金鑰<span id="nav-key-count" class="nav-count">—</span></button>
+      <button data-page="logs" class="nav-item"><svg><use href="#i-pulse"/></svg>請求紀錄</button>
+      <button data-page="models" class="nav-item"><svg><use href="#i-box"/></svg>模型管理</button>
+      <button data-page="settings" class="nav-item"><svg><use href="#i-settings"/></svg>連線與設定</button>
+    </nav>
+    <div class="sidebar-bottom"><div class="local-note"><svg><use href="#i-shield"/></svg><div>在你的電腦上執行<small>關閉此頁，服務仍持續運作。</small></div></div><button id="shutdown" class="quiet">結束 Bridge <span>↗</span></button><div class="sidebar-version"><span>AI GO</span><span id="version">—</span></div></div>
+  </aside>
+  <div class="main-shell">
+    <header class="topbar"><div class="breadcrumb">工作空間 <span>/</span> <strong id="crumb">總覽</strong></div><div class="topbar-right"><span id="sync-label" class="sync-label">連線中</span><span id="service-badge" class="badge neutral"><i></i>正在連線</span></div></header>
+    <main id="main">
+      <div id="preview-notice" class="preview-notice" hidden>隔離預覽工作空間 · 此頁使用獨立的金鑰、設定與紀錄。</div>
+      <div id="connection-error" class="alert" role="alert" hidden></div>
+      <section id="page-overview" class="page">
+        <div class="page-heading"><div><div class="eyebrow">YOUR SUBSCRIPTIONS, CONNECTED</div><h1>讓模型，接上你的服務。</h1><p>從這裡掌握連線、管理存取，開始你的下一次推論。</p></div><button class="primary" id="connect-guide">接入服務 <svg><use href="#i-arrow"/></svg></button></div>
+        <div class="metrics">
+          <article class="metric"><div class="metric-top">有效金鑰<svg><use href="#i-key"/></svg></div><strong id="metric-keys">—</strong><small>獨立授權，隨時撤銷</small></article>
+          <article class="metric"><div class="metric-top">進行中請求<svg><use href="#i-pulse"/></svg></div><strong id="metric-active">—</strong><small id="queue-detail">排隊與執行中的工作</small></article>
+          <article class="metric"><div class="metric-top">已完成請求<svg><use href="#i-grid"/></svg></div><strong id="metric-completed">—</strong><small>目前保留的請求紀錄</small></article>
+          <article class="metric"><div class="metric-top">可用訂閱<svg><use href="#i-box"/></svg></div><strong><span id="metric-providers">—</span><em>/ 2</em></strong><small>CLI 登入狀態</small></article>
+        </div>
+        <div class="overview-columns">
+          <article class="card connection-card"><div class="card-heading"><div><span class="eyebrow">CONNECTION</span><h2>你的 API 入口</h2></div><span class="badge neutral" id="endpoint-kind">本機</span></div><p>在呼叫服務中設定 Base URL，搭配專屬金鑰即可開始。</p><label class="field-label" for="endpoint">BASE URL</label><div class="endpoint-row"><input id="endpoint" readonly aria-label="Base URL"><button id="copy-endpoint" class="icon-button" aria-label="複製 Base URL"><svg><use href="#i-copy"/></svg></button></div><div class="connection-path"><div><span class="path-icon">↗</span><strong>你的服務</strong><small>API 請求</small></div><span class="path-line"></span><div><span class="path-icon bridge">b.</span><strong>LLM Bridge</strong><small id="path-transport">本機入口</small></div><span class="path-line"></span><div><span class="path-icon">✳</span><strong>模型訂閱</strong><small>Claude / Codex</small></div></div><div class="connection-foot"><span id="transport-state">正在取得連線狀態</span><button class="text-button" data-goto="settings">管理連線 ↗</button></div></article>
+          <article class="card providers-card"><div class="card-heading"><div><span class="eyebrow">PROVIDERS</span><h2>模型來源</h2></div><button id="refresh-auth" class="text-button">重新檢查 ↻</button></div><div class="provider"><span class="provider-logo claude">✳</span><div><h3>Claude Code</h3><p>Anthropic 訂閱</p></div><span id="claude-status" class="badge neutral">檢查中</span></div><div class="provider"><span class="provider-logo codex">◈</span><div><h3>Codex</h3><p>OpenAI 訂閱</p></div><span id="codex-status" class="badge neutral">檢查中</span></div><div class="provider-hint"><svg><use href="#i-shield"/></svg><p>使用本機既有登入。每次推論以獨立工作執行，不接續你的 CLI 對話。</p></div></article>
+        </div>
+        <article class="card activity-card"><div class="card-heading"><div><h2>最近請求</h2><p>追蹤執行狀態，不儲存對話原文。</p></div><button class="text-button" data-goto="logs">查看全部 <span>→</span></button></div><div id="recent-logs" class="table-wrap"></div></article>
+        <div class="overview-footer"><span><i class="tiny-dot"></i> <span id="runtime-note">本機服務正在啟動</span></span><button id="pause" class="secondary compact">暫停接單</button></div>
+      </section>
+      <section id="page-integration" class="page" hidden>
+        <div class="page-heading"><div><div class="eyebrow">CONNECT YOUR SERVICE</div><h1>串接指南</h1><p>選擇模型，複製範例，讓你的服務開始對話。</p></div><button id="copy-integration" class="primary">複製串接資訊 <svg><use href="#i-copy"/></svg></button></div>
+        <article class="card integration-endpoint"><div class="card-heading"><div><h2>1. 設定 API 入口</h2><p id="integration-transport"></p></div><span class="badge neutral">BASE URL</span></div><div class="endpoint-row"><input id="integration-endpoint" readonly aria-label="串接 Base URL"><button id="copy-integration-endpoint" class="secondary compact">複製網址</button></div><div class="integration-auth"><code>Authorization: Bearer YOUR_API_KEY</code><p>使用已保存的 API 金鑰，並設定環境變數 <code>LLM_BRIDGE_KEY</code>。既有金鑰無法再次顯示。</p><button class="text-button" data-goto="keys">管理 API 金鑰 →</button></div></article>
+        <article class="card integration-models"><div class="card-heading"><div><h2>2. 選擇可用模型</h2><p>依目前模型設定列出；實際可用性取決於金鑰權限與訂閱。登入狀態不代表已取得所有模型權限。</p></div></div><div id="integration-models"></div></article>
+        <article class="card connection-test-card"><div class="card-heading"><div><h2>3. 測試連線</h2><p>透過上方 Base URL，依序向 Claude 與 Codex 各發送一筆測試訊息。</p></div></div>
+          <form id="connection-test-form" autocomplete="off"><div class="test-key-row"><label>API 金鑰<input id="test-api-key" type="password" autocomplete="off" spellcheck="false" maxlength="256" required placeholder="貼上已保存的 API 金鑰"></label><button id="test-connection" class="primary" type="submit">測試 Claude 與 Codex</button></div><div class="test-model-options"><label>Claude 測試模型<select id="test-model-claude"></select></label><label>Codex 測試模型<select id="test-model-codex"></select></label></div></form>
+          <p class="test-privacy">金鑰僅用於當次測試，送出後清空輸入框，不保存到設定或紀錄。每個來源最多等待 60 秒；測試會使用少量訂閱額度。</p><p id="test-run-note" class="test-run-note" role="status">尚未測試。回應時間包含網路傳輸、排隊與模型推論。</p><div id="connection-test-results" class="test-results" aria-live="polite"></div>
+        </article>
+        <article class="card integration-example"><div class="card-heading"><div><h2>4. 複製呼叫範例</h2><p>範例從環境變數讀取金鑰，使用合成訊息驗證回應。</p></div><button id="copy-example" class="secondary compact">複製範例</button></div><div class="example-options"><label>模型<select id="example-model" aria-label="範例模型"></select></label><label>語言<select id="example-format"><option value="powershell">PowerShell（Windows）</option><option value="curl">cURL（Bash / zsh）</option><option value="python">Python 3</option></select></label><label>操作<select id="example-operation"><option value="chat">發送訊息 · POST</option><option value="models">查詢模型 · GET</option></select></label></div><pre class="code-block example-code" tabindex="0" aria-label="呼叫範例"><code id="example-code"></code></pre><div class="table-note">支援 messages 與 stream: false；目前不支援串流、tools、temperature、max_tokens。請保持 Bridge 執行中，且對應的 CLI 訂閱已登入。</div></article>
+      </section>
+      <section id="page-keys" class="page" hidden><div class="page-heading"><div><div class="eyebrow">ACCESS CONTROL</div><h1>API 金鑰</h1><p>為每個服務建立獨立金鑰，清楚掌握使用範圍。</p></div><button id="create-key" class="primary">＋ 建立金鑰</button></div><div class="info-strip"><svg><use href="#i-shield"/></svg>完整金鑰僅在建立時顯示一次。預設不會到期，可隨時輪替或撤銷。</div><article class="card"><div class="card-heading"><h2>服務存取權</h2><span id="key-total" class="muted"></span></div><div id="keys-list" class="table-wrap"></div></article></section>
+      <section id="page-logs" class="page" hidden><div class="page-heading"><div><div class="eyebrow">OBSERVABILITY</div><h1>請求紀錄</h1><p>從請求到完成，掌握每一次推論的狀態。</p></div><button id="export" class="secondary">↓ 匯出 CSV</button></div><article class="card"><div class="filters"><label>狀態<select id="log-status"><option value="">全部狀態</option value="queued">排隊中</option><option value="running">執行中</option><option value="completed">已完成</option><option value="failed">失敗</option><option value="rejected">已拒絕</option><option value="cancelled">已取消</option><option value="interrupted">已中斷</option></select></label><label>來源<select id="log-provider"><option value="">全部來源</option><option value="claude">Claude</option><option value="codex">Codex</option></select></label><button id="clear-logs" class="text-button danger">清除已結束紀錄</button></div><div id="all-logs" class="table-wrap"></div><div class="table-note">畫面最多顯示最新 500 筆；匯出最多 10,000 筆。僅保留中繼資料，不包含訊息、附件或回應原文。</div></article></section>
+      <section id="page-models" class="page" hidden><div class="page-heading"><div><div class="eyebrow">MODEL REGISTRY</div><h1>模型管理</h1><p>將呼叫端的模型名稱，對應到本機 CLI 使用的模型。</p></div><button id="save-models" class="primary">儲存模型</button></div><div class="info-strip">第一個模型會作為預設值。登錄模型不代表目前訂閱已取得該模型的使用權。</div><article class="card"><div class="card-heading"><h2>模型對應</h2><button id="add-model" class="secondary compact">＋ 新增模型</button></div><div id="model-editor"></div></article></section>
+      <section id="page-settings" class="page" hidden><div class="page-heading"><div><div class="eyebrow">CONFIGURATION</div><h1>連線與設定</h1><p>設定公開入口與本機執行方式。</p></div><button type="submit" form="settings-form" class="primary">儲存設定</button></div><form id="settings-form"><article class="card settings-card"><div class="section-description"><h2>公開連線</h2><p>讓自己的服務透過固定 HTTPS 網址連入。</p></div><div class="settings-fields"><label>固定公開網址<input name="public_url" type="url" placeholder="https://your-bridge.workers.dev"><small>只填網址來源，不含 /api/v1。設定網址後仍須完成雲端配對或 Tunnel 連線。</small></label><label class="check-label"><input name="relay_enabled" type="checkbox">啟用 Cloudflare workers.dev 轉接</label><div class="inline-actions"><button type="button" id="pair-relay" class="secondary compact">設定裝置配對 key</button><span id="relay-detail" class="muted"></span></div><details><summary>進階：Named Tunnel</summary><label>名稱或 UUID<input name="tunnel_name" placeholder="已建立的 Cloudflare Tunnel"></label><div class="inline-actions"><button type="button" id="start-tunnel" class="secondary compact">啟動已儲存的 Tunnel</button><button type="button" id="stop-tunnel" class="secondary compact">停止</button><span id="tunnel-detail" class="muted"></span></div></details></div></article><article class="card settings-card"><div class="section-description"><h2>執行偏好</h2><p>管理本機服務、工作時限與資料保留。</p></div><div class="settings-fields"><div class="field-grid"><label>本機 API 連接埠<input name="port" type="number" min="1024" max="65535" required><small>修改後重啟 Bridge 生效</small></label><label>紀錄保存天數<input name="retention_days" type="number" min="1" max="365" required></label><label>工作時限（秒）<input name="timeout_s" type="number" min="10" max="1800" required></label></div><label class="check-label"><input name="startup" type="checkbox">登入 Windows 後在背景自動啟動</label></div></article><article class="card settings-card"><div class="section-description"><h2>CLI 執行檔</h2><p>留空時自動偵測本機安裝位置。</p></div><div class="settings-fields"><label>Claude<input name="claude_path" placeholder="自動偵測原生執行檔"></label><label>Codex<input name="codex_path" placeholder="自動偵測原生執行檔"></label></div></article></form></section>
+      <footer class="main-footer"><span>LLM Bridge <span class="footer-slash">/</span> Your models. Your workspace.</span><span>僅本機可存取管理台</span></footer>
+    </main>
+  </div>
+</div>
+<dialog id="modal"><div class="modal-header"><h2 id="modal-title"></h2><button id="close-modal" class="icon-button" aria-label="關閉對話框">×</button></div><div id="modal-body"></div></dialog>
+<div id="toast" role="status" hidden></div>
+</body></html>

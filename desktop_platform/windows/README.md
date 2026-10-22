@@ -1,3 +1,7 @@
+# Windows BYO 入口
+
+Windows 新版請使用 [原生 ZIP 與 BYO 指引](../../docs/BYO-QUICKSTART.md)，或 [repo 安裝器](../../docs/CROSS-PLATFORM-INSTALL.md)。下方舊版個人端點僅供既有使用者維護，不含 Cloudflare 公開入口、長效 key 管理或成本換算。Windows release 已改用原生 BYO 包，與 macOS 分開發布。
+
 # Windows 安裝與維護
 
 Python 3.10+；已在 Windows 以自己的帳號登入 Claude Code／Codex。安裝包不含 Python 或 CLI。

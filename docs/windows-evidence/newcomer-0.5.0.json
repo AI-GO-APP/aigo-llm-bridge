@@ -1,0 +1,109 @@
+{
+  "method": "Windows source installer and independent HTTPS consumer subprocess",
+  "complete": true,
+  "computer_use_used": false,
+  "macos": "pending_real_machine_validation",
+  "cases": [
+    {
+      "case": "clean_repo_install_has_no_default_endpoint_or_keys",
+      "success": true,
+      "version": "0.5.0"
+    },
+    {
+      "case": "prerequisites_and_codex_subscription_ready",
+      "success": true
+    },
+    {
+      "case": "new_owner_worker_paired",
+      "success": true
+    },
+    {
+      "case": "one_time_message_has_own_endpoint_key_and_codex",
+      "success": true
+    },
+    {
+      "case": "later_message_cannot_read_key",
+      "success": true
+    },
+    {
+      "case": "independent_consumer_real_https",
+      "success": true,
+      "models_get": 200,
+      "chat_post": 200,
+      "synthetic_reply_matches": true,
+      "usage_cost": 0.08695,
+      "prompt_tokens": 8565,
+      "completion_tokens": 26,
+      "unsupported_parameter_status": 400,
+      "model": "openai/gpt-6-astra"
+    },
+    {
+      "case": "source_update_reuses_profile",
+      "success": true
+    },
+    {
+      "case": "update_redeploy_restart_preserves_url_and_same_key",
+      "success": true
+    },
+    {
+      "case": "same_consumer_after_update_and_redeploy",
+      "success": true,
+      "models_get": 200,
+      "chat_post": 200,
+      "synthetic_reply_matches": true,
+      "usage_cost": 0.021326,
+      "prompt_tokens": 8569,
+      "completion_tokens": 26,
+      "unsupported_parameter_status": 400,
+      "model": "openai/gpt-6-astra"
+    },
+    {
+      "case": "revoked_consumer_key_is_401",
+      "success": true
+    },
+    {
+      "case": "profile_contains_neither_plain_key_nor_request",
+      "success": true,
+      "files_scanned": 7
+    },
+    {
+      "case": "existing_startup_shortcuts_and_claude_untouched",
+      "success": true,
+      "claude_processes_preserved": 40
+    },
+    {
+      "case": "production_windows_install_manifest_unchanged",
+      "success": true
+    }
+  ],
+  "readiness": [
+    [
+      {
+        "status": 401,
+        "error_type": "authentication"
+      },
+      {
+        "status": 200,
+        "error_type": null
+      }
+    ],
+    [
+      {
+        "status": 503,
+        "error_type": "device_restarted"
+      },
+      {
+        "status": 200,
+        "error_type": null
+      }
+    ]
+  ],
+  "cli_privacy": [
+    {
+      "case": "no_synthetic_prompt_in_changed_cli_files",
+      "success": true,
+      "changed_files_scanned": 12,
+      "marker_hits": 0
+    }
+  ]
+}
