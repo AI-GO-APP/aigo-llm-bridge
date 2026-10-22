@@ -14,13 +14,24 @@ def main():
         import json
         import certifi
         import jsonschema
+        import re
         from pathlib import Path
         from desktop_bridge.byo import template_directory
         # Resolve the actual shared resource layout, including the deploy template.
         result = {'version': cfg['version'], 'pack_id': cfg['pack_id'],
                   'resources': (Path(sys._MEIPASS) / 'desktop_bridge/web/index.html').is_file(),
                   'ca_bundle': Path(certifi.where()).is_file()}
-        if not result['resources'] or not result['ca_bundle']:
+        root = Path(sys._MEIPASS)
+        documents = list((root/'docs').rglob('*.md')) + [root/'AGENTS.md', root/'CLAUDE.md', root/'skills/byo-cloudflare/SKILL.md']
+        missing = []
+        for document in documents:
+            text = re.sub(r'```.*?```', '', document.read_text(encoding='utf-8'), flags=re.S)
+            for target in re.findall(r'\]\(([^)\s]+)\)', text):
+                if not re.match(r'^[a-z]+:|#', target) and not (document.parent/target.split('#')[0]).exists():
+                    missing.append(target)
+        result['document_links'] = not missing
+        result['deployment_template'] = (template_directory()/'src/worker.js').is_file()
+        if not all(result[k] for k in ('resources','ca_bundle','document_links','deployment_template')):
             return 2
         print(json.dumps(result))
         return 0

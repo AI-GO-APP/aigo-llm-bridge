@@ -14,6 +14,8 @@ for name in ['BYO-QUICKSTART.md','DEVICE-IDENTITY.md','AI-AGENT-SETUP.md','P1-Wi
              'OPENROUTER-PRICING.md','THIRD-PARTY-INTEGRATION.md','AI-EA-CLOUD-BEST-PRACTICE.md',
              'CROSS-PLATFORM-INSTALL.md','WINDOWS-INSTALL-UPDATE.md']:
     datas.append((str(root/'docs'/name),'docs'))
+# Only this committed anonymous acceptance report; never include a reports tree.
+datas.append((str(root/'docs/qa/2026-10-22-windows-velopack-acceptance.md'),'docs/qa'))
 datas += collect_data_files('jsonschema_specifications') + collect_data_files('velopack')
 a = Analysis([str(root/'packaging/windows/entry.py')], pathex=[str(root)], datas=datas,
     hiddenimports=['desktop_bridge.__main__','desktop_bridge.windows_cli','desktop_bridge.windows_management',
