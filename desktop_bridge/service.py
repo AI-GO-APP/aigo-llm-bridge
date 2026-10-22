@@ -119,7 +119,10 @@ class Runtime:
             # pretend a completed inference was free after validation fails.
             usage=quote.usage(usage)
             self.store.update_request(task.id,prompt_tokens=usage['prompt_tokens'],completion_tokens=usage['completion_tokens'],
-                cost_usd=usage['cost'],pricing_model=quote.model,pricing_fetched_ts=quote.fetched_at)
+                cost_usd=usage['cost'],pricing_model=quote.model,pricing_fetched_ts=quote.fetched_at,
+                cached_tokens=usage.get('prompt_tokens_details',{}).get('cached_tokens'),
+                cache_write_tokens=usage.get('prompt_tokens_details',{}).get('cache_write_tokens'),
+                reasoning_tokens=usage.get('completion_tokens_details',{}).get('reasoning_tokens'))
             if task.cancel.is_set(): raise BridgeError(499,"cancelled","請求已取消。")
             if not isinstance(text,str): raise BridgeError(502,"invalid_provider_response","模型未返回文字內容。")
             if spec.format in {"json_object","json_schema"}:
@@ -141,7 +144,10 @@ class Runtime:
                 "usage":usage}
             self.store.update_request(task.id,status="completed",http_status=200,finished_ts=time.time(),
                 duration_ms=round((time.monotonic()-start)*1000),output_bytes=len(text.encode()),prompt_tokens=prompt,completion_tokens=completion,
-                cost_usd=usage['cost'],pricing_model=quote.model,pricing_fetched_ts=quote.fetched_at)
+                cost_usd=usage['cost'],pricing_model=quote.model,pricing_fetched_ts=quote.fetched_at,
+                cached_tokens=usage.get('prompt_tokens_details',{}).get('cached_tokens'),
+                cache_write_tokens=usage.get('prompt_tokens_details',{}).get('cache_write_tokens'),
+                reasoning_tokens=usage.get('completion_tokens_details',{}).get('reasoning_tokens'))
         except BridgeError as error:
             task.error=error
             self.store.update_request(task.id,status="cancelled" if error.category=="cancelled" else "failed",http_status=error.status,

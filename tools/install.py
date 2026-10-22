@@ -39,15 +39,23 @@ def install(root, data_dir=None, *, dependencies=True):
         if any(p.is_symlink() for p in source.rglob('*')):raise ValueError('Refusing symbolic links in distributable sources.')
         shutil.copytree(source,release/folder,ignore=shutil.ignore_patterns('__pycache__','tests','*.pyc'))
     (release/'docs').mkdir()
-    for name in ('BYO-QUICKSTART.md','DEVICE-IDENTITY.md','AI-AGENT-SETUP.md','OPENROUTER-PRICING.md','THIRD-PARTY-INTEGRATION.md','CROSS-PLATFORM-INSTALL.md'):
+    for name in ('BYO-QUICKSTART.md','DEVICE-IDENTITY.md','AI-AGENT-SETUP.md','OPENROUTER-PRICING.md','THIRD-PARTY-INTEGRATION.md','CROSS-PLATFORM-INSTALL.md','AI-EA-CLOUD-BEST-PRACTICE.md'):
         shutil.copyfile(SOURCE/'docs'/name,release/'docs'/name)
     for name in ('AGENTS.md','CLAUDE.md'):shutil.copyfile(SOURCE/name,release/name)
-    (release/'tools').mkdir();shutil.copyfile(SOURCE/'tools/byo_setup.py',release/'tools/byo_setup.py')
+    (release/'tools').mkdir()
+    for name in ('byo_setup.py','mac_service.py','mac_key_handoff.py'):
+        shutil.copyfile(SOURCE/'tools'/name,release/'tools'/name)
     launcher=root/'Bridge.pyw'
     launcher.write_text("import json, pathlib, runpy, sys\np=pathlib.Path(__file__).parent\nm=json.loads((p/'source-install.json').read_text(encoding='utf-8'))\nsys.path.insert(0,m['app'])\nsys.argv=[sys.argv[0],'--data-dir',m['data_dir'],*sys.argv[1:]]\nrunpy.run_module('desktop_bridge',run_name='__main__')\n",encoding='utf-8')
     data.mkdir(parents=True,exist_ok=True)
     if os.name!='nt':root.chmod(0o700);data.chmod(0o700)
-    value={'version':version['__version__'],'python':str(python),'app':str(release),'data_dir':str(data),'launcher':str(launcher),'install_root':str(root)}
+    try:
+        source_commit=subprocess.check_output(['git','-C',str(SOURCE),'rev-parse','HEAD'],stderr=subprocess.DEVNULL,text=True).strip()
+    except (OSError,subprocess.SubprocessError):source_commit=None
+    value={'source_commit':source_commit,'version':version['__version__'],'python':str(python),'app':str(release),'data_dir':str(data),'launcher':str(launcher),'install_root':str(root)}
+    if previous:
+        backup=root/'source-install.previous.json'
+        backup.write_text(json.dumps(previous,indent=2),encoding='utf-8')
     temporary=manifest.with_suffix('.tmp');temporary.write_text(json.dumps(value,indent=2),encoding='utf-8');os.replace(temporary,manifest)
     if os.name=='nt':
         # ASCII script with runtime-expanded paths also works under CP950/CP1252

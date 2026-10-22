@@ -43,6 +43,7 @@ PR 標題結尾帶上新版本號,合併後一眼就能對回 CHANGELOG 與 Rele
 - 合併方式用 **Create a merge commit**,保留分支上的 commit,版本號對得回 PR。
 - 合併後 `release` workflow 自動打 tag `vX.Y.Z`、建立 GitHub Release(內容取自 CHANGELOG 那一段),
   並附上 worker、開機自動啟動範本與三種客戶端檔案——docs/04 的下載網址靠的就是這些附件。
+  `-mac.*` 實機驗收候選版本只整合來源，不自動建立 tag／Release；原生安裝包仍須另行手動發布。
 - 分支合併後刪掉。
 
 ## 3. 版本號
@@ -95,6 +96,9 @@ PR 標題結尾帶上新版本號,合併後一眼就能對回 CHANGELOG 與 Rele
   公開的 CI 紀錄裡),本機放 `.banned-terms`(已 gitignore)。
 - git 作者名會進公開紀錄:在這個 repo 設定不含公司或客戶名稱的作者,例如
   `git config user.name <你的名字>`、`git config user.email <GitHub noreply 信箱>`。
+- 保留既有提交歷史時，可用經審查的根目錄 `.mailmap` 統一同一作者的個人名稱；只使用已核對的身分對應，
+  不改寫 commit、tag 或既有服務。歷史掃描採 Git `%aN` 的標準名稱，未對應作者仍照常檢查。
+  `.mailmap` 的標準名稱與註解也完整檢查；合法 `個人名稱 <email>` 的身分 email 採既有作者 email 規則。
 - `examples/` 裡客戶端副本的手改——一律改 `clients/` 正本再跑 `sync_clients.py`。
 
 ## 6. 風格

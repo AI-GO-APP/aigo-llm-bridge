@@ -25,7 +25,6 @@
 from __future__ import annotations
 
 import os
-import hashlib
 import re
 import subprocess
 import sys
@@ -33,20 +32,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LOCAL_LIST = ROOT / ".banned-terms"
-
-# One already-published documentation commit used the maintainer's Git identity.
-# Preserve main/tag history. Only this exact immutable commit + identity is an
-# audited metadata baseline; its message, files and every new author stay scanned.
-PUBLISHED_AUTHOR_BASELINE = {
-    "34eff09d77831c623ab9b45c733f46781c0fae9b": "3a2b695cfbc1626b69f7562a88b0e32e059bf9d85b3a0e226226679530a8558f",
-}
-
-
-def commit_author_text(sha: str, name: str) -> str:
-    expected = PUBLISHED_AUTHOR_BASELINE.get(sha)
-    if expected and hashlib.sha256(name.encode('utf-8')).hexdigest() == expected:
-        return "existing maintainer identity"
-    return name
 
 
 def load_terms() -> list[str]:
@@ -117,6 +102,35 @@ def commit_message_text(body: str) -> str:
     return "".join(lines)
 
 
+def mailmap_text(text: str) -> str:
+    """Name-only mailmap entries use the existing identity-email exception.
+
+    Canonical names, comments, malformed entries and other mailmap forms remain
+    fully scanned. This does not exempt arbitrary email in product content.
+    """
+    entry = re.compile(r"([^<>#\r\n]+?)\s*<[^<>\s]+@[^<>\s]+>([ \t]*(?:#[^\r\n]*)?)")
+    lines = text.splitlines(keepends=True)
+    for idx, line in enumerate(lines):
+        ending = "\r\n" if line.endswith("\r\n") else "\n" if line.endswith("\n") else ""
+        match = entry.fullmatch(line.rstrip("\r\n"))
+        if match:
+            lines[idx] = match.group(1) + " <email>" + match.group(2) + ending
+    return "".join(lines)
+
+
+def commit_records(root: Path) -> list[tuple[str, str, str]]:
+    # Read reviewed repository aliases; ignore machine-specific mailmap config.
+    # %aN applies .mailmap without changing any original commit object or SHA.
+    proc = subprocess.run(
+        ["git", "-c", "mailmap.file=", "-c", "mailmap.blob=", "log",
+         "--format=%H%x00%aN%x00%B%x1e"],
+        cwd=root, capture_output=True,
+    )
+    log = proc.stdout.decode("utf-8") if proc.returncode == 0 else ""
+    return [tuple((record.split("\x00") + ["", ""])[:3])
+            for record in (r.strip() for r in log.split("\x1e")) if record]
+
+
 def main() -> int:
     # Windows 主控台預設不是 UTF-8(例如 cp950),中文與 ✓ 會讓 print 直接丟例外
     for stream in (sys.stdout, sys.stderr):
@@ -143,19 +157,12 @@ def main() -> int:
             text = path.read_bytes().decode("utf-8")
         except (UnicodeDecodeError, FileNotFoundError, IsADirectoryError):
             continue  # 二進位檔或已刪除
-        hits.extend(scan_text(rel, text, patterns))
+        hits.extend(scan_text(rel, mailmap_text(text) if rel == ".mailmap" else text, patterns))
 
     if "--commits" in args:
         # 作者及合法協作者尾欄的 email 刻意不檢查:它常含託管平台帳號名,不是 repo 內容能決定的
-        proc = subprocess.run(
-            ["git", "log", "--format=%H%x00%an%x00%B%x1e"],
-            cwd=ROOT, capture_output=True,
-        )
-        # 還沒有任何 commit 時 git log 會回非零,視為「沒有訊息要檢查」
-        log = proc.stdout.decode("utf-8") if proc.returncode == 0 else ""
-        for record in filter(None, (r.strip() for r in log.split("\x1e"))):
-            sha, name, body = (record.split("\x00") + ["", ""])[:3]
-            hits.extend(scan_text(f"(commit {sha[:8]} 作者名)", commit_author_text(sha, name), patterns))
+        for sha, name, body in commit_records(ROOT):
+            hits.extend(scan_text(f"(commit {sha[:8]} 作者名)", name, patterns))
             hits.extend(scan_text(f"(commit {sha[:8]} 訊息)", commit_message_text(body), patterns))
 
     if hits:
