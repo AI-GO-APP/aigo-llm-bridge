@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+## [0.6.6-mac.2] - 2026-10-23
+
+Mac source 實機修復候選，不建立 tag／Release、不發布安裝包。設定檔可明確選擇 1–4 個隔離推論子程序，預設維持 1；Mac CLI 先 pause／wait-idle 再重啟。此 Mac 改為 4，消除實測短請求排隊耗盡 Cloud 期限的瓶頸。原 KEY、模型 scope、endpoint、去重與 metadata-only LOG 保留，Windows 正式服務／Worker／裝置資料不變。
+
 ## [0.6.6-mac.1] - 2026-10-22
 
 Mac source 驗收候選，未發布任何 macOS／Windows release 或安裝包。補 owner-only SQLite、穩定 LaunchAgent 更新與 rollback、一次性本機 key 交付、cache/reasoning 用量 metadata，以及首次配對後程式重新部署。本輪實機與 Cloud 驗收見 Mac QA；既有 Windows 服務與裝置設定保持原狀。
