@@ -2,7 +2,7 @@
 
 Windows 的正式安裝路徑使用 `desktop_bridge/`：自己的 Cloudflare Worker、固定 HTTPS、長效 key、本機 Web Console、僅保存中繼資料，以及 OpenRouter 牌價換算的 `usage.cost`。不需要 AI GO 租戶或 OpenRouter key；發布方不代管帳戶／入口。CLI 訂閱由安裝者自己登入，切換訂閱不更改裝置 URL 或 key。
 
-- [Windows 原生安裝包](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/desktop-windows-v0.6.2)：解壓後執行 Install.ps1，不需要 Python。
+- [Windows 原生安裝包](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/desktop-windows-v0.6.3)：解壓後執行 Install.ps1，不需要 Python。
 - 拿到 repo：Windows 使用 `python tools/install.py`（Python 3.12+），依下列 BYO 指引部署自己的 Cloudflare。
 - macOS 仍由獨立目錄及流程維護；本輪 BYO 完整流程**待 macOS 實機驗證**，不發布 macOS 安裝包。
 

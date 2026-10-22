@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-10-22
+
+- 支援最多 256 個工具定義，涵蓋 AI EA 的完整 131 工具集；精簡模型輸出 schema，回傳後仍逐工具驗證 JSON arguments。
+- 結構化輸出或工具參數驗證失敗，仍保存供應商已回報的 token／成本中繼資料，供 Cloud 原帳本結算。
+- Windows 原安裝更新／重啟與 URL／KEY 保留通過；95 項 Python 回歸通過。
+- AI EA 原生安裝 UI 未驗收，不把來源或 API 測試代替；不發布 macOS。
+
 ## [0.6.2] - 2026-10-22
 
 - Windows：preflight、request ID 去重、執行期限及文字工具提案／工具結果歷史；工具仍由呼叫端執行。
