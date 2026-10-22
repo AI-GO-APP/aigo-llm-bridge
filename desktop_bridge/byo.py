@@ -133,11 +133,11 @@ class Cloudflare:
 
 
 def publish(store,config,cloud,*,url=None,code=True,repair=False):
-    """Retryable pairing: pending credentials are DPAPI encrypted before cloud writes."""
+    """Retryable pairing: pending credentials are protected by OS storage before cloud writes."""
     # Refuse decryption trouble before any cloud mutation, unless repair was explicit.
     try:current=secret.load(store.directory)
     except ValueError:
-        if not repair:raise SetupError('裝置 DPAPI 憑證無法解密；先保留原資料，再用 repair-device-key 重新授權配對。') from None
+        if not repair:raise SetupError('裝置憑證無法存取（Keychain／DPAPI）；先保留原資料，再用 repair-device-key 重新授權配對。') from None
         current=''
     try:pending=secret.load(store.directory,pending=True)
     except ValueError:
@@ -169,7 +169,7 @@ def publish(store,config,cloud,*,url=None,code=True,repair=False):
     secret_written = not (existing and current and token == current and not repair)
     if secret_written:
         cloud.run(['secret','put','DEVICE_KEY'],input=(token+'\n').encode())
-        if code and existing:
+        if code:
             output=cloud.run(['deploy'])
             if target not in output:raise SetupError('配對後程式部署網址不一致；已保留加密 pending 憑證。')
     if not existing and hasattr(cloud,'wait_pairing'):cloud.wait_pairing(target,token)

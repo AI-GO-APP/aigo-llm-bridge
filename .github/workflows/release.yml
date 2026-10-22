@@ -32,6 +32,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version=$(head -n1 VERSION | tr -d '\r ')
+          # Physical Mac candidates are source-only until separately approved.
+          case "$version" in
+            *-mac.*) echo "Mac source candidate: no tag or Release publication"; exit 0 ;;
+          esac
           tag="v$version"
           if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
             echo "$tag 已存在,略過"
