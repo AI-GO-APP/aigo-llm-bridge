@@ -291,7 +291,8 @@ def apply(cfg, directory, timeout=180):
                 until = time.monotonic() + 20
                 while True:
                     instance = Instance(directory); primary = instance.primary; instance.close()
-                    if primary:
+                    console = Instance(directory / 'console'); console_closed=console.primary; console.close()
+                    if primary and console_closed:
                         break
                     if time.monotonic() >= until:
                         raise UpdateError('Service did not shut down; no process was killed.')

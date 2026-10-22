@@ -44,12 +44,25 @@ def main():
     import argparse
     selector = argparse.ArgumentParser(add_help=False)
     selector.add_argument('--data-dir')
+    selector.add_argument('--console',action='store_true')
+    selector.add_argument('--browser',action='store_true')
+    selector.add_argument('--console-probe',action='store_true')
+    selector.add_argument('--console-hidden',action='store_true')
     selected, _ = selector.parse_known_args(argv)
-    profile(cfg, selected.data_dir)
+    directory=profile(cfg, selected.data_dir)
+    from desktop_bridge import windows_console
+    if selected.console or selected.console_probe:
+        return windows_console.run(directory,browser=selected.browser,probe=selected.console_probe,hidden=selected.console_hidden)
+    if '--background' not in argv and '--headless' not in argv and '--native-ui' not in argv:
+        value=windows_console.ensure_service(directory)
+        windows_console.request_owner(value,'/manage/windows-console/open',{'browser':selected.browser})
+        return 0
     if not selected.data_dir:
         argv += ['--data-dir', str(profile(cfg))]
     sys.argv = [sys.argv[0], *argv]
     from desktop_bridge import management
+    import webbrowser
+    webbrowser.open=lambda _url,*_args,**_kwargs: windows_console.launch(directory)
     from desktop_bridge.windows_management import WindowsManagementServer
     management.ManagementServer = WindowsManagementServer
     from desktop_bridge.__main__ import main as bridge

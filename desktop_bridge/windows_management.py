@@ -68,9 +68,18 @@ class WindowsManagementServer(ManagementServer):
         value = super().state()
         value['windows_release'] = {k: self.release[k] for k in ('version', 'core_version', 'commit', 'channel', 'local_probe')}
         value['windows_update'] = self.update_state
+        status=self.store.directory/'windows-console.json'
+        try:
+            console=json.loads(status.read_text())
+            value['windows_console']={k:console[k] for k in ('mode','version','reason') if k in console}
+        except (OSError,ValueError):value['windows_console']={'mode':'not_open'}
         return value
 
     def action(self, path, data):
+        if path == '/manage/windows-console/open':
+            if type(data.get('browser',False)) is not bool:raise ValueError()
+            from .windows_console import launch
+            return {'ok':True,'pid':launch(self.store.directory,browser=data.get('browser',False))}
         if path == '/manage/accepting' and data.get('accepting') is True and self.minimum_blocked():
             raise ValueError('A verified minimum Windows version must be installed before resuming.')
         if path == '/manage/windows-update/setup':

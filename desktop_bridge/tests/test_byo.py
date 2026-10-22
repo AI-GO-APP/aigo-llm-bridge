@@ -161,3 +161,11 @@ def test_cli_key_lifecycle_is_local_and_preserves_live_work(tmp_path,capsys):
     assert rotated['key'].encode() not in (tmp_path/'bridge.sqlite').read_bytes()
     assert main(['key-revoke','--data-dir',str(tmp_path),'--key-id','absent'])==1
     assert 'absent' not in capsys.readouterr().err
+
+
+def test_cli_default_key_has_no_provider_model_restriction(tmp_path,capsys):
+    assert main(['key-create','--data-dir',str(tmp_path),'--label','All models'])==0
+    created=json.loads(capsys.readouterr().out)
+    store=Store(tmp_path,startup=False)
+    try:assert store.authenticate(created['key'])['providers']==['claude','codex']
+    finally:store.close()

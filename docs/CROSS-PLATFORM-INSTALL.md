@@ -33,7 +33,7 @@ wrangler whoami
 printf 'Cloudflare account ID: '; read -r BRIDGE_ACCOUNT
 "$BRIDGE_PY" "$BRIDGE_APP/tools/byo_setup.py" plan --data-dir "$BRIDGE_DATA" --account-id "$BRIDGE_ACCOUNT"
 "$BRIDGE_PY" "$BRIDGE_APP/tools/byo_setup.py" deploy --data-dir "$BRIDGE_DATA"
-"$BRIDGE_PY" "$BRIDGE_APP/tools/byo_setup.py" key-create --data-dir "$BRIDGE_DATA" --label 'My web service' --providers codex --handoff
+"$BRIDGE_PY" "$BRIDGE_APP/tools/byo_setup.py" key-create --data-dir "$BRIDGE_DATA" --label 'My web service' --handoff
 "$BRIDGE_ROOT/Bridge.command"
 ```
 
@@ -54,7 +54,7 @@ wrangler.cmd whoami
 $account = Read-Host '自己的 Cloudflare account ID'
 & $m.python $setup plan --data-dir $m.data_dir --account-id $account
 & $m.python $setup deploy --data-dir $m.data_dir
-$created = & $m.python $setup key-create --data-dir $m.data_dir --label 'My web service' --providers codex --handoff | ConvertFrom-Json
+$created = & $m.python $setup key-create --data-dir $m.data_dir --label 'My web service' --handoff | ConvertFrom-Json
 # 一次性含 key 的標準訊息：只複製給受信任的服務端 IDE，不寫入檔案。
 $created.integration.prompt | Set-Clipboard
 & $m.python $m.launcher

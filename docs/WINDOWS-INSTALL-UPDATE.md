@@ -2,13 +2,23 @@
 
 此流程使用 PyInstaller onedir 與 Velopack，只有 Windows x64 internal；不改 Mac 安裝與 Cloud。暫無 Authenticode 公發憑證，作業系統仍可能提示未知發布者或依企業政策封鎖。更新政策的 Ed25519 簽章不代表 Windows 發布者簽章。
 
-本輪 [隔離 Setup／A→B 驗收紀錄](qa/2026-10-22-windows-velopack-acceptance.md) 記錄實際安裝與資料保留；沒有測過的外網／新訂閱與乾淨 VM 不列為通過。
+前輪 [隔離 Setup／A→B 驗收紀錄](qa/2026-10-22-windows-velopack-acceptance.md) 記錄實際安裝與資料保留；沒有測過的外網／新訂閱與乾淨 VM 不列為通過。
+
+本輪 [Windows WebView2 API／CLI 驗收](qa/2026-10-23-windows-webview-acceptance.md) 列出原生剪貼簿、CSV 與更新的實測及 UI 界線。
 
 ## 首次安裝及 CLI
 
 執行 Setup.exe，開啟管理介面。安裝目錄中的 `current/aigo-bridge.exe` 是 console CLI；GUI 與 CLI 共用 frozen runtime，不需要 Python。首次設定使用 `aigo-bridge.exe setup`，或使用 `byo doctor`、`byo plan`、`byo deploy` 分步完成。部署仍需 Node.js 22+、Wrangler 與安裝者自己的帳戶；不自動變更 provider／Cloudflare 登入。
 
-所有命令可帶 `--data-dir <原設定檔>`。BYO 子命令寫在 `byo` 後，例如 `aigo-bridge.exe byo status --data-dir <路徑>`。`setup` 會先 doctor，要求明確 account ID，展示計畫並確認後部署，最後可建立僅顯示一次的 Codex 服務 KEY。未完成環境／登入時，依 [BYO 指南](BYO-QUICKSTART.md) 操作；不是安裝完成即代表已有公開入口。
+所有命令可帶 `--data-dir <原設定檔>`。BYO 子命令寫在 `byo` 後，例如 `aigo-bridge.exe byo status --data-dir <路徑>`。`setup` 會先 doctor，要求明確 account ID，展示計畫並確認後部署，最後可建立僅顯示一次的服務 KEY。新 KEY 預設開放 Claude／Codex 所有目前及之後登錄的模型；仍受本機模型目錄及訂閱權限限制，可明確指定 provider 縮限，既有 KEY 與輪替 scope 不變。未完成環境／登入時，依 [BYO 指南](BYO-QUICKSTART.md) 操作；不是安裝完成即代表已有公開入口。
+
+## Windows 管理視窗
+
+0.7.1 使用系統 Evergreen WebView2 與 pywebview 薄外殼，不隨包附 Chromium。共用 HTML／JS 透過 `BridgePlatform` 呼叫平台適配層；Windows 才附加原生剪貼簿與 CSV 儲存對話框，瀏覽器保留自己的剪貼簿／下載流程。Mac 封裝及驗收獨立。
+
+管理視窗是獨立程序，關窗仍保留背景服務；再次開啟會還原同一視窗。更新先排空並關閉本設定檔的服務及視窗，再套用版本。缺少 WebView2、視窗載入失敗或程序異常退出會開啟預設瀏覽器，頁首亦可手動切換；可用 GUI 的 `--browser` 明確選擇。瀏覽器 session token 只在記憶體與 URL fragment，不放入命令列。
+
+LocalProbe 的 `--console-probe` 只在不可分發包啟用，以隱藏的實際 WebView2 renderer 驗證 KEY 複製、同 KEY HTTP 認證、CSV 中繼資料與關窗常駐，不操作桌面。CSV 測試由測試程式供應 Save 對話框的選擇結果；它驗證前端→原生 bridge→管理 API→檔案，但不代表人工點選系統儲存對話框或視覺排版驗收。
 
 ## 既有 ZIP 安裝接管
 

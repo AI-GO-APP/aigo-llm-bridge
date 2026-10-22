@@ -91,12 +91,12 @@ def setup(cfg, directory):
     if byo.main(['deploy', '--data-dir', str(directory)]):
         print('Complete official Wrangler login/workers.dev registration if needed, then rerun setup.', flush=True)
         return 1
-    if input('Create a Codex-scoped service key, shown once? [yes/NO]: ').strip() == 'yes':
+    if input('Create a service key for all registered Claude/Codex models, shown once? [yes/NO]: ').strip() == 'yes':
         import contextlib
         import io
         capture = io.StringIO()
         with contextlib.redirect_stdout(capture):
-            code = byo.main(['key-create', '--data-dir', str(directory), '--providers', 'codex',
+            code = byo.main(['key-create', '--data-dir', str(directory),
                              '--label', 'Web service', '--handoff'])
         if code:
             print('Service key creation was not completed.'); return code

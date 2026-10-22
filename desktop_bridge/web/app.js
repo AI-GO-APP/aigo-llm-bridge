@@ -23,7 +23,7 @@ async function run(button, work) {
   try { await work(); } catch (error) { toast(error.message || "無法連線至 Bridge。"); }
   finally { if (button) button.disabled = false; }
 }
-async function copy(text) { try { await navigator.clipboard.writeText(text); toast("已複製到剪貼簿"); } catch { toast("瀏覽器未允許複製，請選取內容後手動複製。"); } }
+async function copy(text) { try { await window.BridgePlatform.copyText(text); toast("已複製到剪貼簿"); } catch { toast("無法複製，請選取內容後手動複製。"); } }
 function navigate(next) {
   if (!names[next]) next = "overview";
   page = next;
@@ -104,7 +104,7 @@ function confirmation(title, description, label, action) {
   $("confirm-action").addEventListener("click", () => modalRun($("confirm-action"), action));
 }
 async function modalRun(button, action) { button.disabled = true; try { await action(); } catch (error) { if ($("modal-error")) $("modal-error").textContent = error.message; else toast(error.message); } finally { button.disabled = false; } }
-function showToken(value, allowed = ['codex']) {
+function showToken(value, allowed = ['claude','codex']) {
   modal("金鑰已建立", '<p class="dialog-note">完整金鑰只顯示這一次。請保存到呼叫服務的 secret 設定，關閉後無法再次查看。</p><input id="new-token" class="secret-input" readonly aria-label="新 API 金鑰"><div class="modal-actions"><button id="copy-token" class="secondary">複製金鑰</button><button id="token-done" class="primary">已保存，關閉</button></div>');
   $("new-token").value = value; $("copy-token").addEventListener("click", () => copy($("new-token").value)); $("token-done").addEventListener("click", closeModal);
   const button=document.createElement('button');button.className='secondary';button.textContent='複製給 AI IDE（含金鑰）';
@@ -117,7 +117,7 @@ function showToken(value, allowed = ['codex']) {
   $("copy-token").after(button);
 }
 function createKey() {
-  modal("建立 API 金鑰", '<form id="key-form" class="modal-form"><p>用服務名稱識別金鑰，例如「內部客服」或「開發環境」。</p><label>服務名稱<input name="label" maxlength="60" required placeholder="輸入服務名稱" autofocus></label><fieldset><legend>允許的模型來源</legend><label class="check-label"><input name="claude" type="checkbox"> Claude</label><label class="check-label"><input name="codex" type="checkbox" checked> Codex</label></fieldset><label>每分鐘請求上限<input name="rpm" type="number" min="1" max="600" value="30" required><small>全機同時執行一筆推論，其他請求進入佇列。</small></label><p id="modal-error" class="inline-error" role="alert"></p><button class="primary" type="submit">建立金鑰</button></form>');
+  modal("建立 API 金鑰", '<form id="key-form" class="modal-form"><p>用服務名稱識別金鑰，例如「內部客服」或「開發環境」。</p><label>服務名稱<input name="label" maxlength="60" required placeholder="輸入服務名稱" autofocus></label><fieldset><legend>允許的模型來源</legend><label class="check-label"><input name="claude" type="checkbox" checked> Claude</label><label class="check-label"><input name="codex" type="checkbox" checked> Codex</label></fieldset><label>每分鐘請求上限<input name="rpm" type="number" min="1" max="600" value="30" required><small>全機同時執行一筆推論，其他請求進入佇列。</small></label><p id="modal-error" class="inline-error" role="alert"></p><button class="primary" type="submit">建立金鑰</button></form>');
   $("key-form").addEventListener("submit", e => { e.preventDefault(); const f = e.target; modalRun(f.querySelector("button"), async () => { const selected = ["claude","codex"].filter(p => f.elements[p].checked); if (!selected.length) throw new Error("請至少選取一個模型來源。"); const result = await api("/manage/keys/create", {label:f.elements.label.value, providers:selected, rpm:Number(f.elements.rpm.value)}); showToken(result.token,selected); await refresh(); }); });
 }
 $("create-key").addEventListener("click", createKey);
@@ -213,7 +213,7 @@ $("copy-endpoint").addEventListener("click", () => copy($("endpoint").value));
 $("pause").addEventListener("click", e => run(e.currentTarget, async () => { if (!state) return; await api("/manage/accepting", {accepting:!state.accepting}); await refresh(); }));
 $("refresh-auth").addEventListener("click", e => run(e.currentTarget, async () => { await api("/manage/auth", {}); await refresh(); }));
 for (const id of ["log-status","log-provider"]) $(id).addEventListener("change", () => refreshLogs().catch(e => toast(e.message)));
-$("export").addEventListener("click", e => run(e.currentTarget, async () => { const blob = await api(`/manage/export?${logQuery()}`, undefined, true), url = URL.createObjectURL(blob), link = document.createElement("a"); link.href = url; link.download = "bridge-request-metadata.csv"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); toast("已匯出目前篩選的中繼資料"); }));
+$("export").addEventListener("click", e => run(e.currentTarget, async () => { if (await window.BridgePlatform.exportLogs(logQuery(), () => api(`/manage/export?${logQuery()}`, undefined, true))) toast("已匯出目前篩選的中繼資料"); }));
 $("clear-logs").addEventListener("click", () => confirmation("清除已結束紀錄", "將清除所有已結束的請求紀錄（包含目前篩選以外的紀錄）。排隊與執行中的工作會保留，此操作無法復原。", "確認清除", async () => { await api("/manage/logs/clear", {}); closeModal(); await refresh(); }));
 function fillSettings() { const form = $("settings-form"); for (const [k,v] of Object.entries({...state.settings, startup:state.startup})) { const input = form.elements[k]; if (!input) continue; if (input.type === "checkbox") input.checked = v; else input.value = v; } }
 function settingsData() { const values = {...state.settings, startup:state.startup}; for (const input of $("settings-form").elements) { if (!input.name) continue; values[input.name] = input.type === "checkbox" ? input.checked : input.type === "number" ? Number(input.value) : input.value.trim(); } return values; }

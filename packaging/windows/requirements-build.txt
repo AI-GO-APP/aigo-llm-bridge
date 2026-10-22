@@ -3,3 +3,5 @@ pyinstaller==6.22.3
 pyinstaller-hooks-contrib==2026.8
 velopack==1.2.161
 cryptography==50.0.2
+pywebview==6.2.1
+pythonnet==3.2.1
