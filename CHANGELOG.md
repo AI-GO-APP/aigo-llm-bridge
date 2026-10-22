@@ -5,6 +5,11 @@
 
 ## [Unreleased]
 
+## [0.6.6-mac.1] - 2026-10-22
+
+Mac source 驗收候選，未發布任何 macOS／Windows release 或安裝包。補 owner-only SQLite、穩定 LaunchAgent 更新與 rollback、一次性本機 key 交付、cache/reasoning 用量 metadata，以及首次配對後程式重新部署。本輪實機與 Cloud 驗收見 Mac QA；既有 Windows 服務與裝置設定保持原狀。
+
+
 ## [0.6.5] - 2026-10-22
 
 - CI 將合法協作者尾欄 email 與既有作者 email 採相同身分規則，修正 GitHub 自動合併的誤判；作者名稱、產品檔案、一般訊息與非尾欄仍完整檢查。

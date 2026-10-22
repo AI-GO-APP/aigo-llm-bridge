@@ -2,6 +2,8 @@
 
 此紀錄僅適用本次 Apple Silicon 實機；不是 macOS 通用 release、DMG 或原生 UI 的驗收宣告。沒有修改 AI EA 程式、Windows Worker、裝置資料或 client key。
 
+本輪 source 候選版號為 `0.6.6-mac.1`；依 repo 版本閘門增加版號，未建立 tag 或發布安裝包。
+
 ## 來源、環境與安裝
 
 - Repo：`AI-GO-APP/aigo-llm-bridge`。開始時重新 fetch，main／v0.6.5 均為 `0354fbb9feb821f496db8ed5586c775db8446564`；保留原 `feat/macos-installer`，工作區原先乾淨。
