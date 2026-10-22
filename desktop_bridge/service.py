@@ -39,7 +39,10 @@ class Runtime:
         self.store=store
         self.runner=runner or providers.infer
         self.pricing=pricing or Catalog(store.directory)
-        self.pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix="bridge-inference")
+        workers=store.get('inference_workers')
+        if type(workers) is not int or not 1<=workers<=4:
+            raise ValueError('inference_workers must be an integer from 1 to 4.')
+        self.pool=ThreadPoolExecutor(max_workers=workers,thread_name_prefix="bridge-inference")
         self.slots=threading.BoundedSemaphore(9)
         self.lock=threading.RLock()
         self.tasks={}

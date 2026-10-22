@@ -92,3 +92,15 @@ python3 tools/install.py --install-root "$BRIDGE_ROOT"
 LaunchAgent 僅在該使用者登入後供應服務。休眠／關機或登入 Keychain 不可用時不能持續推論；不自動更改全機休眠、安全或登入設定。日常使用以 owner 可讀寫的 data 目錄（0700）、SQLite（0600）保存 metadata；配對 secret 只進 Keychain，無明文 fallback。完整 service KEY 由本機一次性管理視窗交付，不進一般報告。
 
 Mac 可用 `"$BRIDGE_PY" "$BRIDGE_APP/tools/mac_key_handoff.py"` 建立 Codex scope 的 Cloud 專用長效 KEY。本機原生一次性視窗可選擇複製 KEY 或完整串接訊息；明文由 stdin 傳給系統視窗，不進 argv、stdout、腳本檔或報告。視窗關閉後不能查回；即使取消視窗也保留該 key 有效，需用 key-list 核對後明確撤銷／輪替，不要重複產生未知用途的 KEY。此工具不替你將 KEY 注入 Cloud secret，也不修改 registry。
+
+### Mac 同時請求與排隊
+
+所有既有設定檔預設仍以一個隔離 CLI 子程序執行推論。多個 Cloud client 同時呼叫時，排隊會消耗呼叫者的期限；不能把回退到其他供應商後的成功當成本機通過。實機確認訂閱可承受後，可在已安裝的 Mac 使用：
+
+```bash
+"$BRIDGE_PY" "$BRIDGE_APP/tools/mac_service.py" workers --count 2 --install-root "$BRIDGE_ROOT"
+```
+
+此指令先 pause／wait-idle，只停止這個 Bridge，將該資料目錄的 `inference_workers` 設為 1–4，再啟動原 LaunchAgent。每個請求仍使用獨立、短暫且不啟用主機工具的 CLI 子程序；request ID 去重、每把 KEY 的頻率與全機九筆在途上限不變。數值在重啟／source 更新後保留，管理 API settings 可查閱；改回 `--count 1` 可恢復序列執行。既有 Windows 設定檔與正式服務不受 Mac 設定影響。
+
+增加同時推論可減少短請求被長工作阻塞，但不保證任意負載或輸出均在舊 client 的 60 秒期限內完成；訂閱限額、模型服務延遲與休眠仍可能使請求失敗。不以自動重試或未核實的零成本掩蓋失敗。

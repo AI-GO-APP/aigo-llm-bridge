@@ -28,8 +28,10 @@ def setup(manifest, action, timeout=180):
     return result.stdout.decode()
 
 
-def control(action, root, timeout=180):
+def control(action, root, timeout=180, workers=None):
     if sys.platform != 'darwin': raise ValueError('This command requires macOS.')
+    if action == 'workers' and (type(workers) is not int or not 1<=workers<=4):
+        raise ValueError('Workers must be an integer from 1 to 4.')
     m = manifest_at(root)
     sys.path.insert(0, m['app'])
     from desktop_bridge.windows import mac_startup_path, set_startup
@@ -38,7 +40,7 @@ def control(action, root, timeout=180):
     def launch(*args):
         return subprocess.run(['/bin/launchctl', *args], capture_output=True, timeout=30)
     def loaded(): return launch('print', target).returncode == 0
-    if action in ('stop', 'restart', 'disable', 'rollback'):
+    if action in ('stop', 'restart', 'disable', 'rollback', 'workers'):
         setup(m, 'pause'); setup(m, 'wait-idle', timeout)
         if loaded() and launch('bootout', target).returncode:
             raise ValueError('LaunchAgent did not stop.')
@@ -52,6 +54,11 @@ def control(action, root, timeout=180):
                     if time.monotonic() >= deadline:
                         raise ValueError('A manually started Bridge still owns this profile; stop it before updating.')
                     time.sleep(.2)
+    if action == 'workers':
+        from desktop_bridge.store import Store
+        store=Store(data,startup=False)
+        try: store.set('inference_workers',workers)
+        finally: store.close()
     if action == 'disable': set_startup(False, data)
     if action == 'rollback':
         root=Path(root).expanduser().resolve()
@@ -62,7 +69,7 @@ def control(action, root, timeout=180):
         pending.write_text(json.dumps(old,indent=2),encoding='utf-8');os.replace(pending,root/'source-install.json')
         (root/'source-install.previous.json').write_text(json.dumps(m,indent=2),encoding='utf-8')
         m=old
-    if action in ('start', 'restart', 'enable', 'rollback'):
+    if action in ('start', 'restart', 'enable', 'rollback', 'workers'):
         # Runs from the installed source, so set_startup discovers its stable Bridge.pyw.
         set_startup(True, data)
         if action != 'enable':
@@ -78,11 +85,12 @@ def control(action, root, timeout=180):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['status','enable','disable','start','stop','restart','rollback'])
+    parser.add_argument('action', choices=['status','enable','disable','start','stop','restart','rollback','workers'])
+    parser.add_argument('--count',type=int,help='Parallel isolated inference processes (workers action, 1–4; default profile is 1).')
     parser.add_argument('--install-root', default=str(Path.home() / 'Library/Application Support/AIGO LLM Bridge'))
     parser.add_argument('--timeout', type=int, default=180)
     args = parser.parse_args()
-    try: print(json.dumps(control(args.action, args.install_root, args.timeout), ensure_ascii=False)); return 0
+    try: print(json.dumps(control(args.action, args.install_root, args.timeout, args.count), ensure_ascii=False)); return 0
     except (OSError, ValueError, subprocess.SubprocessError):
         print('Mac service operation incomplete. Check this installation and drain/stop only its Bridge.', file=sys.stderr)
         return 1

@@ -119,6 +119,37 @@ def test_restart_does_not_replay_or_store_payload(tmp_path):
     rt.stop();s.close()
 
 
+def test_opt_in_workers_run_independent_requests_once_with_separate_results(tmp_path):
+    s=Store(tmp_path);s.set('inference_workers',2)
+    _,token=s.create_key('parallel',['codex']);caller=s.authenticate(token)
+    barrier=threading.Barrier(2);entered=threading.Event();calls=[]
+    def runner(spec,settings,cancel):
+        text=spec.messages[-1]['parts'][0]['text'];calls.append(text);entered.set()
+        barrier.wait(timeout=3)
+        return text,{'prompt_tokens':10,'completion_tokens':2},'stop'
+    rt=Runtime(s,runner)
+    first_body={'messages':[{'role':'user','content':'first'}]}
+    try:
+        first=rt.submit(first_body,caller,10,request_id='17841cbc-b3b6-4fc5-871a-96a07f6d4bca')
+        assert entered.wait(3)
+        assert rt.submit(first_body,caller,10,request_id='17841cbc-b3b6-4fc5-871a-96a07f6d4bca') is first
+        second=rt.submit({'messages':[{'role':'user','content':'second'}]},caller,10)
+        assert first.done.wait(5) and second.done.wait(5)
+        assert first.result['choices'][0]['message']['content']=='first'
+        assert second.result['choices'][0]['message']['content']=='second'
+        assert sorted(calls)==['first','second']
+        assert len(s.logs())==2
+    finally:rt.stop();s.close()
+
+
+@pytest.mark.parametrize('value',[0,5,True,'2'])
+def test_invalid_worker_configuration_fails_closed(tmp_path,value):
+    s=Store(tmp_path);s.set('inference_workers',value)
+    try:
+        with pytest.raises(ValueError):Runtime(s)
+    finally:s.close()
+
+
 def test_metadata_allowlist_and_export(tmp_path):
     s=Store(tmp_path)
     with pytest.raises(ValueError):s.insert_request({"id":"a","messages":"secret"})
