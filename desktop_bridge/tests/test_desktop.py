@@ -58,7 +58,7 @@ def test_standard_paths_and_metadata(system):
 
 
 @pytest.mark.parametrize("field,value",[("temperature",.1),("max_tokens",10),("stream",True),("tools",[]),
-    ("tool_choice","auto"),("seed",1),("top_p",.9),("provider",{}),("plugins",[]),("unknown",True)])
+    ("tool_choice","auto"),("seed",1),("top_p",.9),("provider",{"order":["other"]}),("plugins",[]),("unknown",True)])
 def test_unsupported_explicit_and_no_inference(system,field,value):
     store,rt,api,key,calls=system
     status,body=request(api,key,{**BASE,field:value})

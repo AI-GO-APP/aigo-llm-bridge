@@ -85,6 +85,20 @@ def test_reauth_different_cloud_account_cannot_mutate_endpoint_or_keys(tmp_path,
     store.close()
 
 
+def test_existing_code_upgrade_does_not_rewrite_unchanged_secret(tmp_path,crypto):
+    store=Store(tmp_path);config=configure(store,ACCOUNT)
+    cloud=FakeCloud(store.get('cloudflare_worker_name'));url=publish(store,config,cloud)
+    credential=secret.load(tmp_path);before=len(cloud.calls)
+    assert publish(store,config,cloud)==url
+    assert [c[0] for c in cloud.calls[before:]]==[['deploy']]
+    assert secret.load(tmp_path)==credential
+    before=len(cloud.calls)
+    publish(store,config,cloud,repair=True)
+    assert [c[0] for c in cloud.calls[before:]]==[['deploy'],['secret','put','DEVICE_KEY'],['deploy']]
+    assert secret.load(tmp_path)!=credential
+    store.close()
+
+
 def test_cross_windows_user_repair_retains_device_url_and_client_keys(tmp_path,crypto):
     store=Store(tmp_path);_,key=store.create_key('keep');config=configure(store,ACCOUNT)
     cloud=FakeCloud(store.get('cloudflare_worker_name'));url=publish(store,config,cloud)

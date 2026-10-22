@@ -52,8 +52,9 @@ class Store:
             create index if not exists requests_time on requests(created_ts);
         """)
         columns={row[1] for row in self.db.execute('pragma table_info(requests)')}
-        for name,kind in (('cost_usd','real'),('pricing_model','text'),('pricing_fetched_ts','real')):
+        for name,kind in (('cost_usd','real'),('pricing_model','text'),('pricing_fetched_ts','real'),('client_request_id','text'),('request_digest','text')):
             if name not in columns:self.db.execute(f'alter table requests add column {name} {kind}')
+        self.db.execute("create unique index if not exists request_dedupe on requests(key_id,client_request_id) where client_request_id is not null")
         # Installation identity belongs to this device profile, never to a CLI login.
         self.db.execute("insert or ignore into settings values ('device_id',?)",(json.dumps(uuid.uuid4().hex),))
         # A restart never replays an unknown request: no request bodies are on disk.
@@ -121,9 +122,11 @@ class Store:
                 self.db.execute("update api_keys set revoked_ts=? where id=?", (time.time(), kid))
         return new_id, token
 
-    def insert_request(self, row):
+    def insert_request(self, row, request_identity=None):
         if set(row)-set(LOG_COLUMNS):
             raise ValueError("Content is forbidden in request metadata")
+        if request_identity:
+            row={**row,'client_request_id':request_identity[0],'request_digest':request_identity[1]}
         with self.lock:
             self.db.execute(f"insert into requests ({','.join(row)}) values ({','.join('?' for _ in row)})", tuple(row.values()))
             self.db.commit()
@@ -146,7 +149,7 @@ class Store:
             if value:
                 clauses.append(column+"=?")
                 args.append(value)
-        query = "select * from requests" + (" where "+" and ".join(clauses) if clauses else "") + " order by created_ts desc limit ?"
+        query = "select "+','.join(LOG_COLUMNS)+" from requests" + (" where "+" and ".join(clauses) if clauses else "") + " order by created_ts desc limit ?"
         with self.lock:
             return [dict(r) for r in self.db.execute(query, (*args, min(10000, int(limit))))]
 

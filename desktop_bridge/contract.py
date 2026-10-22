@@ -8,10 +8,10 @@ from jsonschema import Draft202012Validator, SchemaError
 
 from .errors import BridgeError
 
-SUPPORTED = {"messages", "model", "stream", "response_format", "reasoning", "reasoning_effort", "user", "metadata", "session_id"}
+SUPPORTED = {"messages", "model", "stream", "response_format", "reasoning", "reasoning_effort", "user", "metadata", "session_id", "provider"}
 NULLABLE_UNSUPPORTED = {"frequency_penalty", "logit_bias", "logprobs", "max_completion_tokens", "max_tokens",
     "min_p", "parallel_tool_calls", "prediction", "presence_penalty", "prompt_cache_key", "prompt_cache_options",
-    "provider", "repetition_penalty", "route", "seed", "service_tier", "stop", "stream_options",
+    "repetition_penalty", "route", "seed", "service_tier", "stop", "stream_options",
     "temperature", "top_a", "top_k", "top_logprobs", "top_p"}
 KNOWN = SUPPORTED | NULLABLE_UNSUPPORTED | {"cache_control", "debug", "deferred_tools", "image_config", "modalities", "models", "plugins", "stop_server_tools_when", "tool_choice", "tools", "trace"}
 
@@ -28,14 +28,31 @@ class Inference:
     effort: str | None
     format: str
     schema: dict | None
+    tool_proposals: bool = False
 
 
 def validate(body, settings, caller):
     if not isinstance(body, dict):
         raise BridgeError(400, "invalid_request", "Request 必須是 JSON object。")
+    if 'tools' in body:
+        from .tool_contract import proposal_request
+        spec=validate(proposal_request(body),settings,caller)
+        spec.tool_proposals=True
+        return spec
     for field, value in body.items():
         if field not in SUPPORTED and not (field in NULLABLE_UNSUPPORTED and value is None):
             bad(field if field in KNOWN else "unknown_field")
+    # OpenRouter routing metadata is accepted for AI EA compatibility. A fixed
+    # Bridge has no OpenRouter provider-selection engine; this is not a claim
+    # about the signed-in subscription's data handling or a policy approval gate.
+    provider = body.get("provider")
+    if provider is not None:
+        if not isinstance(provider, dict):
+            raise BridgeError(400,"invalid_request","provider 必須是 object。","provider")
+        if set(provider)-{"data_collection"}:
+            bad("provider","此 Bridge 不支援這些供應商路由參數。")
+        if "data_collection" in provider and provider["data_collection"] not in ("deny","allow"):
+            raise BridgeError(400,"invalid_request","data_collection 必須是 deny 或 allow。","provider.data_collection")
     if "stream" in body and not isinstance(body["stream"], bool):
         raise BridgeError(400, "invalid_request", "stream 必須是 boolean。", "stream")
     if body.get("stream"):

@@ -6,6 +6,7 @@ import urllib.error
 import ssl
 import certifi
 import uuid
+import random
 from concurrent.futures import ThreadPoolExecutor
 
 COST_HEADERS=('X-Bridge-Cost-Source','X-Bridge-Pricing-Model','X-Bridge-Pricing-Fetched-At')
@@ -52,18 +53,20 @@ class Relay:
             except Exception:
                 # Never log urllib exceptions: they may contain headers, paths or payloads.
                 self.state="離線／重連中"
-                self.stop_event.wait(backoff); backoff=min(20,backoff*2)
+                self.stop_event.wait(backoff+random.uniform(0,backoff*.25)); backoff=min(20,backoff*2)
 
     def forward(self,work,base,device_key):
             local_opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
             try:
                 path=work.get("path","")
-                allowed=(path in {"/api/v1/models","/v1/models","/api/v1/chat/completions","/v1/chat/completions","/bridge/v1/jobs"}
-                         or path.startswith("/bridge/v1/jobs/"))
+                allowed=(path in {"/api/v1/models","/v1/models","/api/v1/chat/completions","/v1/chat/completions","/bridge/v1/jobs","/bridge/v1/preflight"}
+                         or path.startswith("/bridge/v1/jobs/") or path.startswith('/bridge/v1/receipts/'))
                 if not allowed or work.get("method") not in {"GET","POST"}: raise ValueError("Invalid relay request")
                 req=urllib.request.Request(f"http://127.0.0.1:{self.port}"+path,
                     data=work.get("body","").encode() if work["method"]=="POST" else None,
-                    method=work["method"],headers={"Authorization":work.get("authorization",""),"Content-Type":"application/json"})
+                    method=work["method"],headers={"Authorization":work.get("authorization",""),"Content-Type":"application/json",
+                        **({"X-AIEA-Request-Id":work["request_id"]} if work.get("request_id") else {}),
+                        **({"X-Bridge-Deadline":str(work["deadline"])} if work.get("deadline") else {})})
                 try:
                     with local_opener.open(req,timeout=self.store.get("timeout_s")+10) as res:
                         result={"id":work["id"],"status":res.status,"body":res.read(4_000_001).decode(),
