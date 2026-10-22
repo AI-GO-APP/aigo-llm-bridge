@@ -2,6 +2,8 @@
 
 此流程使用 PyInstaller onedir 與 Velopack，只有 Windows x64 internal；不改 Mac 安裝與 Cloud。暫無 Authenticode 公發憑證，作業系統仍可能提示未知發布者或依企業政策封鎖。更新政策的 Ed25519 簽章不代表 Windows 發布者簽章。
 
+本輪 [隔離 Setup／A→B 驗收紀錄](qa/2026-10-22-windows-velopack-acceptance.md) 記錄實際安裝與資料保留；沒有測過的外網／新訂閱與乾淨 VM 不列為通過。
+
 ## 首次安裝及 CLI
 
 執行 Setup.exe，開啟管理介面。安裝目錄中的 `current/aigo-bridge.exe` 是 console CLI；GUI 與 CLI 共用 frozen runtime，不需要 Python。首次設定使用 `aigo-bridge.exe setup`，或使用 `byo doctor`、`byo plan`、`byo deploy` 分步完成。部署仍需 Node.js 22+、Wrangler 與安裝者自己的帳戶；不自動變更 provider／Cloudflare 登入。
