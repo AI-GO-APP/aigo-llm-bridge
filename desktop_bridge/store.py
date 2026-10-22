@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import secrets
@@ -21,7 +22,7 @@ DEFAULTS = {"port": 8920, "accepting": True, "retention_days": 30, "timeout_s": 
 DEFAULTS.update(device_id="",cloudflare_account_id="",cloudflare_worker_name="")
 LOG_COLUMNS = ("id", "key_id", "model", "provider", "created_ts", "started_ts", "finished_ts",
                "status", "http_status", "error_code", "duration_ms", "input_bytes", "output_bytes",
-               "prompt_tokens", "completion_tokens", "cost_usd", "pricing_model", "pricing_fetched_ts")
+               "prompt_tokens", "completion_tokens", "cost_usd", "pricing_model", "pricing_fetched_ts", "cached_tokens", "cache_write_tokens", "reasoning_tokens")
 
 
 def keep_default(models,current):
@@ -32,8 +33,13 @@ def keep_default(models,current):
 class Store:
     def __init__(self, directory, *, startup=True):
         self.directory = Path(directory).resolve()
-        self.directory.mkdir(parents=True, exist_ok=True)
+        self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if os.name != "nt": self.directory.chmod(0o700)
         self.path = self.directory / "bridge.sqlite"
+        if os.name != "nt":
+            fd = os.open(self.path, os.O_CREAT | os.O_RDWR, 0o600)
+            os.close(fd)
+            self.path.chmod(0o600)
         self.lock = threading.RLock()
         self.db = sqlite3.connect(self.path, check_same_thread=False)
         self.db.row_factory = sqlite3.Row
@@ -52,7 +58,7 @@ class Store:
             create index if not exists requests_time on requests(created_ts);
         """)
         columns={row[1] for row in self.db.execute('pragma table_info(requests)')}
-        for name,kind in (('cost_usd','real'),('pricing_model','text'),('pricing_fetched_ts','real'),('client_request_id','text'),('request_digest','text')):
+        for name,kind in (('cost_usd','real'),('pricing_model','text'),('pricing_fetched_ts','real'),('client_request_id','text'),('request_digest','text'),('cached_tokens','integer'),('cache_write_tokens','integer'),('reasoning_tokens','integer')):
             if name not in columns:self.db.execute(f'alter table requests add column {name} {kind}')
         self.db.execute("create unique index if not exists request_dedupe on requests(key_id,client_request_id) where client_request_id is not null")
         # Installation identity belongs to this device profile, never to a CLI login.

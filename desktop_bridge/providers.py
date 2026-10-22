@@ -137,10 +137,11 @@ def call_claude(spec,settings,cancel,cwd):
 def codex_command(settings):
     command=[executable("codex",settings),"app-server","--listen","stdio://"]
     config={"web_search":"disabled","analytics.enabled":False,"feedback.enabled":False,"notify":[],
-            "agents.enabled":False,"project_doc_max_bytes":0}
+            "agents.enabled":False,"project_doc_max_bytes":0,"service_tier":"default",
+            "history.persistence":"none","shell_environment_policy.inherit":"none"}
     for name in ("hooks","memories","shell_tool","unified_exec","code_mode","apps","plugins","browser_use",
                  "browser_use_external","computer_use","image_generation","multi_agent","multi_agent_v2",
-                 "view_image","in_app_browser","artifact","workspace_dependencies","sleep_tool","remote_plugin","skill_search","tool_suggest"):
+                 "view_image","in_app_browser","artifact","shell_snapshot","code_mode_host","daemon_auto_start","workspace_dependencies","sleep_tool","remote_plugin","skill_search","tool_suggest"):
         config["features."+name]=False
     path=Path(os.environ.get("CODEX_HOME") or Path.home()/".codex")/"config.toml"
     try:

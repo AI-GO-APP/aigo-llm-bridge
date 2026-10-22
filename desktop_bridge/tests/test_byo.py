@@ -127,7 +127,7 @@ def test_first_pair_checks_actual_edge_credential_before_committing(tmp_path,cry
         def wait_pairing(self,url,token):
             self.probes+=1
             assert secret.load(tmp_path,pending=True)==token and not secret.load(tmp_path)
-            assert self.calls[-1][0]==['secret','put','DEVICE_KEY']
+            assert [c[0] for c in self.calls[-3:]]==[['deploy'],['secret','put','DEVICE_KEY'],['deploy']]
     cloud=ReadyCloud(store.get('cloudflare_worker_name'))
     publish(store,config,cloud);assert cloud.probes==1
     publish(store,config,cloud);assert cloud.probes==1

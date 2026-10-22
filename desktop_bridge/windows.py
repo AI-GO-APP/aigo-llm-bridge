@@ -81,8 +81,18 @@ def set_startup(enabled,data_dir):
         command=[sys.executable,str(Path(__file__).with_name('launcher.py')),'--data-dir',str(Path(data_dir).resolve()),'--background']
         if Path(sys.argv[0]).name=='Bridge.pyw' and Path(sys.argv[0]).is_file():
             command=[sys.executable,str(Path(sys.argv[0]).absolute()),'--background']
+        # Source installs must follow the stable manifest launcher across updates.
+        for parent in Path(__file__).resolve().parents:
+            manifest=parent/'source-install.json'
+            if manifest.is_file():
+                import json
+                install=json.loads(manifest.read_text(encoding='utf-8'))
+                if Path(install['data_dir']).resolve()==Path(data_dir).resolve():
+                    command=[install['python'],str(parent/'Bridge.pyw'),'--background']
+                    break
         if getattr(sys,'frozen',False):command=[sys.executable,*command[2:]]
         value={'Label':path.stem,'ProgramArguments':command,'RunAtLoad':True,
+               'KeepAlive':{'SuccessfulExit':False},'ThrottleInterval':10,
                'StandardOutPath':'/dev/null','StandardErrorPath':'/dev/null',
                'EnvironmentVariables':{'PATH':os.environ.get('PATH','/usr/bin:/bin:/usr/sbin:/sbin')}}
         temporary=path.with_suffix('.tmp');temporary.write_bytes(plistlib.dumps(value));temporary.chmod(0o600)
