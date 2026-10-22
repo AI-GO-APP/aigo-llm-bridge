@@ -1,0 +1,57 @@
+name: Desktop publish
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 要發布的平台（可個別發布）
+        type: choice
+        options: [macos, windows]
+        required: true
+permissions:
+  contents: read
+jobs:
+  macos:
+    if: github.ref == 'refs/heads/main' && inputs.target == 'macos'
+    uses: ./.github/workflows/desktop-macos.yml
+  windows:
+    if: github.ref == 'refs/heads/main' && inputs.target == 'windows'
+    uses: ./.github/workflows/desktop-windows.yml
+  publish:
+    needs: [macos, windows]
+    if: >-
+      always() && github.ref == 'refs/heads/main' &&
+      ((inputs.target == 'macos' && needs.macos.result == 'success') ||
+       (inputs.target == 'windows' && needs.windows.result == 'success'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktop-${{ inputs.target }}
+          path: dist
+      - name: 核對來源與完整性後發布（不覆蓋既有版本）
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ inputs.target }}
+        shell: bash
+        run: |
+          python - "$TARGET" <<'PY'
+          import hashlib, json, pathlib, subprocess, sys
+          target = sys.argv[1]
+          root = pathlib.Path('dist')
+          manifest = json.loads((root / f'{target}-manifest.json').read_text())
+          version = pathlib.Path('VERSION').read_text().strip()
+          commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert manifest['target'] == target and manifest['version'] == version
+          assert manifest['commit'] == commit and manifest['dirty'] is False
+          package = root / manifest['package']
+          assert package.name == f'aigo-llm-bridge-{target}-{version}.zip'
+          assert package.stat().st_size == manifest['size']
+          assert hashlib.sha256(package.read_bytes()).hexdigest() == manifest['sha256']
+          tag = f'desktop-{target}-v{version}'
+          subprocess.run(['gh', 'release', 'create', tag, '--target', commit, '--prerelease',
+                          '--title', tag, '--notes', '個人本機端點原始碼安裝包。需要 Python 3.10+ 與已登入的 CLI；未簽章。',
+                          str(package), str(root / f'{target}-manifest.json')], check=True)
+          PY

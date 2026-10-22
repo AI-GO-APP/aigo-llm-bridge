@@ -1,0 +1,33 @@
+name: Desktop macos
+on:
+  pull_request:
+    paths: ['desktop/**', 'desktop_platform/macos/**', 'packaging/build_desktop.py', 'packaging/macos/**', '.github/workflows/desktop-macos.yml', 'VERSION']
+  push:
+    branches: [main]
+    paths: ['desktop/**', 'desktop_platform/macos/**', 'packaging/build_desktop.py', 'packaging/macos/**', '.github/workflows/desktop-macos.yml', 'VERSION']
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pytest
+      - name: 共用核心與本平台回歸
+        run: python -m pytest desktop/tests desktop_platform/macos/tests worker/tests -q
+      - name: 原生安裝與設定煙霧測試
+        env:
+          AIGO_DESKTOP_HOME: ${{ runner.temp }}/aigo-desktop-smoke
+        run: python desktop_platform/macos/install.py --no-start --port 18790
+      - name: 建置本平台安裝包
+        run: python packaging/macos/build.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos
+          path: dist/macos/*
