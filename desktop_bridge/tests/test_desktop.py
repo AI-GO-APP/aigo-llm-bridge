@@ -86,7 +86,7 @@ def test_key_scope_revoke_rotate_restart(tmp_path):
     s=Store(tmp_path); kid,key=s.create_key("stable",["codex"],15)
     s.close();s=Store(tmp_path)
     assert s.authenticate(key)["id"]==kid
-    with pytest.raises(BridgeError) as error:validate(BASE,s,s.authenticate(key))
+    with pytest.raises(BridgeError) as error:validate({**BASE,'model':'anthropic/claude-haiku-4.5'},s,s.authenticate(key))
     assert error.value.status==403
     new_id,new_key=s.rotate(kid)
     assert s.authenticate(key) is None and s.authenticate(new_key)["id"]==new_id
@@ -102,7 +102,7 @@ def test_async_job_owner_and_memory_expiry(system):
     result=request(api,key,path="/bridge/v1/jobs/"+task.id)[1]["result"]
     assert result['object']=='chat.completion' and result['usage']['cost']==0.000014
     metadata=s.request(task.id,task.key_id)
-    assert metadata['cost_usd']==result['usage']['cost'] and metadata['pricing_model']=='anthropic/claude-haiku-4.5'
+    assert metadata['cost_usd']==result['usage']['cost'] and metadata['pricing_model']==result['model']=='openai/gpt-6-astra'
     _,other=s.create_key("other")
     assert request(api,other,path="/bridge/v1/jobs/"+task.id)[0]==404
     task.completed=time.time()-601
