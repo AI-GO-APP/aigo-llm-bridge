@@ -205,3 +205,5 @@ spikes/     設計前的實測腳本(量完的數字寫在 docs/01,腳本保留�
 ## 授權
 
 [MIT](LICENSE)
+
+本輪單一 Apple Silicon 實體 Mac 的 source 安裝、Keychain／LaunchAgent 與 Codex 訂閱驗收見 [Mac 實機紀錄](docs/MACOS-PHYSICAL-ACCEPTANCE.md)。不代表所有 Mac 已驗證，亦未發布 macOS 安裝包。

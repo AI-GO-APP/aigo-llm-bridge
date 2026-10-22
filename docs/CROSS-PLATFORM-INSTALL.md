@@ -67,3 +67,28 @@ $created.integration.prompt | Set-Clipboard
 若下一階段要以新Mac取代現有Windows作為Cloud常駐供應端，依[供應裝置交接](AI-EA-CLOUD-BEST-PRACTICE.md#下一階段改用另一台-mac-作常駐供應端)先建獨立profile並驗外部HTTPS、模型／成本、工具與錯誤，再切Cloud registry。保留原Windows URL／key作回退；本段不是Mac實機驗收或Mac release。
 
 macOS 儲存與啟動依據：[Apple Keychain](https://developer.apple.com/documentation/security/seckeychainfindgenericpassword(_:_:_:_:_:_:_:_:))、[Apple LaunchAgents](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html)。
+
+
+## macOS LaunchAgent 管理與回復
+
+完成 source 安裝後，可使用安裝內的 `tools/mac_service.py` 管理此 profile。此工具不操作其他 CLI 視窗、不更改供應商登入；`stop`／`restart`／`rollback` 先 pause、wait-idle，再停止此 profile 的 LaunchAgent。若另有手動啟動的 Bridge 仍持有 lock，拒絕更新，不強制殺程序。
+
+```sh
+BRIDGE_ROOT="$HOME/Library/Application Support/AIGO LLM Bridge"
+BRIDGE_PY="$BRIDGE_ROOT/runtime/bin/python"
+BRIDGE_APP="$("$BRIDGE_PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["app"])' "$BRIDGE_ROOT/source-install.json")"
+"$BRIDGE_PY" "$BRIDGE_APP/tools/mac_service.py" status
+"$BRIDGE_PY" "$BRIDGE_APP/tools/mac_service.py" restart
+"$BRIDGE_PY" "$BRIDGE_APP/tools/mac_service.py" stop
+# 在 source checkout 用 Python 3.12+ 執行，沿用同一 root/data：
+python3 tools/install.py --install-root "$BRIDGE_ROOT"
+# 更新後重新從 source-install.json 讀取 BRIDGE_APP，再 start。
+```
+
+`enable`／`disable` 控制登入啟動項；`start` 會立即 bootstrap 並啟用登入啟動，`stop` 停止目前服務並暫停接單，但保留登入啟動檔。再次 `start` 會 resume。LaunchAgent 使用穩定的 `Bridge.pyw` 讀取 manifest；每個 profile 有獨立 label，正常結束不自動重啟，異常退出由 launchd 重啟。stdout/stderr 指向 `/dev/null`，不保存 CLI 原始內容。
+
+更新保留 `source-install.previous.json` 與舊 app 目錄。使用目前安裝的 `mac_service.py rollback` 可先排空、切回上一個 manifest 再啟動，資料目錄不變；回復程式版本不回復／刪除裝置 DB。runtime 為同一 venv，若未來版本改變不相容的依賴，需按舊版 requirements 恢復依賴後再啟動。`source_commit` 記錄安裝來源的 Git commit；從有未提交變更的 checkout 安裝時仍應另核對 Git diff。
+
+LaunchAgent 僅在該使用者登入後供應服務。休眠／關機或登入 Keychain 不可用時不能持續推論；不自動更改全機休眠、安全或登入設定。日常使用以 owner 可讀寫的 data 目錄（0700）、SQLite（0600）保存 metadata；配對 secret 只進 Keychain，無明文 fallback。完整 service KEY 由本機一次性管理視窗交付，不進一般報告。
+
+Mac 可用 `"$BRIDGE_PY" "$BRIDGE_APP/tools/mac_key_handoff.py"` 建立 Codex scope 的 Cloud 專用長效 KEY。本機原生一次性視窗可選擇複製 KEY 或完整串接訊息；明文由 stdin 傳給系統視窗，不進 argv、stdout、腳本檔或報告。視窗關閉後不能查回；即使取消視窗也保留該 key 有效，需用 key-list 核對後明確撤銷／輪替，不要重複產生未知用途的 KEY。此工具不替你將 KEY 注入 Cloud secret，也不修改 registry。
