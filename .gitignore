@@ -28,3 +28,11 @@ spikes/**/out/
 Thumbs.db
 .idea/
 .vscode/
+
+.desktop-data/
+.desktop-build/
+.wrangler/
+.dev.vars*
+**/byo-worker/
+bridge.sqlite*
+relay-device*.dpapi

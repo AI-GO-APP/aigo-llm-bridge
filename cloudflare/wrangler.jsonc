@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Template only. Use tools/byo_setup.py plan to generate a device-owned project.
+  "name": "llm-bridge-template",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-22",
+  "workers_dev": true,
+  "observability": { "enabled": false },
+  "durable_objects": { "bindings": [{ "name": "DEVICE", "class_name": "DeviceRelay" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DeviceRelay"] }]
+}

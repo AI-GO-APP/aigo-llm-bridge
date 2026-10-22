@@ -1,10 +1,10 @@
 name: Desktop windows
 on:
   pull_request:
-    paths: ['desktop/**', 'desktop_platform/windows/**', 'packaging/build_desktop.py', 'packaging/windows/**', '.github/workflows/desktop-windows.yml', 'VERSION']
+    paths: ['desktop_bridge/**', 'cloudflare/**', 'installer/windows/**', 'tools/build_byo.ps1', 'tools/install.py', 'tools/byo_setup.py', 'tools/check_byo_package.py', 'packaging/windows/**', '.github/workflows/desktop-windows.yml', 'docs/**', 'skills/byo-cloudflare/**', 'VERSION']
   push:
     branches: [main]
-    paths: ['desktop/**', 'desktop_platform/windows/**', 'packaging/build_desktop.py', 'packaging/windows/**', '.github/workflows/desktop-windows.yml', 'VERSION']
+    paths: ['desktop_bridge/**', 'cloudflare/**', 'installer/windows/**', 'tools/build_byo.ps1', 'tools/install.py', 'tools/byo_setup.py', 'tools/check_byo_package.py', 'packaging/windows/**', '.github/workflows/desktop-windows.yml', 'docs/**', 'skills/byo-cloudflare/**', 'VERSION']
   workflow_dispatch:
   workflow_call:
 permissions:
@@ -12,22 +12,26 @@ permissions:
 jobs:
   verify:
     runs-on: windows-2025
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - run: python -m pip install pytest
-      - name: 共用核心與本平台回歸
-        run: python -m pytest desktop/tests desktop_platform/windows/tests worker/tests -q
-      - name: 原生安裝與設定煙霧測試
-        env:
-          AIGO_DESKTOP_HOME: ${{ runner.temp }}/aigo-desktop-smoke
-        run: python desktop_platform/windows/install.py --no-start --port 18790
-      - name: 建置本平台安裝包
+          python-version: '3.14'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install pytest pyinstaller==6.22.3 -r desktop_bridge/requirements.txt
+      - name: Windows BYO core regression
+        run: python -m pytest desktop_bridge/tests -q
+      - name: Stateless Cloudflare relay regression
+        run: node --test cloudflare/test/relay.test.js
+      - name: Build Windows native BYO package and source manifest
         run: python packaging/windows/build.py
+      - name: Smoke native EXEs, isolated key authentication and packaged guide links
+        run: python tools/check_byo_package.py
       - uses: actions/upload-artifact@v4
         with:
           name: desktop-windows
           path: dist/windows/*
+          if-no-files-found: error

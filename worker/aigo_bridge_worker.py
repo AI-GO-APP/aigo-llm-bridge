@@ -38,7 +38,7 @@ import urllib.request
 import uuid
 from pathlib import Path
 
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 HOME = Path(os.environ.get("AIGO_BRIDGE_WORKER_HOME") or Path.home() / ".aigo-llm-bridge")
 CONFIG = HOME / "worker.json"
 SESSIONS = HOME / "sessions.json"

@@ -5,6 +5,28 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-22
+
+Windows 新版改採裝置擁有的 BYO Cloudflare 公開 HTTPS 入口，提供本機管理台、長效 API key 及可交給遠端 IDE 的串接訊息。macOS BYO 實機流程仍待驗證，本版只發布 Windows 原生安裝包。
+
+### 升級影響
+- Windows 0.3.x BYO 安裝：以同 InstallRoot 更新並沿用 data_dir，保留 UUID、URL、key hash 與 metadata；先暫停及排空工作，不重開電腦。
+- 舊的 desktop 個人端點：與 BYO 設定檔不同，沒有自動搬移其明文 key 或改寫登入。依 BYO 指引建立自己的 Worker。
+- macOS：不觸發發布、不改 macOS 安裝及封裝程式碼；本輪未做實機驗收。
+- Hosted／舊 worker／客戶端：無行為變更，只同步根版本號；不需部署或修改平台表。
+- 不需要 OpenRouter API key：成本來自公開模型牌價，usage.cost 為 USD 估值。
+
+### Added
+- Windows Web Console、長效 key 的建立／輪替／撤銷、僅 allowlist metadata 的 LOG 管理。
+- 固定 Worker、裝置配對與帳戶綁定；CLI 訂閱登入切換不影響 URL/key。
+- OpenRouter 部分相容 POST/GET、非等價參數明確 400，以及實際 token/cache 牌價換算。
+- repo 隔離安裝器、doctor、自有 Cloudflare agent 指引、一次性 key 串接訊息。
+- Windows CI 實際建置、原生 EXE 隔離 smoke、文件連結及隱私檢查，發布 manifest 含來源 commit 與 SHA256。
+
+### Fixed
+- Windows 中文 CLI 輸出統一 UTF-8；Python 呼叫端需使用有效 CA bundle，保留 TLS 驗證。
+
+
 ## [0.4.0] - 2026-10-22
 
 新增 Mac／Windows 個人本機端點，沿用本人 Claude Code 與 Codex 訂閱登入，並各自安裝與發布。

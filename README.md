@@ -1,3 +1,29 @@
+# Windows BYO Cloudflare LLM Bridge
+
+Windows 的正式安裝路徑使用 `desktop_bridge/`：自己的 Cloudflare Worker、固定 HTTPS、長效 key、本機 Web Console、僅保存中繼資料，以及 OpenRouter 牌價換算的 `usage.cost`。不需要 AI GO 租戶或 OpenRouter key；發布方不代管帳戶／入口。CLI 訂閱由安裝者自己登入，切換訂閱不更改裝置 URL 或 key。
+
+- [Windows 原生安裝包](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/desktop-windows-v0.5.0)：解壓後執行 Install.ps1，不需要 Python。
+- 拿到 repo：Windows 使用 `python tools/install.py`（Python 3.12+），依下列 BYO 指引部署自己的 Cloudflare。
+- macOS 仍由獨立目錄及流程維護；本輪 BYO 完整流程**待 macOS 實機驗證**，不發布 macOS 安裝包。
+
+- [Windows 0.5.0 實際驗收](docs/WINDOWS-RELEASE-0.5.0.md)
+
+| 指引 | 用途 |
+|---|---|
+| [docs/BYO-QUICKSTART.md](docs/BYO-QUICKSTART.md) | 自有 Cloudflare 帳戶、安裝與配對 |
+| [docs/DEVICE-IDENTITY.md](docs/DEVICE-IDENTITY.md) | 裝置與 CLI 帳戶生命週期 |
+| [docs/AI-AGENT-SETUP.md](docs/AI-AGENT-SETUP.md) | 貼給安裝 AI agent 的 prompt |
+| [docs/P1-Windows-guide.md](docs/P1-Windows-guide.md) | 管理介面與 OpenRouter 相容範圍 |
+| [docs/OPENROUTER-PRICING.md](docs/OPENROUTER-PRICING.md) | 成本估值，不是實際扣款 |
+| [docs/THIRD-PARTY-INTEGRATION.md](docs/THIRD-PARTY-INTEGRATION.md) | 複製給遠端 IDE／Web 服務的標準訊息 |
+| [docs/CROSS-PLATFORM-INSTALL.md](docs/CROSS-PLATFORM-INSTALL.md) | Windows repo 安裝與 macOS 待驗證說明 |
+
+完成後建立服務 key，可在一次性視窗按「複製給 AI IDE（含金鑰）」；串接指南可再複製不含 key 的訊息。非串流的 Chat Completions HTTP 用戶可接入；強制 tools／streaming／Responses 的 IDE agent 尚不相容，跨來源網頁需經自己的服務端。
+
+Windows CI/CD 使用 `Desktop windows` 與 `Desktop publish`（target=windows），測試、建置原生 ZIP、檢查文件與不含個人憑證，再產生 commit／SHA256 manifest。macOS 發布不由 Windows 流程觸發。舊的 `desktop/` 迴圈本機端點與下方 Hosted 架構留供既有使用者；不提供新版 BYO 雲端路徑或成本相容。
+
+---
+
 # aigo-llm-bridge
 
 > **English summary** — An OpenAI-compatible LLM gateway for AI GO Custom Apps and Hosted Apps.
@@ -114,7 +140,7 @@ https://github.com/AI-GO-APP/aigo-llm-bridge/releases/latest/download/<檔名>
 2. 照 [docs/07 §6](docs/07-operations.md) 升級。
 3. 想收到新版通知:在 GitHub 上 Watch → Custom → Releases。
 
-## 版本
+## 舊版元件的版本
 
 版本號遵循 [SemVer](https://semver.org/),**單一來源是 [`VERSION`](VERSION)**,每一版都有 tag `vX.Y.Z`、
 [Release](https://github.com/AI-GO-APP/aigo-llm-bridge/releases) 與 [CHANGELOG](CHANGELOG.md) 段落。

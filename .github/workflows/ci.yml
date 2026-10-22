@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: 編譯檢查所有 Python 檔
-        run: python -m compileall -q tools spikes hosted worker clients examples
+        run: python -m compileall -q tools spikes hosted worker clients examples desktop_bridge
       - name: 範例裡的客戶端副本與 clients/ 正本一致
         run: python tools/sync_clients.py --check
 

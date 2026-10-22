@@ -52,7 +52,7 @@ def test_no_leftover_skill_sync_references():
         if md.name == "CHANGELOG.md":
             continue
         text = md.read_text(encoding="utf-8")
-        for needle in ("check_update", "SKILL.md", "npx skills", "resources/hooks", "SessionStart"):
+        for needle in ("check_update", "resources/SKILL.md", "npx skills", "resources/hooks", "SessionStart"):
             if needle in text:
                 stale.append(f"{md.relative_to(ROOT).as_posix()}: {needle}")
     assert not stale, stale
