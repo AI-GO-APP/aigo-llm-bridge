@@ -184,6 +184,43 @@ def complete(config, req, home):
                                                'finish_reason': 'stop'}]}
 
 
+
+def connection_page(port):
+    """公開說明頁不含金鑰、帳號或本機設定。"""
+    return r'''<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM Bridge · 本機連線</title>
+<style>body{margin:0;background:#f4f5f7;color:#202735;font:16px/1.7 system-ui,sans-serif}main{max-width:720px;margin:60px auto;padding:32px;background:white;border:1px solid #dde1e7;border-radius:16px}h1{line-height:1.3}code,pre{background:#f1f3f6;border-radius:6px;padding:4px 8px;overflow-wrap:anywhere}pre{white-space:pre-wrap;padding:16px}label{display:block;margin-top:20px;font-weight:600}input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #a9b2bf;border-radius:8px;font:inherit}button{padding:10px 18px;margin:12px 8px 0 0;border:0;border-radius:8px;background:#215ad6;color:white;font:inherit;cursor:pointer}#result{min-height:2em}small{color:#566174}@media(max-width:780px){main{margin:16px;padding:22px}}</style>
+</head><body><main>
+<small>AI GO · 個人本機端點</small><h1>LLM Bridge 連線設定</h1>
+<p>服務已啟動。這裡是連線說明頁；在呼叫工具中填入下列設定，即可使用這台電腦的訂閱。</p>
+<label>Base URL</label><code id="base">http://127.0.0.1:PORT/v1</code> <button id="copy" type="button">複製網址</button>
+<label>Model</label><p><code>claude</code> 或 <code>codex</code></p>
+<label>取得 API Key</label><p>在自己的終端機執行以下指令，複製輸出中的 <code>api_key</code>，填入呼叫工具的 API Key 欄位。</p>
+<pre>macOS:
+python3 ~/.aigo-llm-bridge/desktop/aigo_desktop.py credentials
+
+Windows PowerShell:
+py -3 "$env:USERPROFILE\.aigo-llm-bridge\desktop\aigo_desktop.py" credentials</pre>
+<small>若使用自訂安裝目錄，請在相同的 AIGO_DESKTOP_HOME 環境下執行。更新會保留原有金鑰。</small>
+<label for="key">檢查金鑰</label><input id="key" type="password" autocomplete="off" placeholder="貼上 api_key（只貼金鑰本身）" spellcheck="false">
+<button id="test" type="button">測試連線</button><p id="result" role="status" aria-live="polite"></p>
+<small>測試只查詢本機模型清單，不呼叫模型。金鑰不寫入瀏覽器儲存空間，重新整理後需重新輸入。<br>直接開啟說明頁不需要金鑰；實際 API 仍需 Authorization: Bearer &lt;api_key&gt;。</small>
+</main><script nonce="NONCE">
+const result=document.getElementById('result');
+document.getElementById('copy').onclick=async()=>{try{await navigator.clipboard.writeText(document.getElementById('base').textContent);result.textContent='已複製 Base URL。';}catch{result.textContent='請選取上方 Base URL 並手動複製。';}};
+document.getElementById('test').onclick=async()=>{
+const key=document.getElementById('key').value.trim();
+if(!key){result.textContent='請先貼上設定檔中的 api_key。';return;}
+const button=document.getElementById('test');button.disabled=true;result.textContent='正在檢查…';
+try{const response=await fetch('/v1/models',{headers:{Authorization:'Bearer '+key},cache:'no-store',signal:AbortSignal.timeout(10000)});
+if(response.ok){const data=await response.json();result.textContent='連線成功。已登記模型：'+data.data.map(m=>m.id).join('、')+'。登入狀態由實際呼叫時確認。';}
+else if(response.status===401){result.textContent='金鑰不正確。請重新執行 credentials，貼上 api_key 的值，不含引號或 Bearer 前綴。';}
+else{result.textContent='服務回應異常（HTTP '+response.status+'），請確認背景服務狀態。';}}
+catch{result.textContent='無法連線。請確認背景服務仍在執行，然後重試。';}
+finally{button.disabled=false;}};
+</script></body></html>'''.replace('PORT', str(port))
+
 def make_handler(config, home):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -195,6 +232,22 @@ def make_handler(config, home):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.send_header('Content-Length', str(len(body)))
             self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            self.wfile.write(body)
+
+        def show_connection_page(self):
+            nonce = secrets.token_urlsafe(24)
+            body = connection_page(config['port']).replace('NONCE', nonce).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('X-Content-Type-Options', 'nosniff')
+            self.send_header('X-Frame-Options', 'DENY')
+            self.send_header('Referrer-Policy', 'no-referrer')
+            self.send_header('Content-Security-Policy',
+                             f"default-src 'none'; script-src 'nonce-{nonce}'; style-src 'unsafe-inline'; "
+                             "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
             self.end_headers()
             self.wfile.write(body)
 
@@ -235,6 +288,9 @@ def make_handler(config, home):
 
         def handle_request(self):
             try:
+                if self.command == 'GET' and self.path in ('/', '/v1', '/v1/'):
+                    self.show_connection_page()
+                    return
                 self.reply(200, self.dispatch())
             except DesktopError as exc:
                 self.reply(exc.status, {'error': {'code': exc.code, 'message': exc.message}})

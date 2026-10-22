@@ -27,7 +27,9 @@ Codex 必須支援 `exec --ignore-user-config --ignore-rules --ephemeral`；不�
 - Bearer API key：執行已安裝的 `aigo_desktop.py credentials` 查看。`status` 不顯示金鑰。
 - `GET /healthz`：實際登入狀態；`GET /v1/models`：已登記 CLI。
 - `POST /v1/chat/completions`：`model` 用 `claude`、`codex`，或 `claude/sonnet`、`codex/<可用模型>`。
-- 所有端點都要 Bearer 金鑰；同時只執行一個推論，忙碌回 429，單次上限 180 秒。
+- 瀏覽器開啟 `/`、`/v1` 或 `/v1/` 可看到連線說明頁、複製 Base URL，貼上金鑰測試連線。
+  說明頁不包含金鑰或帳號，輸入的金鑰不寫入瀏覽器儲存空間；測試只查模型清單、不呼叫模型。
+- 除上述公開說明頁，所有 API 端點都要 Bearer 金鑰；同時只執行一個推論，忙碌回 429，單次上限 180 秒。
 
 Python OpenAI SDK 範例（API key 從自己的環境變數取得）：
 

@@ -39,7 +39,7 @@ def test_invalid_requests_rejected(req):
 
 
 def test_auth_malformed_busy_and_completion(tmp_path, monkeypatch):
-    cfg = {'api_key': 'test-key', 'providers': {}}
+    cfg = {'api_key': 'test-key', 'providers': {}, 'port': 8790}
     monkeypatch.setattr(d, 'complete', lambda c, r, h: {'result': 'ok'})
     server = ThreadingHTTPServer(('127.0.0.1', 0), d.make_handler(cfg, tmp_path))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -49,6 +49,20 @@ def test_auth_malformed_busy_and_completion(tmp_path, monkeypatch):
         return urllib.request.urlopen(urllib.request.Request(base + path, data=body,
             headers={'Authorization': 'Bearer ' + key}), timeout=5)
     try:
+        for path in ('/', '/v1', '/v1/'):
+            with urllib.request.urlopen(base + path, timeout=5) as response:
+                page = response.read().decode('utf-8')
+                assert response.status == 200
+                assert response.headers['Content-Type'].startswith('text/html')
+                assert response.headers['Cache-Control'] == 'no-store'
+                assert "frame-ancestors 'none'" in response.headers['Content-Security-Policy']
+                assert '測試連線' in page and 'http://127.0.0.1:8790/v1' in page
+                assert cfg['api_key'] not in page
+                assert 'localStorage' not in page and 'sessionStorage' not in page
+        for path in ('/v1/models', '/healthz'):
+            with pytest.raises(urllib.error.HTTPError) as exc:
+                urllib.request.urlopen(base + path, timeout=5)
+            assert exc.value.code == 401
         with pytest.raises(urllib.error.HTTPError) as exc:
             request('/v1/models', key='bad')
         assert exc.value.code == 401
