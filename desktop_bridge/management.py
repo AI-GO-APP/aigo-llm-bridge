@@ -146,7 +146,7 @@ class ManagementServer:
         threading.Thread(target=check, daemon=True, name="bridge-auth-status").start()
 
     def state(self):
-        settings = {k: self.store.get(k) for k in ("public_url", "tunnel_name", "port", "retention_days", "timeout_s", "claude_path", "codex_path", "models", "relay_enabled")}
+        settings = {k: self.store.get(k) for k in ("public_url", "tunnel_name", "port", "retention_days", "timeout_s", "inference_workers", "claude_path", "codex_path", "models", "relay_enabled")}
         with self.store.lock:
             counts = dict(self.store.db.execute("select status,count(*) from requests group by status"))
         keys = self.store.keys()

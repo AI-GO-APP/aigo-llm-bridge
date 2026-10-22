@@ -16,7 +16,7 @@ DEFAULT_MODELS = [
     {"id": "anthropic/claude-haiku-4.5", "provider": "claude", "native": "claude-haiku-4-5-20251001"},
     {"id": "openai/gpt-6-astra", "provider": "codex", "native": "gpt-6-astra"},
 ]
-DEFAULTS = {"port": 8920, "accepting": True, "retention_days": 30, "timeout_s": 180,
+DEFAULTS = {"port": 8920, "accepting": True, "retention_days": 30, "timeout_s": 180, "inference_workers": 1,
             "public_url": "", "default_model": DEFAULT_MODELS[1]["id"], "models": DEFAULT_MODELS,
             "claude_path": "", "codex_path": "", "tunnel_kind": "none", "tunnel_name": "", "relay_enabled":False}
 DEFAULTS.update(device_id="",cloudflare_account_id="",cloudflare_worker_name="")
