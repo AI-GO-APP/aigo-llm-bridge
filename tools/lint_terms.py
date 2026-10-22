@@ -77,6 +77,31 @@ def scan_text(label: str, text: str, patterns: list[re.Pattern[str]]) -> list[st
     return hits
 
 
+def commit_message_text(body: str) -> str:
+    """Exclude only identity email in a well-formed final coauthor trailer.
+
+    Author email is already outside this content policy. GitHub squash merges
+    serialize coauthor email into the body, so apply the same identity rule.
+    Display names, ordinary body text and malformed/non-final trailers stay
+    subject to the full scan. Preserve line numbers for private diagnostics.
+    """
+    lines = body.splitlines(keepends=True)
+    end = len(lines)
+    while end and not lines[end - 1].strip():
+        end -= 1
+    start = end
+    while start and lines[start - 1].strip():
+        start -= 1
+    trailer = re.compile(r"(Co-authored-by:\s+[^<>\r\n]+?)\s*<[^<>\s]+@[^<>\s]+>[ \t]*", re.IGNORECASE)
+    for idx in range(start, end):
+        line = lines[idx]
+        ending = "\r\n" if line.endswith("\r\n") else "\n" if line.endswith("\n") else ""
+        match = trailer.fullmatch(line.rstrip("\r\n"))
+        if match:
+            lines[idx] = match.group(1) + " <email>" + ending
+    return "".join(lines)
+
+
 def main() -> int:
     # Windows 主控台預設不是 UTF-8(例如 cp950),中文與 ✓ 會讓 print 直接丟例外
     for stream in (sys.stdout, sys.stderr):
@@ -106,7 +131,7 @@ def main() -> int:
         hits.extend(scan_text(rel, text, patterns))
 
     if "--commits" in args:
-        # 作者 email 刻意不檢查:它常含託管平台帳號名,不是 repo 內容能決定的
+        # 作者及合法協作者尾欄的 email 刻意不檢查:它常含託管平台帳號名,不是 repo 內容能決定的
         proc = subprocess.run(
             ["git", "log", "--format=%H%x00%an%x00%B%x1e"],
             cwd=ROOT, capture_output=True,
@@ -116,7 +141,7 @@ def main() -> int:
         for record in filter(None, (r.strip() for r in log.split("\x1e"))):
             sha, name, body = (record.split("\x00") + ["", ""])[:3]
             hits.extend(scan_text(f"(commit {sha[:8]} 作者名)", name, patterns))
-            hits.extend(scan_text(f"(commit {sha[:8]} 訊息)", body, patterns))
+            hits.extend(scan_text(f"(commit {sha[:8]} 訊息)", commit_message_text(body), patterns))
 
     if hits:
         print(f"✗ 發現 {len(hits)} 處不該出現在通用套件的字詞:")

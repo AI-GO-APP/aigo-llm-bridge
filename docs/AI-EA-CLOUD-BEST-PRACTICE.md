@@ -8,7 +8,7 @@
 
 ## 安裝與端點
 
-1. 按 BYO-QUICKSTART.md 在供應者自有 Cloudflare 帳戶安裝，保留其原 profile／Worker。Windows 以原資料目錄更新 0.6.3 並部署對應 Worker，核對本機版本與公開 HTTPS；macOS 另依原始碼安裝流程實機驗證，不能套用 Windows EXE／DPAPI。
+1. 按 BYO-QUICKSTART.md 在供應者自有 Cloudflare 帳戶安裝，保留其原 profile／Worker。Windows 以原資料目錄更新目前 Windows release（0.6.3 以上） 並部署對應 Worker，核對本機版本與公開 HTTPS；macOS 另依原始碼安裝流程實機驗證，不能套用 Windows EXE／DPAPI。
 2. 從設定讀取公開 origin；不得使用歷史驗收網址當預設。建立獨立服務 key，明文僅一次交給 Cloud secret。一般串接 base URL 為 `<origin>/api/v1`，Cloud registry 的 base_url 則只填 `<origin>`，防止重複 `/api/v1`。
 3. Cloud 設定 `AIEA_BRIDGES=[{"id":"bridge:office","base_url":"https://YOUR-WORKER.workers.dev","key_env":"AIEA_BRIDGE_KEY_OFFICE","models":{"REQUESTED-MODEL-ID":"ACTUAL-BRIDGE-MODEL-ID"}}]`，key 存 `AIEA_BRIDGE_KEY_OFFICE`。映射由管理者明確指定，回應保留實際模型。
 4. `AIEA_LLM_PRIORITY=auto` 採管理頁，或環境覆寫 bridge_first/openrouter_first。管理頁停用 Bridge 可立即回 OpenRouter。更新正式 secrets 不用重新部署；只改本機 .env 不會改線上。
