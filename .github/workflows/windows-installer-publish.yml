@@ -10,6 +10,10 @@ on:
         required: true
         default: '0.7.0'
         description: Minimum compatible Windows installer version
+      published_version:
+        required: false
+        default: ''
+        description: Policy-only mode; reuse this immutable published Windows version, without rebuilding
 permissions:
   contents: read
 concurrency:
@@ -17,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   package:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && inputs.published_version == ''
     runs-on: windows-2025
     timeout-minutes: 30
     env:
@@ -58,7 +62,7 @@ jobs:
             ${{ runner.temp }}/bridge-installer/self-test.json
   announce:
     needs: package
-    if: inputs.announce && github.ref == 'refs/heads/main'
+    if: always() && inputs.announce && github.ref == 'refs/heads/main' && (needs.package.result == 'success' || inputs.published_version != '')
     runs-on: ubuntu-latest
     environment: windows-internal
     permissions:
@@ -74,10 +78,17 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install cryptography==50.0.2 certifi==2026.2.25
       - uses: actions/download-artifact@v4
+        if: inputs.published_version == ''
         with:
           name: windows-internal-installer
           path: ${{ runner.temp }}/bridge-installer
       - name: Verify immutable assets, public readback and announce Windows policy
         env:
           MINIMUM_VERSION: ${{ inputs.minimum_version }}
-        run: python tools/publish_windows_installer.py --build "$RUNNER_TEMP/bridge-installer" --repository "${{ github.repository }}" --minimum-version "$MINIMUM_VERSION"
+          PUBLISHED_VERSION: ${{ inputs.published_version }}
+        run: |
+          if [ -n "$PUBLISHED_VERSION" ]; then
+            python tools/publish_windows_installer.py --published-version "$PUBLISHED_VERSION" --repository "${{ github.repository }}" --minimum-version "$MINIMUM_VERSION"
+          else
+            python tools/publish_windows_installer.py --build "$RUNNER_TEMP/bridge-installer" --repository "${{ github.repository }}" --minimum-version "$MINIMUM_VERSION"
+          fi

@@ -42,4 +42,6 @@ LocalProbe 使用獨立 package ID、臨時更新公鑰及明確 loopback policy
 
 安裝者不需要 GitHub 登入或 PAT：更新 assets 必須可匿名 HTTPS 下載，發布器會實測。若日後將 repo 設為 private，需另選公開的專屬更新 repo／靜態儲存來源並更新安裝包設定，不能把發布 PAT 塞進安裝包。安裝者自己的 BYO Cloudflare 僅提供推論入口；Windows 更新由發布方的 GitHub Actions 簽署及發布。`version` 代表可更新版本，`minimum_version` 代表繼續接收新工作的最低版本；後者提高才會要求強制更新。
 
+若 B 先以選用更新發布，之後才要求 A 必須更新，手動執行同一發布 workflow：`announce=true`、`published_version=B 的版號`、`minimum_version=B 的版號`。此模式重用已發布且驗證過的原始安裝包，提高 policy 序號與最低版本，不重新打包、不替換同版檔案。policy 有效期為三十天；到期前七天內可用相同模式續期。尚未接到強制政策時，來源到期／無法連線只顯示不可用，不憑空停用現有服務；已接到的最低版本限制則保留。
+
 發布器驗證來源在 main、完整產物及固定身份，先上傳 immutable 版本並匿名下載回讀 SHA256，最後才更新 Windows pointer。只允許序號遞增，不覆寫同版內容或降低最低版本；重試相同內容可安全略過。CI 只有 Windows 渠道寫入流程，沒有 Supabase、Cloudflare 或 Mac 憑證。

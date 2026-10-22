@@ -1,6 +1,7 @@
 """Publish Windows-only immutable assets and a signed channel pointer; no Cloud access."""
 import argparse
 import base64
+from datetime import datetime, timezone
 import hashlib
 import importlib.util
 import json
@@ -18,6 +19,16 @@ from desktop_bridge.windows_updates import canonical, verify, fetch, version
 
 def gh(*args,check=True):
     return subprocess.run(['gh',*map(str,args)],check=check,capture_output=True,text=True)
+
+
+def same_release_action(old, new, now=None):
+    if any(old[k] != new[k] for k in ('feed_sha256','package_sha256','commit')):
+        raise ValueError('A published Windows version cannot be replaced.')
+    if version(new['minimum_version']) < version(old['minimum_version']):
+        raise ValueError('Cannot lower the minimum Windows version.')
+    expires = datetime.fromisoformat(old['expires_at'].replace('Z','+00:00'))
+    remaining = (expires - (now or datetime.now(timezone.utc))).total_seconds()
+    return 'unchanged' if old['minimum_version'] == new['minimum_version'] and remaining > 7 * 86400 else 'refresh'
 
 
 def publish(build, repository, minimum):
@@ -64,9 +75,8 @@ def publish(build, repository, minimum):
         signer=importlib.util.module_from_spec(spec);spec.loader.exec_module(signer)
         envelope=signer.sign(root,f'https://github.com/{repository}/releases/download/{tag}',sequence,minimum,key)
         if previous and previous['payload']['version']==cfg['version']:
-            if any(previous['payload'][k]!=envelope['payload'][k] for k in ('feed_sha256','package_sha256','commit')):
-                raise ValueError('A published Windows version cannot be replaced.')
-            print('Windows channel already announced with identical content.');return
+            if same_release_action(previous['payload'], envelope['payload']) == 'unchanged':
+                print('Windows channel already announced with identical content.');return
         release_exists=gh('release','view',tag,'--repo',repository,check=False).returncode==0
         assets=[root/'Releases'/item['name'] for item in report['artifacts']]+[root/'artifacts.json',root/'self-test.json']
         if not release_exists:
@@ -94,5 +104,23 @@ def publish(build, repository, minimum):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--build',required=True);p.add_argument('--repository',required=True)
-    p.add_argument('--minimum-version',required=True);a=p.parse_args();publish(a.build,a.repository,a.minimum_version)
+    p=argparse.ArgumentParser()
+    source=p.add_mutually_exclusive_group(required=True)
+    source.add_argument('--build');source.add_argument('--published-version')
+    p.add_argument('--repository',required=True);p.add_argument('--minimum-version',required=True)
+    a=p.parse_args()
+    if a.published_version:
+        version(a.published_version)
+        with tempfile.TemporaryDirectory() as selected:
+            selected=Path(selected)
+            gh('release','download','windows-installer-internal-v'+a.published_version,
+               '--repo',a.repository,'--dir',selected)
+            report=json.loads((selected/'artifacts.json').read_text())
+            if report['config']['version']!=a.published_version:raise ValueError('Published version mismatch.')
+            (selected/'Releases').mkdir()
+            for item in report['artifacts']:
+                if Path(item['name']).name!=item['name']:raise ValueError('Invalid artifact path.')
+                (selected/item['name']).rename(selected/'Releases'/item['name'])
+            publish(selected,a.repository,a.minimum_version)
+    else:
+        publish(a.build,a.repository,a.minimum_version)
