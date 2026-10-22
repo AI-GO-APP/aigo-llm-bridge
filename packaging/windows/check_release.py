@@ -14,6 +14,7 @@ def windows_only(paths):
     frontend={'desktop_bridge/web/platform.js','desktop_bridge/web/app.js','desktop_bridge/web/style.css',
               'desktop_bridge/web/index.html','desktop_bridge/management.py'}
     code=[p for p in paths if not p.endswith('.md') and not p.startswith(('.github/','tools/tests/','desktop_bridge/tests/'))
+          and not (p.startswith('docs/qa/assets/') and Path(p).suffix.lower() in {'.png','.jpg','.webp'})
           and p != 'tools/lint_terms.py']
     native=any(p.startswith(('desktop_bridge/windows_','packaging/windows/')) for p in code)
     return bool(code) and native and all(p.startswith(('desktop_bridge/windows_','packaging/windows/')) or p in frontend or
