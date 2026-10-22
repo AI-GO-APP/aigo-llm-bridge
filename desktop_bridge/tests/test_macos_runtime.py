@@ -51,8 +51,11 @@ def test_token_detail_migration_preserves_identity_and_keys(tmp_path):
     finally: store.close()
 
 
-def test_codex_inference_overrides_never_modify_personal_config():
+def test_codex_inference_overrides_never_modify_personal_config(tmp_path, monkeypatch):
     from desktop_bridge.providers import codex_command
+    native=tmp_path/"codex-native-fixture"
+    native.write_bytes(b"command construction only; never executed")
+    monkeypatch.setattr("desktop_bridge.providers.executable",lambda *_:str(native))
     command = codex_command({})
     assert 'history.persistence="none"' in command
     assert 'features.shell_snapshot=false' in command
