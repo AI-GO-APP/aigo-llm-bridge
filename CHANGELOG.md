@@ -9,6 +9,12 @@
 
 Mac source 驗收候選，未發布任何 macOS／Windows release 或安裝包。補 owner-only SQLite、穩定 LaunchAgent 更新與 rollback、一次性本機 key 交付、cache/reasoning 用量 metadata，以及首次配對後程式重新部署。本輪實機與 Cloud 驗收見 Mac QA；既有 Windows 服務與裝置設定保持原狀。
 
+### 升級影響
+- Mac：依 source 安裝流程明確更新；既有設定檔、endpoint 與有效 key 保留。
+- Windows：不更新或重啟正在執行的服務，不改 Worker、裝置資料或 key。
+- CI：以已核對的 Git 作者別名保留原始歷史並繼續檢查標準名稱；新增身分對應及發布保護回歸。
+- 發布：`-mac.*` 候選版本合併不自動建立 tag／Release；本輪不發布任何新安裝包。
+
 
 ## [0.6.5] - 2026-10-22
 

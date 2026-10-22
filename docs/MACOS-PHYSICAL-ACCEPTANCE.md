@@ -78,6 +78,6 @@ PYTHON
 
 依 [source 安裝文件](CROSS-PLATFORM-INSTALL.md#macos-launchagent-管理與回復)，從 manifest 讀取目前 app，使用安裝內 `tools/mac_service.py status|start|stop|restart|rollback`。更新前 stop（內含 pause／wait-idle），在 checkout 重跑 `python3 tools/install.py`，重讀 manifest 後 start。rollback 保留 data；依賴不相容的大版本更新需同時恢復舊 requirements。不要重建空 profile、Worker 或 client key 來更新。
 
-沒有重開電腦、沒有更改主機休眠設定；未實際讓整台 Mac 睡眠／喚醒或切換使用者訂閱，也沒有鎖住個人登入 Keychain。這些情況會離線或拒絕取用憑證，不能保證在休眠／未登入時服務。完全斷線且拿不到 usage 的未知 dispatch 不重做，也無法保證立即精確核帳。原生管理 UI／AI EA UI 未作本輪驗收閘門，不能寫成 UI 已通過。尚未發布 Mac release。
+沒有重開電腦；後續依擁有者授權以 `pmset -a sleep 0` 停用插電與電池模式的系統閒置休眠，並讀回兩者均為 `sleep 0`。螢幕關閉與鎖定保持原設定；闔蓋、電量耗盡或手動休眠仍可能中斷供應。未實際讓整台 Mac 睡眠／喚醒或切換使用者訂閱，也沒有鎖住個人登入 Keychain。這些情況會離線或拒絕取用憑證，不能保證在休眠／未登入時服務。完全斷線且拿不到 usage 的未知 dispatch 不重做，也無法保證立即精確核帳。原生管理 UI／AI EA UI 未作本輪驗收閘門，不能寫成 UI 已通過。尚未發布 Mac release。
 
 Cloud 注入與真實用量結算另有一組正式環境驗收紀錄；以該紀錄確認 Cloud 已完成，不能只用上述 Mac 43 項替代。
