@@ -1,5 +1,7 @@
 # Windows 原生安裝與更新
 
+現行規格總入口見 [產品文件](README.md)；管理台風格與深淺色見 [設計規範](DESIGN-SYSTEM.md)，資料與備份見 [SCHEMA](SCHEMA.md)。Windows 安裝器版本以 `packaging/windows/release-target.json` 為準，不以共用核心 VERSION 的 Mac 候選標記推斷。0.7.3 的發布／正式升級狀態見 [本輪驗收](qa/2026-10-23-windows-design-docs.md)。
+
 此流程使用 PyInstaller onedir 與 Velopack，只有 Windows x64 internal；不改 Mac 安裝與 Cloud。暫無 Authenticode 公發憑證，作業系統仍可能提示未知發布者或依企業政策封鎖。更新政策的 Ed25519 簽章不代表 Windows 發布者簽章。
 
 前輪 [隔離 Setup／A→B 驗收紀錄](qa/2026-10-22-windows-velopack-acceptance.md) 記錄實際安裝與資料保留；沒有測過的外網／新訂閱與乾淨 VM 不列為通過。

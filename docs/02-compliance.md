@@ -1,3 +1,5 @@
+> **歷史產品線文件**：本頁描述舊 Hosted／個人端點流程；現行 BYO Windows 請讀 [產品入口](README.md)、[架構](ARCHITECTURE.md) 與 [API](API.md)。不要以本頁定義新版契約。
+
 # 02 · 使用邊界(啟用 `local` 前必讀)
 
 `local` provider 讓工作在「使用者本人電腦上的 Claude Code」執行。這一節說明它**能做什麼、不能做什麼**,

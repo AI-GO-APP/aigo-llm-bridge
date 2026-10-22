@@ -1,6 +1,8 @@
 # AI agent instructions
 
-0.4 起提供 repo 安裝器與第三方串接訊息：先讀 [安裝流程](docs/CROSS-PLATFORM-INSTALL.md)。Windows 原生 ZIP 與 source 安裝目錄分離。macOS 程式碼僅供後續驗證，**待實機驗證，不發布 macOS release**。首次安裝最終需交付 endpoint、一次性長效 key 及 [第三方 AI IDE 標準說明](docs/THIRD-PARTY-INTEGRATION.md)，不能只撤銷測試 key 後留下無法呼叫的安裝。
+先讀 [產品文件入口](docs/README.md)。需求、架構、資料字典、API、設計規範、決策與驗收都是 repo 正本；修改功能須在同一 PR 更新受影響文件。舊編號 01–13 及 README-LEGACY 僅供歷史產品線，不可套用到現行 BYO。新增取捨記 D 編號，不依賴聊天或 LLM 本機記憶。執行 `python tools/check_product_docs.py`；前端改動須依 DESIGN-SYSTEM 與 ACCEPTANCE 驗證六頁、深淺色、窄版及 Windows 適配卡。
+
+0.4 起提供 repo 安裝器與第三方串接訊息：先讀 [安裝流程](docs/CROSS-PLATFORM-INSTALL.md)。Windows 原生 ZIP 與 source 安裝目錄分離。macOS 安裝、實機驗收與發布由獨立維護者處理，狀態見其驗收文件；Windows 工作不得發布 macOS release。首次安裝最終需交付 endpoint、一次性長效 key 及 [第三方 AI IDE 標準說明](docs/THIRD-PARTY-INTEGRATION.md)，不能只撤銷測試 key 後留下無法呼叫的安裝。
 
 本專案目前是 Windows 本機 LLM Bridge，**只採 BYO Cloudflare**。每位安裝者在自己選定的 Cloudflare 帳戶部署、管理、付費及更新專屬 Worker；發布方只提供原始碼與安裝包，不代管入口、帳戶、裝置憑證或訂閱。這不是 AI GO 平台上的 Custom／Hosted App，安裝時不需存取 AI GO 租戶。
 
@@ -22,4 +24,4 @@
 
 ## 維護
 
-Windows 優先，macOS 尚未驗收。保持外部標準 POST／GET 及明確 unsupported_parameter；不把非等價 CLI 控制宣稱為完整 OpenRouter 相容。改完執行 `python -m pytest desktop_bridge/tests -q`、`node --test cloudflare/test/relay.test.js`、`python tools/lint_terms.py --require`。BYO 建置見 `tools/build_byo.ps1`；不要將 `.desktop-data/`、`.desktop-build/`、`.wrangler/` 或任何安裝者設定打包／提交。
+Windows 維護優先；macOS 依其獨立驗收文件，不把 Windows 結果當成 Mac 通過。保持外部標準 POST／GET 及明確 unsupported_parameter；不把非等價 CLI 控制宣稱為完整 OpenRouter 相容。改完執行 `python -m pytest desktop_bridge/tests -q`、`node --test cloudflare/test/relay.test.js`、`python tools/lint_terms.py --require`。BYO 建置見 `tools/build_byo.ps1`；不要將 `.desktop-data/`、`.desktop-build/`、`.wrangler/` 或任何安裝者設定打包／提交。

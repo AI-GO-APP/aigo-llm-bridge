@@ -1,3 +1,5 @@
+> **歷史產品線文件**：本頁描述舊 Hosted／個人端點流程；現行 BYO Windows 請讀 [產品入口](README.md)、[架構](ARCHITECTURE.md) 與 [API](API.md)。不要以本頁定義新版契約。
+
 # 13 · 個人本機端點（macOS／Windows）
 
 供本人本機程式呼叫自己的 Claude Code／Codex 訂閱。沿用 CLI 的官方登入流程，不讀取或轉送 OAuth 憑證。

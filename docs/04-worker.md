@@ -1,3 +1,5 @@
+> **歷史產品線文件**：本頁描述舊 Hosted／個人端點流程；現行 BYO Windows 請讀 [產品入口](README.md)、[架構](ARCHITECTURE.md) 與 [API](API.md)。不要以本頁定義新版契約。
+
 # 04 · 在自己的電腦上安裝 worker
 
 worker 讓 app 可以用「你電腦上、你自己登入的 Claude Code」處理「你自己」送出的工作。

@@ -1,3 +1,5 @@
+> **歷史產品線文件**：本頁描述舊 Hosted／個人端點流程；現行 BYO Windows 請讀 [產品入口](README.md)、[架構](ARCHITECTURE.md) 與 [API](API.md)。不要以本頁定義新版契約。
+
 # 12 · 在本機跑 Bridge、測試與端到端檢查
 
 不碰 AI GO 平台、不花雲端費用,在自己電腦上把 Bridge、模擬的 OpenRouter、worker 全部跑起來。

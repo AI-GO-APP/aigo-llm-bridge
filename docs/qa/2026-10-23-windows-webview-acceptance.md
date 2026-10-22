@@ -38,3 +38,10 @@ Velopack 把 github.com 的字串來源自動當作 GithubSource，無法代表�
 
 
 0.7.2 回歸另發現「視窗事件已釋放，但程序仍在結束」的競爭；Velopack log 明確記錄強制終止該 viewer PID。更新現在會核對本設定檔 viewer 的 PID 及精確執行檔，等待 OS 程序退出後才套用，並等待自有 watcher 結束；不終止其他設定檔或供應商程序。驗收同時要求視窗收據為 closed 且退出碼為 0，不能只用事件釋放或更新成功判定關窗通過。
+
+
+## 0.7.2 後續實際桌面補充
+
+使用已發布0.7.2執行檔與獨立profile，透過Computer Use完成原生Save／中文檔名／Cancel、KEY建立表單兩來源預選及主要頁面閱讀。合成CSV回讀欄位等於LOG_COLUMNS、1筆、輸入17／輸出9 tokens、0.012345 USD；取消後CSV仍只有1檔。按右上X後視窗消失、同profile背景API health為HTTP200。沒有建立正式KEY或改啟動設定。
+
+預設瀏覽器備援CLI退出0、狀態mode=browser，且出現「總覽 · LLM Bridge」Chrome視窗；Computer Use因無法可靠辨識瀏覽器URL而自動停止，未取得該瀏覽器畫面的可信確認，故此部分仍只記啟動成功，非視覺通過。先前原生copy→OS剪貼簿為隱藏frozen WebView實測，不能描述成人工按copy已驗收。
