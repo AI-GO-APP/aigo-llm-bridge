@@ -17,6 +17,11 @@ class WindowsManagementServer(ManagementServer):
         self.update_state = {'status': 'not_checked'}
         self.update_lock = threading.Lock()
         self.before_update = None
+        self.update_stop = threading.Event()
+
+    def minimum_blocked(self):
+        path = self.store.directory / 'updates' / 'minimum-block.json'
+        return path.is_file() and json.loads(path.read_text())['pack_id'] == self.release['pack_id']
 
     def start(self):
         super().start()
@@ -25,9 +30,17 @@ class WindowsManagementServer(ManagementServer):
         temp.write_bytes(protect(json.dumps({'origin': self.origin, 'token': self.token, 'pack_id': self.release['pack_id']}).encode()))
         temp.replace(path)
         windows_updates.finish(self.release, self.store)
+        if self.minimum_blocked():
+            self.store.set('accepting', False)
+            self.update_state = {'status': 'required_cached', 'required': True, 'installed': self.release['version']}
         self.check_updates()
+        def periodic():
+            while not self.update_stop.wait(6 * 3600):
+                self.check_updates()
+        threading.Thread(target=periodic, daemon=True, name='windows-update-timer').start()
 
     def stop(self):
+        self.update_stop.set()
         (self.store.directory / 'windows-control.dpapi').unlink(missing_ok=True)
         super().stop()
 
@@ -45,7 +58,8 @@ class WindowsManagementServer(ManagementServer):
                         atomic_json(floor, {'pack_id':self.release['pack_id'], 'previous_accepting':self.store.get('accepting')})
                     self.store.set('accepting', False)
             except Exception:
-                self.update_state = {'status': 'unavailable', 'installed': self.release['version']}
+                self.update_state = {'status': 'unavailable', 'installed': self.release['version'],
+                                     'required': self.minimum_blocked()}
             finally:
                 self.update_lock.release()
         threading.Thread(target=run, daemon=True, name='windows-update-check').start()
@@ -57,6 +71,8 @@ class WindowsManagementServer(ManagementServer):
         return value
 
     def action(self, path, data):
+        if path == '/manage/accepting' and data.get('accepting') is True and self.minimum_blocked():
+            raise ValueError('A verified minimum Windows version must be installed before resuming.')
         if path == '/manage/windows-update/setup':
             from .windows_release import stable_entry
             subprocess.Popen([str(stable_entry('aigo-bridge.exe')), 'setup', '--data-dir', str(self.store.directory)],

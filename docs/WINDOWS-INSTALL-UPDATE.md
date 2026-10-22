@@ -12,13 +12,15 @@
 
 ## 既有 ZIP 安裝接管
 
-先 pause／wait-idle 並正常關閉舊 Bridge，再執行新 Setup。使用 CLI `adopt --manifest <舊 install.json> --data-dir <原 data_dir>`；資料不搬移、不重建裝置、不輪替 KEY。接著使用 `start --data-dir <同目錄>`。舊程序仍在時拒絕接管；不自動殺程序或刪除舊安裝。首次安裝／更新時勿自動啟動舊捷徑。
+先 pause／wait-idle 並正常關閉舊 Bridge，再執行新 `Setup.exe --silent`，避免先以預設 profile 啟動。使用 CLI `adopt --manifest <舊 install.json> --data-dir <原 data_dir>`；資料不搬移、不重建裝置、不輪替 KEY。接著使用 `start --data-dir <同目錄>`。舊程序仍在時拒絕接管；不自動殺程序或刪除舊安裝。首次安裝／更新時勿自動啟動舊捷徑。
 
 ## 檢查及更新
 
 `update check` 驗證固定公鑰簽署的 policy；`update apply` 再驗一次、下載並驗證完整包，排空本設定檔、備份 metadata SQLite／DPAPI、正常停止此 Bridge，交給 Velopack 套用並用相同 data-dir 重啟。`update status` 顯示重啟後完成結果。沒有 Worker 部署或訂閱登入動作。
 
-GUI 背景檢查失敗不停止現有服務；已驗證最低版本限制會暫停接單，管理功能仍開放。下載／驗證失敗發生在停止服務前；排空超時恢復原接單狀態。若套用或啟動失敗，`updates/pending.json` 與 metadata 備份保留；不要讓舊版讀取不相容 schema，也不要重播未知請求。結果只在 RAM，更新會清除 RAM 回覆，已知 token／cost receipt 仍在 metadata DB。
+程式啟動時與常駐期間每六小時檢查，管理介面亦可手動檢查；有更新時顯示跨頁提示，不自動安裝。GUI 背景檢查失敗不停止現有服務；已驗證最低版本限制會暫停新接單，管理功能與已完成工作的查詢仍開放，不中斷進行中的推論。重啟或之後斷網也保留已取得的限制，不能用一般「恢復接單」略過；完成更新後恢復限制前的接單設定。從未連上更新站的裝置無法得知新限制，不宣稱可離線遠端強制更新。
+
+下載／驗證失敗發生在停止服務前；排空超時恢復原接單狀態。若套用或啟動失敗，`updates/pending.json` 與 metadata 備份保留；不要讓舊版讀取不相容 schema，也不要重播未知請求。結果只在 RAM，更新會清除 RAM 回覆，已知 token／cost receipt 仍在 metadata DB。
 
 若原生安裝器未成功替換 A，正常停止此設定檔後可用原 CLI `update recover --data-dir <原目錄>`。它只允許原版本、原 package ID 與完全相同資料庫 schema，恢復接單設定並保留失敗紀錄；不回寫舊備份覆蓋新資料。若已換成 B 或 schema 改變，拒絕舊版恢復，改安裝更高版本修復。
 
@@ -37,5 +39,7 @@ LocalProbe 使用獨立 package ID、臨時更新公鑰及明確 loopback policy
 首次啟用發布需設定 repository variable `BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY`（32-byte Ed25519 公鑰的 base64）及 windows-internal environment secret `BRIDGE_WINDOWS_UPDATE_PRIVATE_KEY`（對應 32-byte 私鑰的 base64）。這與 client KEY、DEVICE_KEY、Cloudflare 登入及 Windows 公發憑證完全不同。不從 BYO 使用者收取任何發布憑證。
 
 更新來源使用本 repo 的 Windows 專屬固定 Release `windows-updates-internal/windows-x64-internal-policy.json`，每版產物則在 `windows-installer-internal-v<version>`，不使用通用 latest、不需新增 Cloud／Supabase 或 Pages 部署。這是靜態自建 policy 的第一版落地方式；未啟用／未宣布時，安裝程式仍可運行，更新檢查顯示來源不可達。
+
+安裝者不需要 GitHub 登入或 PAT：更新 assets 必須可匿名 HTTPS 下載，發布器會實測。若日後將 repo 設為 private，需另選公開的專屬更新 repo／靜態儲存來源並更新安裝包設定，不能把發布 PAT 塞進安裝包。安裝者自己的 BYO Cloudflare 僅提供推論入口；Windows 更新由發布方的 GitHub Actions 簽署及發布。`version` 代表可更新版本，`minimum_version` 代表繼續接收新工作的最低版本；後者提高才會要求強制更新。
 
 發布器驗證來源在 main、完整產物及固定身份，先上傳 immutable 版本並匿名下載回讀 SHA256，最後才更新 Windows pointer。只允許序號遞增，不覆寫同版內容或降低最低版本；重試相同內容可安全略過。CI 只有 Windows 渠道寫入流程，沒有 Supabase、Cloudflare 或 Mac 憑證。

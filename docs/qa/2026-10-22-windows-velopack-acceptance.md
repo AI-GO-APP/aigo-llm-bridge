@@ -4,7 +4,7 @@
 
 ## 建置基準
 
-- 程式 commit：`7baad911c9f51ad1a001058eb1c2b2330f9eeae2`，A／B manifest 均為 `dirty=false`。
+- 程式 commit：`c9212cbbc8662d6eb8e7cb2f551029d8203527e3`，A／B manifest 均為 `dirty=false`。其後的封裝文件修正再由 frozen self-test 與 PR CI 驗證。
 - Windows 11 x64；Python 3.14.3、PyInstaller 6.22.3、hooks 2026.8、Velopack Python／vpk 1.2.161；完整依賴見 packaging/windows/requirements-lock.txt。
 - A：Windows package 0.7.0；B：0.7.1；兩者核心版本仍為 0.6.5。
 - 獨立 LocalProbe package ID、臨時 Ed25519 公鑰、loopback 更新站與獨立 profile；Setup 真正執行，更新由原生 Velopack 下載、安裝及重啟，非 mock installer。
@@ -12,7 +12,7 @@
 
 ## 最終結果
 
-工具：`tools/verify_installer_update.py`，輸出 `.desktop-build/native-update-acceptance-final/acceptance.json`，22／22 checks 通過。
+工具：`tools/verify_installer_update.py`，輸出 `.desktop-build/native-update-acceptance-hardened/acceptance.json`，22／22 checks 通過。
 
 | 實測 | 結果 |
 |---|---|
@@ -32,15 +32,17 @@
 | 正常停止後執行原生解除安裝 | 程式移除、profile 保留 |
 | 測試 KEY 撤銷與測試程序清理 | 通過；不撤銷任何正式 KEY |
 
-最終 B Setup：33,264,206 bytes；SHA256 `241d6a8d94ad7fae6f730f9addd4973837351090e1299eed5586b8d828bd46e0`。此包是不可分發的 LocalProbe，不上傳公開 Release；臨時 feed 已停止，不能作正常使用者的更新入口。
+最終 B Setup：33,266,559 bytes；SHA256 `031ed6b43659284027a43023997c5b82fbb785281b72509ac2a9435063711484`。此包是不可分發的 LocalProbe，不上傳公開 Release；臨時 feed 已停止，不能作正常使用者的更新入口。
 
 第一輪已實際升到 B，但驗收腳本誤以為 native apply 必定輸出 JSON，因 CLI 正常退出交給 updater 而失敗。修正為檢查真正的新版程序／完成紀錄；第二輪 18 項及最終乾淨來源的 22 項均通過。第一輪測試安裝亦已正常移除。
 
 ## 回歸與 CI/CD 邊界
 
-- `python -m pytest desktop_bridge/tests packaging/windows/tests tools/tests -q`：161 passed、1 macOS-only skip。
+- `python -m pytest desktop_bridge/tests packaging/windows/tests tools/tests -q`：163 passed、1 macOS-only skip。
 - `node --test cloudflare/test/relay.test.js`：7 passed。
 - Windows-only 版號 gate、JS 語法、版本一致性、私有字詞與機敏資訊掃描通過。
+- CI 原先被 Git 預設作者名稱擋住。未合併的 Windows 提交改用通用專案作者；歷史作者沿用 main 的 `.mailmap` 與標準化作者檢查，不改寫 main／tag 歷史，也未加入額外 commit baseline。不在文件或公開 log 揭露私有清單內容。
+- Windows 安裝包拒絕將 profile 放進 managed install root，避免更新／解除安裝刪除資料；`--data-dir=...` 與分開參數形式均保留選定目錄。
 - `windows-installer.yml` 對 PR 執行相同原生安裝／更新驗收；CI 結果以 PR checks 為準，不以本機成功推定 runner 成功。
 - `windows-installer-publish.yml` 已提供 main 手動建置與明確 announce 選項，預設不宣布。首次公開宣布前仍須配置專屬更新公鑰／簽署 secret 並執行發布與匿名下載回讀閘門；本輪沒有執行公開 announce。
 - 沒有 Authenticode 公發憑證；更新 policy 簽章不會消除 Windows SmartScreen／企業政策限制。本機既有使用者的隔離安裝不等於乾淨 VM 或所有 Windows 安全政策已驗收。

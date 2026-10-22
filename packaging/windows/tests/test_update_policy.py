@@ -57,6 +57,26 @@ def test_replay_replacement_and_expired_source_do_not_reset_state(policy,monkeyp
     assert updates.check(cfg,tmp_path)['latest']=='0.7.2'
 
 
+def test_valid_new_sequence_cannot_lower_known_minimum(policy,monkeypatch,tmp_path):
+    cfg,payload,signed=policy
+    selected=[signed({**payload,'minimum_version':'0.7.1'})]
+    monkeypatch.setattr(updates,'fetch',lambda *_:json.dumps(selected[0]).encode())
+    assert updates.check(cfg,tmp_path)['required']
+    selected[0]=signed({**payload,'sequence':2})
+    with pytest.raises(updates.UpdateError):updates.check(cfg,tmp_path)
+
+
+def test_management_cannot_resume_below_verified_minimum(tmp_path,monkeypatch):
+    from desktop_bridge.windows_management import WindowsManagementServer
+    from desktop_bridge.windows_release import atomic_json
+    server=object.__new__(WindowsManagementServer)
+    server.release={'pack_id':'fixture'}
+    from types import SimpleNamespace
+    server.store=SimpleNamespace(directory=tmp_path)
+    atomic_json(tmp_path/'updates/minimum-block.json',{'pack_id':'fixture','previous_accepting':True})
+    with pytest.raises(ValueError):server.action('/manage/accepting',{'accepting':True})
+
+
 def test_unsigned_build_cannot_enable_loopback_transport(policy):
     cfg,payload,signed=policy
     with pytest.raises(updates.UpdateError):updates.transport(cfg['policy_url'],{**cfg,'local_probe':False})

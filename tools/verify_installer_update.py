@@ -124,6 +124,37 @@ def main():
         store=Store(data,startup=False)
         checks['busy_timeout_restores_accepting']=store.get('accepting') is True
         store.update_request(busy_id,status='completed',http_status=200,finished_ts=time.time());store.close()
+        # Announce a mandatory B after exercising the optional-update failures.
+        mandatory=signer.sign(root/'b',origin+'/b',3,'0.7.1',signing)
+        atomic_json(web/'policy.json',mandatory)
+        control(data,'check',pack_id=package_id)
+        def blocked():
+            store=Store(data,startup=False)
+            try:return store.get('accepting') is False
+            finally:store.close()
+        checks['mandatory_policy_pauses_new_work']=bool(wait(blocked))
+        try:
+            req=urllib.request.Request('http://127.0.0.1:'+str(port)+'/api/v1/chat/completions',
+                data=json.dumps({'model':models()['data'][0]['id'],'messages':[{'role':'user','content':'synthetic update gate'}]}).encode(),
+                headers={'Authorization':'Bearer '+key,'Content-Type':'application/json'})
+            opener.open(req,timeout=5)
+            raise AssertionError('Mandatory update accepted inference.')
+        except urllib.error.HTTPError as error:
+            checks['mandatory_policy_rejects_inference']=error.code==503
+        # Normal stop and restart must retain the required state and management access.
+        control(data,'drain',pack_id=package_id);control(data,'shutdown',pack_id=package_id)
+        wait(lambda:not (data/'windows-control.dpapi').exists());time.sleep(1)
+        cli(executable,'start','--data-dir',data)
+        wait(lambda:(data/'windows-control.dpapi').is_file())
+        checks['mandatory_policy_survives_restart']=bool(wait(blocked)) and bool(models()['data'])
+        try:
+            marker=json.loads(secret.protect((data/'windows-control.dpapi').read_bytes(),decrypt=True))
+            req=urllib.request.Request(marker['origin']+'/manage/accepting',data=b'{"accepting":true}',
+                headers={'Authorization':'Bearer '+marker['token'],'Content-Type':'application/json'})
+            opener.open(req,timeout=5)
+            raise AssertionError('Management bypassed the minimum version.')
+        except urllib.error.HTTPError as error:
+            checks['mandatory_policy_cannot_resume_old_version']=error.code==400 and blocked()
         print('APPLY B (native download and restart)',flush=True)
         cli(executable,'update','apply','--data-dir',data,timeout=180)
         result=wait(lambda:json.loads((data/'updates/last-result.json').read_text()) if (data/'updates/last-result.json').is_file() else None,90)

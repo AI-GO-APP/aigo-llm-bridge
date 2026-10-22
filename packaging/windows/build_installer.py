@@ -12,6 +12,7 @@ import shutil
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from desktop_bridge.windows_updates import version, transport
+from build_resources import stage_documents
 
 
 def main(argv=None):
@@ -55,6 +56,7 @@ def main(argv=None):
     (out / '.bridge-windows-build').write_text('Windows installer build', encoding='utf-8')
     stage = out / 'stage'; stage.mkdir(exist_ok=True)
     (stage / 'windows-release.json').write_text(json.dumps(cfg), encoding='utf-8')
+    stage_documents(ROOT, stage, cfg['commit'])
     shutil.copytree(ROOT / 'desktop_bridge/web', stage / 'web', dirs_exist_ok=True)
     with (stage / 'web/app.js').open('a', encoding='utf-8') as stream:
         stream.write('\n' + (ROOT / 'packaging/windows/console_extension.js').read_text(encoding='utf-8'))

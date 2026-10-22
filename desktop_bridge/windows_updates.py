@@ -110,7 +110,8 @@ def _check(cfg, directory):
     state = json.loads(state_path.read_text()) if state_path.is_file() else {}
     previous = state.get('payload')
     if previous:
-        if payload['sequence'] < previous['sequence'] or version(payload['version']) < version(previous['version']):
+        if (payload['sequence'] < previous['sequence'] or version(payload['version']) < version(previous['version'])
+                or version(payload['minimum_version']) < version(previous['minimum_version'])):
             raise UpdateError('Rejected an older release policy.')
         if payload['sequence'] == previous['sequence'] and payload != previous:
             raise UpdateError('A release sequence cannot be changed.')
