@@ -114,6 +114,12 @@ class Runtime:
                         return min(store.get(name),remaining) if name=="timeout_s" else store.get(name)
                 settings=DeadlineSettings()
             text,usage,finish=self.runner(spec,settings,task.cancel)
+            # A semantically invalid answer can still have real provider usage.
+            # Keep only that billing metadata, so receipt settlement does not
+            # pretend a completed inference was free after validation fails.
+            usage=quote.usage(usage)
+            self.store.update_request(task.id,prompt_tokens=usage['prompt_tokens'],completion_tokens=usage['completion_tokens'],
+                cost_usd=usage['cost'],pricing_model=quote.model,pricing_fetched_ts=quote.fetched_at)
             if task.cancel.is_set(): raise BridgeError(499,"cancelled","請求已取消。")
             if not isinstance(text,str): raise BridgeError(502,"invalid_provider_response","模型未返回文字內容。")
             if spec.format in {"json_object","json_schema"}:
@@ -123,14 +129,13 @@ class Runtime:
                     if spec.schema: Draft202012Validator(spec.schema).validate(value)
                 except (ValueError,ValidationError):
                     raise BridgeError(502,"invalid_structured_output","模型輸出未符合 JSON 格式或指定 schema。") from None
-            usage=quote.usage(usage)
             prompt=usage['prompt_tokens'];completion=usage['completion_tokens']
             task.pricing_headers=quote.headers
             if finish not in {"stop","length","content_filter"}: finish="stop"
             message={"role":"assistant","content":text}
             if spec.tool_proposals:
                 from .tool_contract import proposal_message
-                message,finish=proposal_message(json.loads(text))
+                message,finish=proposal_message(json.loads(text),spec.tool_schemas)
             task.result={"id":"gen-"+task.id,"object":"chat.completion","created":int(task.created),"model":spec.model["id"],
                 "system_fingerprint":None,"choices":[{"index":0,"message":message,"finish_reason":finish}],
                 "usage":usage}

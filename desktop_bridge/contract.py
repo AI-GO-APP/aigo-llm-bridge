@@ -29,6 +29,7 @@ class Inference:
     format: str
     schema: dict | None
     tool_proposals: bool = False
+    tool_schemas: dict | None = None
 
 
 def validate(body, settings, caller):
@@ -38,6 +39,7 @@ def validate(body, settings, caller):
         from .tool_contract import proposal_request
         spec=validate(proposal_request(body),settings,caller)
         spec.tool_proposals=True
+        spec.tool_schemas={t['function']['name']:t['function'].get('parameters',{'type':'object'}) for t in body['tools']}
         return spec
     for field, value in body.items():
         if field not in SUPPORTED and not (field in NULLABLE_UNSUPPORTED and value is None):

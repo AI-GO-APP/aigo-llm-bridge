@@ -78,7 +78,7 @@ def test_deadline_expired_before_execution(tmp_path):
 
 def test_tool_proposals_and_history_are_validated_and_never_executed(tmp_path):
     s=Store(tmp_path);_,key=s.create_key('cloud');seen=[]
-    def runner(spec,*_):seen.append(spec);return json.dumps({'content':None,'calls':[{'name':'sum','arguments':{'a':4}}]}),{'prompt_tokens':10,'completion_tokens':1},'stop'
+    def runner(spec,*_):seen.append(spec);return json.dumps({'content':None,'calls':[{'name':'sum','arguments':'{"a":4}'}]}),{'prompt_tokens':10,'completion_tokens':1},'stop'
     rt=Runtime(s,runner)
     t=rt.submit({**BODY,'tools':TOOLS,'tool_choice':'required','parallel_tool_calls':False},s.authenticate(key),30)
     assert t.done.wait(5) and not t.error
@@ -87,6 +87,20 @@ def test_tool_proposals_and_history_are_validated_and_never_executed(tmp_path):
     follow={**BODY,'tools':TOOLS,'messages':BODY['messages']+[msg,{'role':'tool','tool_call_id':call['id'],'content':'4'}]}
     assert validate(follow,s,s.authenticate(key)).tool_proposals
     # Enforced output schema prevents an unregistered function from escaping.
-    rt.runner=lambda *_:(json.dumps({'content':None,'calls':[{'name':'shell','arguments':{}}]}),{'prompt_tokens':1,'completion_tokens':1},'stop')
+    rt.runner=lambda *_:(json.dumps({'content':None,'calls':[{'name':'shell','arguments':'{}'}]}),{'prompt_tokens':1,'completion_tokens':1},'stop')
     bad=rt.submit({**BODY,'tools':TOOLS},s.authenticate(key),20);assert bad.done.wait(5) and bad.error.status==502
+    rt.stop();s.close()
+
+
+def test_full_agent_tool_count_and_invalid_arguments_keep_real_usage(tmp_path):
+    s=Store(tmp_path);_,key=s.create_key('agent');caller=s.authenticate(key)
+    tools=[{'type':'function','function':{'name':'tool_'+str(n),'parameters':TOOLS[0]['function']['parameters']}} for n in range(131)]
+    spec=validate({**BODY,'tools':tools},s,caller)
+    assert len(spec.tool_schemas)==131 and len(json.dumps(spec.schema))<5000
+    def runner(*_):return json.dumps({'content':None,'calls':[{'name':'tool_0','arguments':'{"a":"bad"}'}]}),{'prompt_tokens':10,'completion_tokens':1},'stop'
+    rt=Runtime(s,runner);rid=str(uuid.uuid4());t=rt.submit({**BODY,'tools':tools},caller,30,rid)
+    assert t.done.wait(5) and t.error.status==502
+    receipt=rt.receipt(rid,caller)
+    assert 'result' not in receipt and receipt['billing']['usage']['cost']>0
+    assert receipt['billing']['usage']['prompt_tokens']==10
     rt.stop();s.close()
