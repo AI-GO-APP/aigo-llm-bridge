@@ -3,6 +3,9 @@
 worker 讓 app 可以用「你電腦上、你自己登入的 Claude Code」處理「你自己」送出的工作。
 它是一個 Python 檔,只用標準函式庫,不需要 `pip install`。**它只會領到你本人的工單**(docs/02)。
 
+> 只需要本人本機程式呼叫 Claude／Codex 訂閱與金鑰端點，可改用 [個人端點安裝](13-desktop.md)。
+> 本頁的 worker 模式供 Hosted Bridge 連接個人 Claude Code 使用。
+
 ## 1. 需要什麼
 
 | 項目 | 怎麼確認 |

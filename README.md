@@ -31,6 +31,9 @@ app ──► Bridge ──► 使用者選的優先 ──(不可用)──► 
 |---|---|---|
 | [`hosted/`](hosted) | **Bridge** 本體(FastAPI) | 部署成租戶裡的一個 AI GO Hosted App |
 | [`worker/`](worker) | **worker**:單一 Python 檔,只用標準函式庫 | 每位想用本機的使用者**自己的電腦** |
+| [`desktop/`](desktop) | 個人本機端點:Claude Code／Codex 訂閱、Bridge 金鑰 | 本人的 Mac／Windows |
+| [`desktop_platform/`](desktop_platform) | 各平台獨立安裝、背景啟動與維護 | Mac／Windows 各自維護 |
+| [`packaging/`](packaging) | 平台獨立封裝與來源 manifest | CI 或開發者電腦 |
 | [`clients/`](clients) | 三種呼叫端的正本:瀏覽器、Custom App Server Action、Python | 複製進你的 app |
 | [`examples/`](examples) | 可直接發布的範例:最小 Custom App、Hosted App 呼叫端 | AI GO 平台 |
 | [`tools/`](tools) | 建表、部署、環境變數、本機端到端、維護工具 | 你的電腦 |
@@ -44,6 +47,11 @@ app ──► Bridge ──► 使用者選的優先 ──(不可用)──► 
 | **Hosted App／伺服器程式開發者** | 從自己的服務呼叫 Bridge | [05 呼叫端 §4](docs/05-callers.md) → [examples/hosted-app-caller](examples/hosted-app-caller) |
 | **終端使用者** | 讓 app 用自己電腦上的 Claude Code | [04 安裝 worker](docs/04-worker.md) |
 | **要改這個 repo 的人** | 修 bug、加功能、改文件 | [12 本機開發](docs/12-local-development.md) → [CONTRIBUTING](CONTRIBUTING.md) |
+
+## 個人本機端點（Mac／Windows）
+
+用本人已登入的 Claude Code 或 Codex 訂閱提供本機 OpenAI 相容端點與獨立金鑰，
+附各平台安裝、登入後背景啟動與獨立發布流程。見 [13 · 個人端點與平台架構](docs/13-desktop.md)。
 
 ## 快速上手
 

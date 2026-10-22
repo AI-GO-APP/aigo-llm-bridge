@@ -15,6 +15,7 @@
 cd hosted && python -m pytest -q            # Bridge、三種客戶端、Hosted App 範例
 cd worker && python -m pytest tests -q      # worker(只用標準函式庫)
 python -m pytest tools/tests -q             # 版本工具、文件連結、機敏資訊掃描
+python -m pytest desktop/tests desktop_platform/macos/tests desktop_platform/windows/tests -q
 python tools/sync_clients.py --check        # examples/ 的客戶端副本與 clients/ 一致
 python tools/version.py --check             # 版本號四處一致
 python tools/scan_secrets.py                # 沒有被提交的金鑰
