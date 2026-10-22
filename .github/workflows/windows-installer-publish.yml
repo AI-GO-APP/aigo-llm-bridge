@@ -1,0 +1,83 @@
+name: Windows installer package and publish
+on:
+  workflow_dispatch:
+    inputs:
+      announce:
+        type: boolean
+        default: false
+        description: Publish only this Windows internal channel after native acceptance
+      minimum_version:
+        required: true
+        default: '0.7.0'
+        description: Minimum compatible Windows installer version
+permissions:
+  contents: read
+concurrency:
+  group: windows-installer-internal-publish
+  cancel-in-progress: false
+jobs:
+  package:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-2025
+    timeout-minutes: 30
+    env:
+      PYTHONIOENCODING: utf-8
+      BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY: ${{ vars.BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.3'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Dependencies
+        shell: pwsh
+        run: |
+          python -m venv .desktop-build/venv
+          .desktop-build/venv/Scripts/python -m pip install -r packaging/windows/requirements-lock.txt
+          dotnet tool install --tool-path "$env:RUNNER_TEMP/bridge-vpk" vpk --version 1.2.161
+      - name: Regression and native update gate
+        shell: pwsh
+        run: |
+          .desktop-build/venv/Scripts/python -m pytest desktop_bridge/tests packaging/windows/tests -q
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          .desktop-build/venv/Scripts/python tools/verify_installer_update.py --output "$env:RUNNER_TEMP/bridge-update-proof" --vpk "$env:RUNNER_TEMP/bridge-vpk/vpk.exe"
+      - name: Build redistributable Windows internal package
+        shell: pwsh
+        run: |
+          if (!$env:BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY) { throw 'Configure the dedicated Windows update public key first.' }
+          $policy = 'https://github.com/${{ github.repository }}/releases/download/windows-updates-internal/windows-x64-internal-policy.json'
+          .desktop-build/venv/Scripts/python packaging/windows/build_installer.py --public-key $env:BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY --policy-url $policy --vpk "$env:RUNNER_TEMP/bridge-vpk/vpk.exe" --output "$env:RUNNER_TEMP/bridge-installer"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-internal-installer
+          path: |
+            ${{ runner.temp }}/bridge-installer/Releases/*
+            ${{ runner.temp }}/bridge-installer/artifacts.json
+            ${{ runner.temp }}/bridge-installer/self-test.json
+  announce:
+    needs: package
+    if: inputs.announce && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: windows-internal
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BRIDGE_WINDOWS_UPDATE_PRIVATE_KEY: ${{ secrets.BRIDGE_WINDOWS_UPDATE_PRIVATE_KEY }}
+      BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY: ${{ vars.BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install cryptography==50.0.2 certifi==2026.2.25
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-internal-installer
+          path: ${{ runner.temp }}/bridge-installer
+      - name: Verify immutable assets, public readback and announce Windows policy
+        env:
+          MINIMUM_VERSION: ${{ inputs.minimum_version }}
+        run: python tools/publish_windows_installer.py --build "$RUNNER_TEMP/bridge-installer" --repository "${{ github.repository }}" --minimum-version "$MINIMUM_VERSION"
