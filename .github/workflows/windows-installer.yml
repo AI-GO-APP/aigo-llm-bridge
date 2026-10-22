@@ -1,0 +1,51 @@
+name: Windows installer regression
+on:
+  pull_request:
+    paths: ['desktop_bridge/**', 'packaging/windows/**', 'tools/verify_installer_update.py', '.github/workflows/windows-installer*.yml']
+  push:
+    branches: [main]
+    paths: ['desktop_bridge/**', 'packaging/windows/**', 'tools/verify_installer_update.py', '.github/workflows/windows-installer*.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-installer-ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  isolated-update:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.3'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Locked Windows tools (no machine-global install)
+        shell: pwsh
+        run: |
+          python -m venv .desktop-build/venv
+          .desktop-build/venv/Scripts/python -m pip install -r packaging/windows/requirements-lock.txt
+          dotnet tool install --tool-path "$env:RUNNER_TEMP/bridge-vpk" vpk --version 1.2.161
+      - name: Core, policy and relay regression
+        shell: pwsh
+        run: |
+          .desktop-build/venv/Scripts/python -m pytest desktop_bridge/tests packaging/windows/tests -q
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node --test cloudflare/test/relay.test.js
+      - name: Real isolated Setup and A-to-B native update
+        shell: pwsh
+        run: .desktop-build/venv/Scripts/python tools/verify_installer_update.py --output "$env:RUNNER_TEMP/bridge-update-proof" --vpk "$env:RUNNER_TEMP/bridge-vpk/vpk.exe"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-installer-acceptance
+          path: ${{ runner.temp }}/bridge-update-proof/acceptance.json
+          if-no-files-found: warn

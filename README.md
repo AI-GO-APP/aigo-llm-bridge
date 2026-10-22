@@ -19,6 +19,8 @@ Windows 的正式安裝路徑使用 `desktop_bridge/`：自己的 Cloudflare Wor
 | [docs/THIRD-PARTY-INTEGRATION.md](docs/THIRD-PARTY-INTEGRATION.md) | 複製給遠端 IDE／Web 服務的標準訊息 |
 | [docs/AI-EA-CLOUD-BEST-PRACTICE.md](docs/AI-EA-CLOUD-BEST-PRACTICE.md) | Cloud 模型路由、KEY、成本與驗收邊界 |
 | [docs/CROSS-PLATFORM-INSTALL.md](docs/CROSS-PLATFORM-INSTALL.md) | Windows repo 安裝與 macOS 待驗證說明 |
+| [docs/MAC-CODEX-HANDOFF.md](docs/MAC-CODEX-HANDOFF.md) | 既有 Mac 接手文件；由 Mac 端執行 |
+| [docs/WINDOWS-INSTALL-UPDATE.md](docs/WINDOWS-INSTALL-UPDATE.md) | Windows Velopack 安裝、CLI、簽章更新與隔離驗收 |
 
 完成後建立服務 key，可在一次性視窗按「複製給 AI IDE（含金鑰）」；串接指南可再複製不含 key 的訊息。非串流的 Chat Completions HTTP 用戶可接入；強制 tools／streaming／Responses 的 IDE agent 尚不相容，跨來源網頁需經自己的服務端。
 

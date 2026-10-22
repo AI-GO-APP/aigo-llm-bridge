@@ -1,0 +1,8 @@
+{
+  "platform": "windows",
+  "arch": "x64",
+  "channel": "internal",
+  "version": "0.7.0",
+  "pack_id": "AIGO.LLMBridge.Windows.Internal",
+  "framework_channel": "windows-x64-internal"
+}
