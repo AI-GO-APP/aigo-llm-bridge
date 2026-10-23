@@ -37,6 +37,8 @@
 
 `onboarding open` 現可明確手動重開已完成精靈；一次 RAM open/opened 旗標經前端確認即清除，不抹 completed_at，也不讓下一次日常啟動重開精靈。已安裝正式檔案另唯讀核對仍為 Windows 0.7.3／`d3f2707`。
 
+後續新增「暫存進度，前往進階設定」：真合成 UI 已驗證關閉精靈後可進設定／模型頁，設定卡仍顯示首次安裝未完成，並能返回精靈；不假存完成旗標。新同意文案明確揭露一般電源鍵設不動作；390px 深色畫面再次檢查無水平溢出，本文兩張圖已更新。交付模型或 native/provider 對應若在測試後改變，現在必須重新 verify；onboarding 專屬測試更新為 26 案例。後續候選將另列來源／hash，不以先前包充當新增行為已封裝。
+
 ![Worker 自有帳戶與一鍵／AI IDE 路徑，合成資料](assets/windows-0.8.0-worker-onboarding-light.png)
 
 ![插電同意與 UAC，窄版深色，未套用任何設定](assets/windows-0.8.0-power-onboarding-narrow-dark.png)
