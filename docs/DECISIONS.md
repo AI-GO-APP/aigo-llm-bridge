@@ -58,3 +58,6 @@ D-29（2026-10-23）：公開 API 的交付證據分為本機支援、無 Key �
 | ID／狀態 | 決定與理由 | 代價／何時重訪 |
 |---|---|---|
 | D-28 採用 2026-10-23 | Mac 正式交付現行 BYO source ZIP 與專屬 macos-source-v… Release，Python 3.12+／WKWebView；以 tracked 公開檔 allowlist 建包，附 checksum／commit manifest／self-test，CI 從 ZIP 真安裝後發布。 | 不把 legacy desktop 包、Windows Velopack、未公證 .app／DMG 或更新 feed 混稱現有能力；Mac 日後升級沿用 profile、明確排空、下載新來源。發布後匿名回讀並驗 owner 更新及真 HTTPS。 |
+
+
+**D-31 採用 2026-10-23：64 併發為標準。** 每裝置 Claude／Codex、Chat／Decisions 共用 64 同時推論；新 KEY 預設 600 RPM，保留既有頻率／裝置身分。串接採普通同步 API 並行 POST，無需工單或輪詢。控制請求另保留 8 名額，Schema 子程序保持 4 個並內部短暫等待。大於 64、Claude 真實負載及長上下文另列待驗。本次使用者明確授權更新既有裝置 Worker，並不將 Windows 發布變成對所有安裝者自動部署。

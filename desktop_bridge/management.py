@@ -166,7 +166,7 @@ class ManagementServer:
         with self.auth_lock:
             auth = {p: {"ready": bool(s.get("ready"))} for p, s in self.auth.items()}
             checking = self.auth_checking
-        return {"version": __version__, "preview": self.preview, "accepting": self.store.get("accepting"), "settings": settings,
+        return {"version": __version__, "preview": self.preview, "max_concurrent_requests": self.runtime.max_workers, "shared_provider_capacity": True, "accepting": self.store.get("accepting"), "settings": settings,
                 "endpoint": (settings["public_url"] or f"http://127.0.0.1:{self.api.port}") + "/api/v1",
                 "local_port": self.api.port, "startup": startup_enabled(self.store.directory), "keys": keys,
                 "counts": counts, "auth": auth, "auth_checking": checking,
@@ -212,7 +212,7 @@ class ManagementServer:
         elif path == "/manage/keys/create":
             allowed = data.get("providers", ["claude", "codex"])
             if not isinstance(allowed, list) or not all(isinstance(p, str) for p in allowed): raise ValueError()
-            kid, token = self.store.create_key(data["label"], allowed, int(data.get("rpm", 30)))
+            kid, token = self.store.create_key(data["label"], allowed, int(data.get("rpm", 600)))
             return {"id": kid, "token": token}
         elif path in {"/manage/keys/revoke", "/manage/keys/rotate"}:
             kid = data["id"]

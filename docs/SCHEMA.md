@@ -29,7 +29,7 @@ profile 下 `bridge.sqlite`，WAL 模式、`secure_delete=ON`；並行存取用 
 | accepting | boolean true | 暫停／恢復接單；更新最低版本亦可限制新工作。 |
 | retention_days | integer 30 | 1–365，只刪過期已結束 metadata。 |
 | timeout_s | integer 180 | 10–1800；實際請求 deadline 可更短。 |
-| inference_workers | integer 1 | runtime 驗 1–4；Windows 預設 1，Mac 由其獨立流程配置。 |
+| inference_workers | integer 64 | runtime 驗 1–64；兩來源共用總容量。既有明確設定保留，未設定者採 64。 |
 | public_url | string 空值 | HTTPS origin，不含 API path、query、fragment、帳密。 |
 | default_model | string `openai/gpt-6-astra` | 省略／auto 使用此值；保留有效既有預設，失效優先找 Codex 再找第一筆。 |
 | models | array DEFAULT_MODELS | 1–100 個唯一 id；每筆 `{id,provider,native}`，provider 為 claude／codex。 |
@@ -55,7 +55,7 @@ startup 不在 settings 表，是 Windows HKCU Run／平台啟動設定；隔離
 | created_ts | REAL NOT NULL | Unix 秒 |
 | revoked_ts | REAL nullable | 非 null 表示撤銷 |
 | providers | TEXT NOT NULL | JSON array；新 KEY 預設 claude／codex；無獨立模型白名單 |
-| rpm | INTEGER NOT NULL | 每分鐘請求上限 1–600，預設 30 |
+| rpm | INTEGER NOT NULL | 每分鐘請求上限 1–600，新建預設 600，既有值保留 |
 
 沒有 expires 欄位，KEY 長效直到撤銷／輪替。完整隨機 KEY 不寫 DB；建立／輪替一次回傳。輪替以同一交易建立新 KEY 並撤銷舊 KEY，保留 label／providers／rpm。
 

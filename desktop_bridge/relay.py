@@ -26,6 +26,7 @@ def read_cloud(response,limit=MAX_CLOUD_BODY):
     return value
 
 from . import secret
+from .capacity import STANDARD_CONCURRENCY, CONTROL_CONCURRENCY, is_inference_request
 
 
 class Relay:
@@ -33,7 +34,8 @@ class Relay:
         self.store,self.port=store,port
         self.agent_session=uuid.uuid4().hex
         self.stop_event=threading.Event(); self.thread=None; self.state="未連線"
-        self.pool=ThreadPoolExecutor(max_workers=9,thread_name_prefix="relay-forward")
+        self.pool=ThreadPoolExecutor(max_workers=STANDARD_CONCURRENCY,thread_name_prefix="relay-forward")
+        self.control_pool=ThreadPoolExecutor(max_workers=CONTROL_CONCURRENCY,thread_name_prefix="relay-control")
         self.cloud_opener=urllib.request.build_opener(NoRedirect(),urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=certifi.where())))
         self.cloud_opener.addheaders=[("User-Agent","local-token-buffet-bridge/0.2.0")]
     def start(self):
@@ -62,7 +64,8 @@ class Relay:
                 self.state="已連線"; backoff=1
                 work=item.get("request")
                 if not work: continue
-                self.pool.submit(self.forward,work,base,device_key)
+                pool=self.pool if is_inference_request(work.get("method"),work.get("path")) else self.control_pool
+                pool.submit(self.forward,work,base,device_key)
                 work=None; item=None
             except Exception:
                 # Never log urllib exceptions: they may contain headers, paths or payloads.

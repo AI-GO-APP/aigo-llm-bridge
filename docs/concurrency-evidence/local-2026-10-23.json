@@ -1,0 +1,1161 @@
+{
+  "method": "isolated loopback HTTP to source Runtime to existing Codex subscription; synthetic content only",
+  "installed_version_unchanged": "0.7.1",
+  "source_version_at_test": "0.6.3",
+  "codex_cli_version": "0.163.0-alpha.10.2",
+  "system_memory_gib": 63.86,
+  "maximum_configured_concurrency_tested": 64,
+  "maximum_observed_active_turns": 64,
+  "requests_total": 626,
+  "correct_total": 626,
+  "claude_live_tested": false,
+  "greater_than_64_tested": false,
+  "runs": [
+    {
+      "name": "calibration",
+      "created_utc": "2026-10-23T14:32:40.443014+00:00",
+      "finished_utc": "2026-10-23T14:32:58.487162+00:00",
+      "models": {
+        "judge": {
+          "id": "openai/gpt-6-luna",
+          "provider": "codex",
+          "native": "gpt-6-luna"
+        },
+        "llm": {
+          "id": "openai/gpt-6-astra",
+          "provider": "codex",
+          "native": "gpt-6-astra"
+        }
+      },
+      "source_sha256": {},
+      "limits_before": {
+        "codex": {
+          "primary": {
+            "usedPercent": 88,
+            "windowDurationMins": 10080,
+            "resetsAt": 1793293874
+          }
+        }
+      },
+      "limits_after": {
+        "codex": {
+          "primary": {
+            "usedPercent": 89,
+            "windowDurationMins": 10080,
+            "resetsAt": 1793293874
+          }
+        }
+      },
+      "stop_reason": "levels_exhausted",
+      "production_identity_and_keys_unchanged": true,
+      "stages": [
+        {
+          "stage": 1,
+          "kind": "mixed",
+          "concurrency": 1,
+          "requests": 2,
+          "correct": 2,
+          "wall_s": 13.992,
+          "good_rpm": 8.58,
+          "p50_s": 5.128,
+          "p95_s": 8.782,
+          "peak_active_turns": 1,
+          "within_cloud_38s": 2,
+          "error_counts": {},
+          "queue_p95_s": null,
+          "setup_p95_s": 0.574,
+          "turn_p95_s": 8.198,
+          "resources": {
+            "peak_child_rss_mib": 154.1,
+            "peak_child_processes": 2,
+            "available_memory_min_mib": 30164.1,
+            "resource_guard_triggered": false
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 89,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "discovery",
+      "created_utc": "2026-10-23T14:33:51.977818+00:00",
+      "finished_utc": "2026-10-23T14:37:08.584688+00:00",
+      "models": {
+        "judge": {
+          "id": "openai/gpt-6-luna",
+          "provider": "codex",
+          "native": "gpt-6-luna"
+        },
+        "llm": {
+          "id": "openai/gpt-6-astra",
+          "provider": "codex",
+          "native": "gpt-6-astra"
+        }
+      },
+      "source_sha256": {
+        "desktop_bridge\\service.py": "f08c5c9088591a038265024da4bae86447564be29dd03c248f95858a2b74b806",
+        "desktop_bridge\\providers.py": "b6aceb2942d88ccff908b73846fa478744dbff074d972ccd9e58f764d5d8beeb",
+        "tools\\benchmark_concurrency.py": "4e15b98b30d7c2ddfcf0cae21603f048eb5635ddc0c3858f71079f0503d551d7"
+      },
+      "limits_before": {
+        "codex": {
+          "primary": {
+            "usedPercent": 89,
+            "windowDurationMins": 10080,
+            "resetsAt": 1793293874
+          }
+        }
+      },
+      "limits_after": {
+        "codex": {
+          "primary": {
+            "usedPercent": 90,
+            "windowDurationMins": 10080,
+            "resetsAt": 1793293874
+          }
+        }
+      },
+      "stop_reason": "throughput_plateau_requires_confirmation",
+      "production_identity_and_keys_unchanged": true,
+      "stages": [
+        {
+          "stage": 1,
+          "kind": "mixed",
+          "concurrency": 1,
+          "requests": 8,
+          "correct": 8,
+          "wall_s": 59.508,
+          "good_rpm": 8.07,
+          "p50_s": 5.619,
+          "p95_s": 10.459,
+          "peak_active_turns": 1,
+          "within_cloud_38s": 8,
+          "error_counts": {},
+          "queue_p95_s": 0.002,
+          "setup_p95_s": 0.585,
+          "turn_p95_s": 10.016,
+          "by_kind": {
+            "judge": {
+              "requests": 4,
+              "correct": 4,
+              "p50_s": 5.369,
+              "p95_s": 5.619
+            },
+            "llm": {
+              "requests": 4,
+              "correct": 4,
+              "p50_s": 9.538,
+              "p95_s": 10.459
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 154.2,
+            "peak_child_processes": 2,
+            "available_memory_min_mib": 30330.8,
+            "resource_guard_triggered": false
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 89,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 2,
+          "kind": "mixed",
+          "concurrency": 2,
+          "requests": 8,
+          "correct": 8,
+          "wall_s": 32.527,
+          "good_rpm": 14.76,
+          "p50_s": 6.504,
+          "p95_s": 9.015,
+          "peak_active_turns": 2,
+          "within_cloud_38s": 8,
+          "error_counts": {},
+          "queue_p95_s": 0.004,
+          "setup_p95_s": 0.446,
+          "turn_p95_s": 8.554,
+          "by_kind": {
+            "judge": {
+              "requests": 4,
+              "correct": 4,
+              "p50_s": 5.686,
+              "p95_s": 6.504
+            },
+            "llm": {
+              "requests": 4,
+              "correct": 4,
+              "p50_s": 7.742,
+              "p95_s": 9.015
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 308.7,
+            "peak_child_processes": 4,
+            "available_memory_min_mib": 30578.2,
+            "resource_guard_triggered": false
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 89,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 3,
+          "kind": "mixed",
+          "concurrency": 4,
+          "requests": 8,
+          "correct": 8,
+          "wall_s": 15.899,
+          "good_rpm": 30.19,
+          "p50_s": 7.743,
+          "p95_s": 8.945,
+          "peak_active_turns": 4,
+          "within_cloud_38s": 8,
+          "error_counts": {},
+          "queue_p95_s": 0.011,
+          "setup_p95_s": 0.559,
+          "turn_p95_s": 8.506,
+          "by_kind": {
+            "judge": {
+              "requests": 4,
+              "correct": 4,
+              "p50_s": 6.043,
+              "p95_s": 8.945
+            },
+            "llm": {
+              "requests": 4,
+              "correct": 4,
+              "p50_s": 7.771,
+              "p95_s": 8.165
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 613.0,
+            "peak_child_processes": 8,
+            "available_memory_min_mib": 30200.8,
+            "resource_guard_triggered": false
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 89,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 4,
+          "kind": "mixed",
+          "concurrency": 8,
+          "requests": 8,
+          "correct": 8,
+          "wall_s": 8.923,
+          "good_rpm": 53.8,
+          "p50_s": 7.764,
+          "p95_s": 8.811,
+          "peak_active_turns": 8,
+          "within_cloud_38s": 8,
+          "error_counts": {},
+          "queue_p95_s": 0.021,
+          "setup_p95_s": 0.764,
+          "turn_p95_s": 8.138,
+          "by_kind": {
+            "judge": {
+              "requests": 4,
+              "correct": 4,
+              "p50_s": 5.839,
+              "p95_s": 7.764
+            },
+            "llm": {
+              "requests": 4,
+              "correct": 4,
+              "p50_s": 7.922,
+              "p95_s": 8.811
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 1227.9,
+            "peak_child_processes": 16,
+            "available_memory_min_mib": 30730.5,
+            "resource_guard_triggered": false
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 89,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 5,
+          "kind": "mixed",
+          "concurrency": 16,
+          "requests": 16,
+          "correct": 16,
+          "wall_s": 12.742,
+          "good_rpm": 75.34,
+          "p50_s": 7.882,
+          "p95_s": 12.505,
+          "peak_active_turns": 16,
+          "within_cloud_38s": 16,
+          "error_counts": {},
+          "queue_p95_s": 0.033,
+          "setup_p95_s": 0.917,
+          "turn_p95_s": 11.291,
+          "by_kind": {
+            "judge": {
+              "requests": 8,
+              "correct": 8,
+              "p50_s": 6.612,
+              "p95_s": 7.882
+            },
+            "llm": {
+              "requests": 8,
+              "correct": 8,
+              "p50_s": 9.354,
+              "p95_s": 12.505
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 2452.1,
+            "peak_child_processes": 32,
+            "available_memory_min_mib": 30494.1,
+            "resource_guard_triggered": false
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 90,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 6,
+          "kind": "mixed",
+          "concurrency": 32,
+          "requests": 32,
+          "correct": 32,
+          "wall_s": 12.078,
+          "good_rpm": 158.96,
+          "p50_s": 9.475,
+          "p95_s": 11.238,
+          "peak_active_turns": 32,
+          "within_cloud_38s": 32,
+          "error_counts": {},
+          "queue_p95_s": 0.067,
+          "setup_p95_s": 1.865,
+          "turn_p95_s": 9.036,
+          "by_kind": {
+            "judge": {
+              "requests": 16,
+              "correct": 16,
+              "p50_s": 8.082,
+              "p95_s": 10.214
+            },
+            "llm": {
+              "requests": 16,
+              "correct": 16,
+              "p50_s": 10.355,
+              "p95_s": 11.317
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 4904.5,
+            "peak_child_processes": 64,
+            "available_memory_min_mib": 30005.0,
+            "resource_guard_triggered": false
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 90,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 7,
+          "kind": "mixed",
+          "concurrency": 64,
+          "requests": 64,
+          "correct": 64,
+          "wall_s": 43.8,
+          "good_rpm": 87.67,
+          "p50_s": 23.01,
+          "p95_s": 41.388,
+          "peak_active_turns": 64,
+          "within_cloud_38s": 52,
+          "error_counts": {},
+          "queue_p95_s": 0.115,
+          "setup_p95_s": 3.443,
+          "turn_p95_s": 36.623,
+          "by_kind": {
+            "judge": {
+              "requests": 32,
+              "correct": 32,
+              "p50_s": 21.218,
+              "p95_s": 38.136
+            },
+            "llm": {
+              "requests": 32,
+              "correct": 32,
+              "p50_s": 24.388,
+              "p95_s": 42.371
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 9723.4,
+            "peak_child_processes": 128,
+            "available_memory_min_mib": 28137.5,
+            "resource_guard_triggered": false
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 90,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "confirmation",
+      "created_utc": "2026-10-23T14:38:07.941853+00:00",
+      "finished_utc": "2026-10-23T14:40:28.900427+00:00",
+      "models": {
+        "judge": {
+          "id": "openai/gpt-6-luna",
+          "provider": "codex",
+          "native": "gpt-6-luna"
+        },
+        "llm": {
+          "id": "openai/gpt-6-astra",
+          "provider": "codex",
+          "native": "gpt-6-astra"
+        }
+      },
+      "source_sha256": {
+        "desktop_bridge\\service.py": "f08c5c9088591a038265024da4bae86447564be29dd03c248f95858a2b74b806",
+        "desktop_bridge\\providers.py": "b6aceb2942d88ccff908b73846fa478744dbff074d972ccd9e58f764d5d8beeb",
+        "tools\\benchmark_concurrency.py": "4e15b98b30d7c2ddfcf0cae21603f048eb5635ddc0c3858f71079f0503d551d7"
+      },
+      "limits_before": {
+        "codex": {
+          "primary": {
+            "usedPercent": 91,
+            "windowDurationMins": 10080,
+            "resetsAt": 1793293874
+          }
+        }
+      },
+      "limits_after": {
+        "codex": {
+          "primary": {
+            "usedPercent": 93,
+            "windowDurationMins": 10080,
+            "resetsAt": 1793293874
+          }
+        }
+      },
+      "stop_reason": "levels_exhausted",
+      "production_identity_and_keys_unchanged": true,
+      "stages": [
+        {
+          "stage": 1,
+          "kind": "mixed",
+          "concurrency": 32,
+          "requests": 64,
+          "correct": 64,
+          "wall_s": 38.814,
+          "good_rpm": 98.93,
+          "p50_s": 7.955,
+          "p95_s": 15.678,
+          "peak_active_turns": 32,
+          "within_cloud_38s": 64,
+          "error_counts": {},
+          "queue_p95_s": 0.045,
+          "setup_p95_s": 2.144,
+          "turn_p95_s": 13.562,
+          "by_kind": {
+            "judge": {
+              "requests": 32,
+              "correct": 32,
+              "p50_s": 6.799,
+              "p95_s": 10.506
+            },
+            "llm": {
+              "requests": 32,
+              "correct": 32,
+              "p50_s": 9.857,
+              "p95_s": 18.367
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 4903.9,
+            "peak_child_processes": 64,
+            "available_memory_min_mib": 29261.9,
+            "resource_guard_triggered": false
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 91,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 2,
+          "kind": "mixed",
+          "concurrency": 48,
+          "requests": 64,
+          "correct": 64,
+          "wall_s": 34.631,
+          "good_rpm": 110.88,
+          "p50_s": 18.774,
+          "p95_s": 30.013,
+          "peak_active_turns": 48,
+          "within_cloud_38s": 64,
+          "error_counts": {},
+          "queue_p95_s": 0.112,
+          "setup_p95_s": 3.015,
+          "turn_p95_s": 26.596,
+          "by_kind": {
+            "judge": {
+              "requests": 32,
+              "correct": 32,
+              "p50_s": 17.35,
+              "p95_s": 26.687
+            },
+            "llm": {
+              "requests": 32,
+              "correct": 32,
+              "p50_s": 19.526,
+              "p95_s": 31.864
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 7387.7,
+            "peak_child_processes": 96,
+            "available_memory_min_mib": 28448.3,
+            "resource_guard_triggered": false
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 92,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 3,
+          "kind": "mixed",
+          "concurrency": 64,
+          "requests": 64,
+          "correct": 64,
+          "wall_s": 28.816,
+          "good_rpm": 133.26,
+          "p50_s": 14.213,
+          "p95_s": 24.701,
+          "peak_active_turns": 63,
+          "within_cloud_38s": 64,
+          "error_counts": {},
+          "queue_p95_s": 0.118,
+          "setup_p95_s": 4.387,
+          "turn_p95_s": 18.767,
+          "by_kind": {
+            "judge": {
+              "requests": 32,
+              "correct": 32,
+              "p50_s": 12.697,
+              "p95_s": 22.982
+            },
+            "llm": {
+              "requests": 32,
+              "correct": 32,
+              "p50_s": 14.213,
+              "p95_s": 25.221
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 9712.8,
+            "peak_child_processes": 128,
+            "available_memory_min_mib": 28633.2,
+            "resource_guard_triggered": false
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 92,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 4,
+          "kind": "mixed",
+          "concurrency": 32,
+          "requests": 64,
+          "correct": 64,
+          "wall_s": 33.155,
+          "good_rpm": 115.82,
+          "p50_s": 11.456,
+          "p95_s": 25.387,
+          "peak_active_turns": 32,
+          "within_cloud_38s": 64,
+          "error_counts": {},
+          "queue_p95_s": 0.038,
+          "setup_p95_s": 2.241,
+          "turn_p95_s": 22.859,
+          "by_kind": {
+            "judge": {
+              "requests": 32,
+              "correct": 32,
+              "p50_s": 7.461,
+              "p95_s": 22.515
+            },
+            "llm": {
+              "requests": 32,
+              "correct": 32,
+              "p50_s": 11.456,
+              "p95_s": 26.046
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 4910.6,
+            "peak_child_processes": 64,
+            "available_memory_min_mib": 29160.2,
+            "resource_guard_triggered": false
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 93,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "judge",
+      "created_utc": "2026-10-23T14:41:13.662412+00:00",
+      "finished_utc": "2026-10-23T14:42:22.965908+00:00",
+      "models": {
+        "judge": {
+          "id": "openai/gpt-6-luna",
+          "provider": "codex",
+          "native": "gpt-6-luna"
+        },
+        "llm": {
+          "id": "openai/gpt-6-astra",
+          "provider": "codex",
+          "native": "gpt-6-astra"
+        }
+      },
+      "source_sha256": {
+        "desktop_bridge\\service.py": "f08c5c9088591a038265024da4bae86447564be29dd03c248f95858a2b74b806",
+        "desktop_bridge\\providers.py": "3461e49d8bf0b36ce3696df5f4582cee799a318c466c8b628f9892aed5621e75",
+        "tools\\benchmark_concurrency.py": "c8c49d105f6e99873ecdceeb2d9094dfdf82c71565c1172f2b6c8dc2344174a3"
+      },
+      "limits_before": {
+        "codex": {
+          "primary": {
+            "usedPercent": 93,
+            "windowDurationMins": 10080,
+            "resetsAt": 1793293874
+          }
+        }
+      },
+      "limits_after": {
+        "codex": {
+          "primary": {
+            "usedPercent": 93,
+            "windowDurationMins": 10080,
+            "resetsAt": 1793293874
+          }
+        }
+      },
+      "stop_reason": "throughput_plateau_requires_confirmation",
+      "production_identity_and_keys_unchanged": true,
+      "stages": [
+        {
+          "stage": 1,
+          "kind": "judge",
+          "concurrency": 16,
+          "requests": 16,
+          "correct": 16,
+          "wall_s": 8.668,
+          "good_rpm": 110.76,
+          "p50_s": 5.57,
+          "p95_s": 8.323,
+          "peak_active_turns": 16,
+          "within_cloud_38s": 16,
+          "error_counts": {},
+          "queue_p95_s": 0.058,
+          "setup_p95_s": 1.312,
+          "turn_p95_s": 6.769,
+          "by_kind": {
+            "judge": {
+              "requests": 16,
+              "correct": 16,
+              "p50_s": 5.57,
+              "p95_s": 8.323
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 2452.5,
+            "peak_child_processes": 32,
+            "available_memory_min_mib": 29861.3,
+            "resource_guard_triggered": false,
+            "peak_system_cpu_percent": 90.4
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 93,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 2,
+          "kind": "judge",
+          "concurrency": 32,
+          "requests": 32,
+          "correct": 32,
+          "wall_s": 11.893,
+          "good_rpm": 161.44,
+          "p50_s": 7.679,
+          "p95_s": 11.079,
+          "peak_active_turns": 32,
+          "within_cloud_38s": 32,
+          "error_counts": {},
+          "queue_p95_s": 0.118,
+          "setup_p95_s": 2.461,
+          "turn_p95_s": 7.856,
+          "by_kind": {
+            "judge": {
+              "requests": 32,
+              "correct": 32,
+              "p50_s": 7.679,
+              "p95_s": 11.079
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 4894.9,
+            "peak_child_processes": 64,
+            "available_memory_min_mib": 29395.1,
+            "resource_guard_triggered": false,
+            "peak_system_cpu_percent": 98.9
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 93,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 3,
+          "kind": "judge",
+          "concurrency": 64,
+          "requests": 64,
+          "correct": 64,
+          "wall_s": 43.732,
+          "good_rpm": 87.81,
+          "p50_s": 19.144,
+          "p95_s": 41.991,
+          "peak_active_turns": 63,
+          "within_cloud_38s": 52,
+          "error_counts": {},
+          "queue_p95_s": 0.158,
+          "setup_p95_s": 4.289,
+          "turn_p95_s": 36.716,
+          "by_kind": {
+            "judge": {
+              "requests": 64,
+              "correct": 64,
+              "p50_s": 19.144,
+              "p95_s": 41.991
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 9703.4,
+            "peak_child_processes": 128,
+            "available_memory_min_mib": 28359.4,
+            "resource_guard_triggered": false,
+            "peak_system_cpu_percent": 100.0
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 93,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "llm",
+      "created_utc": "2026-10-23T14:43:04.421857+00:00",
+      "finished_utc": "2026-10-23T14:44:08.103947+00:00",
+      "models": {
+        "judge": {
+          "id": "openai/gpt-6-luna",
+          "provider": "codex",
+          "native": "gpt-6-luna"
+        },
+        "llm": {
+          "id": "openai/gpt-6-astra",
+          "provider": "codex",
+          "native": "gpt-6-astra"
+        }
+      },
+      "source_sha256": {
+        "desktop_bridge\\service.py": "f08c5c9088591a038265024da4bae86447564be29dd03c248f95858a2b74b806",
+        "desktop_bridge\\providers.py": "3461e49d8bf0b36ce3696df5f4582cee799a318c466c8b628f9892aed5621e75",
+        "tools\\benchmark_concurrency.py": "c8c49d105f6e99873ecdceeb2d9094dfdf82c71565c1172f2b6c8dc2344174a3"
+      },
+      "limits_before": {
+        "codex": {
+          "primary": {
+            "usedPercent": 93,
+            "windowDurationMins": 10080,
+            "resetsAt": 1793293874
+          }
+        }
+      },
+      "limits_after": {
+        "codex": {
+          "primary": {
+            "usedPercent": 95,
+            "windowDurationMins": 10080,
+            "resetsAt": 1793293874
+          }
+        }
+      },
+      "stop_reason": "subscription_budget_guard",
+      "production_identity_and_keys_unchanged": true,
+      "stages": [
+        {
+          "stage": 1,
+          "kind": "llm",
+          "concurrency": 16,
+          "requests": 16,
+          "correct": 16,
+          "wall_s": 11.613,
+          "good_rpm": 82.66,
+          "p50_s": 9.111,
+          "p95_s": 11.511,
+          "peak_active_turns": 16,
+          "within_cloud_38s": 16,
+          "error_counts": {},
+          "queue_p95_s": 0.014,
+          "setup_p95_s": 0.99,
+          "turn_p95_s": 10.422,
+          "by_kind": {
+            "llm": {
+              "requests": 16,
+              "correct": 16,
+              "p50_s": 9.111,
+              "p95_s": 11.511
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 2451.0,
+            "peak_child_processes": 32,
+            "available_memory_min_mib": 29443.7,
+            "resource_guard_triggered": false,
+            "peak_system_cpu_percent": 90.7
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 93,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 2,
+          "kind": "llm",
+          "concurrency": 32,
+          "requests": 32,
+          "correct": 32,
+          "wall_s": 14.598,
+          "good_rpm": 131.52,
+          "p50_s": 10.497,
+          "p95_s": 12.878,
+          "peak_active_turns": 32,
+          "within_cloud_38s": 32,
+          "error_counts": {},
+          "queue_p95_s": 0.08,
+          "setup_p95_s": 2.569,
+          "turn_p95_s": 11.11,
+          "by_kind": {
+            "llm": {
+              "requests": 32,
+              "correct": 32,
+              "p50_s": 10.497,
+              "p95_s": 12.878
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 4905.7,
+            "peak_child_processes": 64,
+            "available_memory_min_mib": 29392.1,
+            "resource_guard_triggered": false,
+            "peak_system_cpu_percent": 100.0
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 94,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        },
+        {
+          "stage": 3,
+          "kind": "llm",
+          "concurrency": 64,
+          "requests": 64,
+          "correct": 64,
+          "wall_s": 32.164,
+          "good_rpm": 119.39,
+          "p50_s": 23.675,
+          "p95_s": 27.086,
+          "peak_active_turns": 64,
+          "within_cloud_38s": 64,
+          "error_counts": {},
+          "queue_p95_s": 0.114,
+          "setup_p95_s": 6.093,
+          "turn_p95_s": 20.705,
+          "by_kind": {
+            "llm": {
+              "requests": 64,
+              "correct": 64,
+              "p50_s": 23.675,
+              "p95_s": 27.086
+            }
+          },
+          "resources": {
+            "peak_child_rss_mib": 9747.0,
+            "peak_child_processes": 128,
+            "available_memory_min_mib": 27224.4,
+            "resource_guard_triggered": false,
+            "peak_system_cpu_percent": 100.0
+          },
+          "limits_after": {
+            "codex": {
+              "primary": {
+                "usedPercent": 95,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793293874
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "privacy_and_cleanup": [
+    {
+      "run": "calibration",
+      "profile": "01-mixed-1",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "discovery",
+      "profile": "01-mixed-1",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "discovery",
+      "profile": "02-mixed-2",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "discovery",
+      "profile": "03-mixed-4",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "discovery",
+      "profile": "04-mixed-8",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "discovery",
+      "profile": "05-mixed-16",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "discovery",
+      "profile": "06-mixed-32",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "discovery",
+      "profile": "07-mixed-64",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "confirmation",
+      "profile": "01-mixed-32",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "confirmation",
+      "profile": "02-mixed-48",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "confirmation",
+      "profile": "03-mixed-64",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "confirmation",
+      "profile": "04-mixed-32",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "judge",
+      "profile": "01-judge-16",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "judge",
+      "profile": "02-judge-32",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "judge",
+      "profile": "03-judge-64",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "llm",
+      "profile": "01-llm-16",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "llm",
+      "profile": "02-llm-32",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    },
+    {
+      "run": "llm",
+      "profile": "03-llm-64",
+      "all_test_keys_revoked": true,
+      "unfinished_jobs": 0,
+      "no_raw_content": true,
+      "no_plaintext_api_key": true
+    }
+  ]
+}

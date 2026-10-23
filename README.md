@@ -58,3 +58,6 @@ python tools/lint_terms.py --require
 ```
 
 `hosted/`、`worker/`、`desktop/`、編號 01–13 文件與 [舊 README](README-LEGACY.md) 是歷史產品線，不作現行 BYO 契約或安裝入口。
+
+
+標準 API 容量為每裝置 64 筆同時推論，Claude／Codex 與 Chat／Jev Decisions 共用；可直接並行 POST。詳見 [併發規格及驗證邊界](docs/CONCURRENCY.md)。

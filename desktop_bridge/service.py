@@ -12,6 +12,7 @@ import threading
 import time
 import uuid
 
+from .capacity import STANDARD_CONCURRENCY
 from .schema_guard import validate_instances
 
 from . import __version__, providers
@@ -42,16 +43,20 @@ class Task:
 
 
 class Runtime:
-    def __init__(self,store,runner=None,pricing=None,model_catalog=None):
+    def __init__(self,store,runner=None,pricing=None,model_catalog=None,*,max_workers=None,max_pending=None):
         self.store=store
         self.runner=runner or providers.infer
         self.pricing=pricing or Catalog(store.directory)
         self.models=model_catalog or ModelCatalog(store)
-        workers=store.get('inference_workers')
-        if type(workers) is not int or not 1<=workers<=4:
-            raise ValueError('inference_workers must be an integer from 1 to 4.')
+        workers=store.get('inference_workers') if max_workers is None else max_workers
+        pending=workers if max_pending is None else max_pending
+        if type(workers) is not int or not 1<=workers<=STANDARD_CONCURRENCY:
+            raise ValueError('inference_workers must be an integer from 1 to 64.')
+        if type(pending) is not int or not workers<=pending<=STANDARD_CONCURRENCY:
+            raise ValueError('max_pending must be an integer between workers and 64.')
+        self.max_workers,self.max_pending=workers,pending
         self.pool=ThreadPoolExecutor(max_workers=workers,thread_name_prefix="bridge-inference")
-        self.slots=threading.BoundedSemaphore(9)
+        self.slots=threading.BoundedSemaphore(pending)
         self.lock=threading.RLock()
         self.tasks={}
         self.rate=defaultdict(deque)
@@ -82,8 +87,8 @@ class Runtime:
         if self.stopped or not self.store.get("accepting"):
             raise BridgeError(503,"device_paused","服務目前暫停接單。")
         with self.lock:
-            if sum(not t.done.is_set() for t in self.tasks.values())>=9:
-                raise BridgeError(429,"queue_full","工作佇列已滿。")
+            if sum(not t.done.is_set() for t in self.tasks.values())>=self.max_pending:
+                raise BridgeError(429,"queue_full","同時推論已達裝置容量。")
         return spec
 
     def submit(self,body,caller,input_bytes,request_id=None,deadline=None,protocol="chat"):
@@ -106,7 +111,7 @@ class Runtime:
             now=time.monotonic(); history=self.rate[caller["id"]]
             while history and history[0]<now-60: history.popleft()
             if len(history)>=caller["rpm"]: raise BridgeError(429,"rate_limit_exceeded","這把 key 已達每分鐘上限。")
-            if not self.slots.acquire(blocking=False): raise BridgeError(429,"queue_full","工作佇列已滿，請稍後再試。")
+            if not self.slots.acquire(blocking=False): raise BridgeError(429,"queue_full","同時推論已達裝置容量。")
             history.append(now)
             rid=uuid.uuid4().hex
             task=Task(rid,caller["id"],time.time(),deadline=deadline,protocol=protocol)
@@ -298,7 +303,7 @@ class ApiServer:
                 try:
                     path=self.path.split("?",1)[0]
                     if not is_post and path=="/health":
-                        return self.reply(200,{"ok":True,"version":__version__,"accepting":rt.store.get("accepting")})
+                        return self.reply(200,{"ok":True,"version":__version__,"accepting":rt.store.get("accepting"),"max_concurrent_requests":rt.max_workers,"shared_provider_capacity":True})
                     caller=rt.authorize(self.headers.get("Authorization",""))
                     if not is_post and path.startswith('/bridge/v1/receipts/'):
                         return self.reply(200,rt.receipt(path.removeprefix('/bridge/v1/receipts/'),caller))
@@ -378,6 +383,7 @@ class ApiServer:
                 except (OSError,TimeoutError): pass
                 except Exception: self.reply(500,BridgeError(500,"server","服務無法完成請求。請檢查本機狀態。").body())
         class Server(ThreadingHTTPServer):
+            request_queue_size=128
             daemon_threads=True
             allow_reuse_address=True
             def handle_error(self,*_): pass

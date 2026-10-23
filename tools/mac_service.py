@@ -30,8 +30,8 @@ def setup(manifest, action, timeout=180):
 
 def control(action, root, timeout=180, workers=None, accepting=True):
     if sys.platform != 'darwin': raise ValueError('This command requires macOS.')
-    if action == 'workers' and (type(workers) is not int or not 1<=workers<=4):
-        raise ValueError('Workers must be an integer from 1 to 4.')
+    if action == 'workers' and (type(workers) is not int or not 1<=workers<=64):
+        raise ValueError('Workers must be an integer from 1 to 64.')
     m = manifest_at(root)
     sys.path.insert(0, m['app'])
     from desktop_bridge.windows import mac_startup_path, set_startup
@@ -161,7 +161,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['status','enable','disable','start','stop','restart','rollback','workers','update','onboarding-open','onboarding-status'])
     parser.add_argument('--source', help='Explicit local Bridge source checkout for update.')
-    parser.add_argument('--count',type=int,help='Parallel isolated inference processes (workers action, 1–4; default profile is 1).')
+    parser.add_argument('--count',type=int,help='Parallel isolated inference processes (workers action, 1–64; default profile is 64).')
     parser.add_argument('--install-root', default=str(Path.home() / 'Library/Application Support/AIGO LLM Bridge'))
     parser.add_argument('--timeout', type=int, default=180)
     args = parser.parse_args()
