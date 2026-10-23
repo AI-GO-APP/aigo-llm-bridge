@@ -1,6 +1,6 @@
 # Windows 首次安裝 onboarding
 
-適用 Windows Velopack 0.8.0 候選；是否已發布、實測到哪裡，見 [ACCEPTANCE](ACCEPTANCE.md)。本文件是操作契約，不能當成驗收通過證明。macOS 的安裝／權限／發布由其維護者另行處理。
+適用 Windows Velopack 0.8.0；發布狀態與實測範圍，見 [ACCEPTANCE](ACCEPTANCE.md)。本文件是操作契約，不能當成驗收通過證明。macOS 的安裝／權限／發布由其維護者另行處理。
 
 ## 安裝者的完整路徑
 
