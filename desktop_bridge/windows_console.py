@@ -191,7 +191,11 @@ def ensure_service(directory):
                 # The previous service may have deleted its owner file but still
                 # hold the profile instance lock while shutting down. A second
                 # launch then exits cleanly without becoming the new service.
-                process = start()
+                instance = Instance(directory)
+                available = instance.primary
+                instance.close()
+                if available:
+                    process = start()
             elif code is not None:
                 raise ValueError('The background service could not start.') from None
             time.sleep(.2)

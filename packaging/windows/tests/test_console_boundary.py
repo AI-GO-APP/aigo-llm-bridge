@@ -58,6 +58,8 @@ def test_quick_restart_retries_clean_instance_handoff_without_terminating_old_se
     monkeypatch.setattr(console,'config',lambda:{'pack_id':'synthetic'})
     monkeypatch.setattr(console,'stable_entry',lambda:'synthetic.exe')
     monkeypatch.setattr(console.time,'sleep',lambda *_:None)
+    availability=iter([False,False,True])
+    monkeypatch.setattr(console,'Instance',lambda *_:SimpleNamespace(primary=next(availability),close=lambda:None))
     def owner(*_):
         if len(launches)<2:raise OSError('old owner removed while old instance still holds lock')
         return {'origin':'http://127.0.0.1:12345','token':'synthetic'}
