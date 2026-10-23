@@ -7,3 +7,5 @@
 目前為候選紀錄；合併、CI、發布、公開下載及正式安裝證據將於實際完成後補記。
 
 本機 Python Bridge／tools 回歸 281 passed、18 skipped；Worker 13 passed，文件、品牌、版本與 diff 檢查通過。本機沒有私有 terms 清單，`lint_terms.py --require` 未通過，必須由 repo-secret CI 核實。Claude 官方 auth login 已由本人完成，後續切換預設為 Haiku 4.5，保留 Codex 明確模型路由及原 Key scope。
+
+Mac Claude 登入適配：官方登入成功後，完整本機環境 auth status=true，但原 allowlist 環境=false。逐欄比對僅補回 USER 即恢復 claude.ai／Max 認證；保留此非敏感使用者名稱，不外傳憑證，API key 等無關 secret 仍排除。新增回歸覆蓋。
