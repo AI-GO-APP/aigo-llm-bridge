@@ -20,7 +20,7 @@ Mac source 同步的共通功能及平台差異以 [Mac 設定契約](MACOS-SETU
 | R-08 | 只持久化 allowlist metadata。管理台可篩選、CSV 匯出及清除已結束紀錄；不可保存 request／response 原文、附件、任意 metadata 或完整 KEY。 |
 | R-09 | 推論不接續使用者個人 CLI session；使用獨立子程序／ephemeral 工作，不操作使用者視窗、不更動全域設定或登入。 |
 | R-10 | Windows 管理台以系統 WebView2 顯示；保留預設瀏覽器備援。關閉管理視窗不停止背景服務，停止服務需明確操作。 |
-| R-11 | 共用前端與 Windows 適配層分離。全頁沿用 AI GO 合約請款系統的深藍側欄／表頭、靛藍操作色、卡片／表單與深淺色語言，保留 Bridge 獨立產品名稱與功能。 |
+| R-11 | 共用前端與 Windows 適配層分離。全頁使用獨立定義的深藍側欄／表頭、靛藍操作色、卡片／表單與深淺色語言，保留 Bridge 獨立產品名稱與功能。 |
 | R-12 | 由 GitHub 專屬 Windows internal 渠道公告更新與最低版本；客戶端驗固定公鑰簽章、序號、來源及 SHA256，排空自有工作再套用。更新後 profile、KEY、URL、token／cost 不變。 |
 | R-13 | 規格、資料、設計、決策、驗收及操作指引在 repo 與 Windows 包中可找到，不依賴任一 LLM 私有記憶。 |
 | R-14 | Windows 新安裝／新 profile 首次必走可續接 onboarding；完成者日常啟動直接主畫面，正常更新保留完成紀錄；重裝建立新安裝識別但不刪 URL／KEY／metadata。 |
@@ -30,7 +30,7 @@ Mac source 同步的共通功能及平台差異以 [Mac 設定契約](MACOS-SETU
 | R-18 | CI/CD、Release、pin、權限、政策續期／最低版本、故障恢復與 installed-verified 收據具 repo 正本，不依賴本地記憶或 AI EA Cloud／Supabase。 |
 | R-19 | caller scope 的模型／能力查詢與 refresh 不推論，提供具時間及登入世代的證據；明確 probe 使用固定合成輸入並計量，不把 CLI 選單當成訂閱模型權限。 |
 | R-20 | Jev 相容 Decisions 保留 state／questions／answers，支援 noul／choice／score，逐題隔離、原順序、受限 schema 驗證、不默默換模型或重試，逐次核對模型／token 計價並保留失敗時已知成本與未知計量旗標。新公開路徑需安裝者另授權部署原 Worker。 |
-| R-21 | 一台電腦同時僅允許一個 Bridge runtime，跨設定檔、安裝目錄、API port 及 OS 使用者；同設定檔重開只喚回管理視窗。第二套在開啟資料庫／relay 前拒絕，不重建 URL／KEY。Mac source 0.9.1-mac.1 實作，Windows 待 [issue #20](https://github.com/AI-GO-APP/aigo-llm-bridge/issues/20) 修復及獨立驗收。 |
+| R-21 | 一台電腦同時僅允許一個 Bridge runtime，跨設定檔、安裝目錄、API port 及 OS 使用者；同設定檔重開只喚回管理視窗。第二套在開啟資料庫／relay 前拒絕，不重建 URL／KEY。Mac source 0.9.1-mac.1 實作，Windows 待 [issue #20](https://github.com/AI-GO-APP/local-token-buffet-bridge/issues/20) 修復及獨立驗收。 |
 | R-22 | Mac Release 交付現行 BYO source ZIP、SHA256、clean commit manifest 與 self-test；下載包可實際安裝／啟停，原裝置更新保留 URL／KEY／模型／容量，README／Agent 指引能分流雙平台及首次／既有安裝。 |
 
 ## 非功能需求與邊界

@@ -29,9 +29,9 @@
 
 ## 最終合併、發布與已安裝收據
 
-- [完成 PR #24](https://github.com/AI-GO-APP/aigo-llm-bridge/pull/24) 的 14 項 checks 全成功後 squash merge。main／Release runtime source：`e3c09bb7cb478220413f5e2c75dc35183e689675`，Mac `0.9.1-mac.1`；保留已合併 0.9.0 功能與 Windows 安全修補，沒有發布 Windows 或部署 Worker。
-- [Mac 發布 run 39903843916](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39903843916) 成功：main 的 Mac source tests、真 Cocoa renderer、現行 ZIP 建包／安裝／固定鎖／停止，以及歷史回歸均放行，再核對 clean SHA／版本／hash 發布。
-- 已公開 [Mac source Release](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/macos-source-v0.9.1-mac.1)。4 個附件皆匿名下載成功：ZIP、其 SHA256、macos-source-manifest.json、macos-source-self-test.json。ZIP 1,514,265 bytes；SHA256 `96776675d280b00d7a1c52829632bf47ea591c993e799060ac023acb2cc1f197`；manifest 來源為上述 main SHA，dirty=false／redistributable=true。
+- [完成 PR #24](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/24) 的 14 項 checks 全成功後 squash merge。main／Release runtime source：`e3c09bb7cb478220413f5e2c75dc35183e689675`，Mac `0.9.1-mac.1`；保留已合併 0.9.0 功能與 Windows 安全修補，沒有發布 Windows 或部署 Worker。
+- [Mac 發布 run 39903843916](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39903843916) 成功：main 的 Mac source tests、真 Cocoa renderer、現行 ZIP 建包／安裝／固定鎖／停止，以及歷史回歸均放行，再核對 clean SHA／版本／hash 發布。
+- 已公開 [Mac source Release](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.1-mac.1)。4 個附件皆匿名下載成功：ZIP、其 SHA256、macos-source-manifest.json、macos-source-self-test.json。ZIP 1,514,265 bytes；SHA256 `96776675d280b00d7a1c52829632bf47ea591c993e799060ac023acb2cc1f197`；manifest 來源為上述 main SHA，dirty=false／redistributable=true。
 - 從實際公開下載的 ZIP，再經 Install.command 在隔離目錄真安裝：安裝來源 SHA／版本吻合，HTTP 健康、固定全機鎖拒絕第二 profile 且未建立 DB、正常停止後 API 無法連線，全通過。這是下載包的實測，非僅對本機建包宣稱公開附件可用。
 - owner Mac 由 `0.8.1-mac.1`／`936ff38` 更新為 `0.9.1-mac.1`／`e3c09bb`，來源為匿名下載並驗 hash 的公開 ZIP。經原安裝工具 pause／wait-idle／停止／同 data-dir 安裝／重啟，並保存解壓來源供日後明確更新。沒有重新登入、重建 Worker、輪替 owner KEY 或改電源／鎖定。
 - 同一臨時 Codex KEY 在更新前後外部 models GET 200。device ID、固定 URL、Cloudflare 帳戶／Worker、全部 owner KEY rows、已登錄模型／預設、relay 設定與四路容量一致；新增模型目錄可回傳額外發現項目，不把動態目錄數量當成資料遺失。

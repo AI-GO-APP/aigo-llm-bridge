@@ -44,7 +44,7 @@ python ../../tools/deploy_hosted.py --slug <your-caller-slug> --src . --files Do
 
 ```ini
 # caller.env
-BRIDGE_URL=https://<your-bridge>.deploy.ai-go.app
+BRIDGE_URL=https://bridge.example.invalid
 BRIDGE_KEY=<這個服務的 source 金鑰>
 INTERNAL_KEY=local-test
 ```

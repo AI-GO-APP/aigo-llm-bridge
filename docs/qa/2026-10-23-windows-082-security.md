@@ -21,11 +21,11 @@ Windows 隔離 socket 實測兩個 SO_REUSEADDR listener 可綁同一 loopback �
 - 第一輪 native 在測試 helper 漏傳 cfg 時中止，API 重綁已拒絕；第二輪因新 QA 尚未 tracked 被文件打包閘門拒絕。兩次失敗收據保留，未改正式程序；孤立測試 KEY 已撤銷。
 - 修正 helper／追蹤文件後 Setup→A→B 35／35；整合版再驗 37／37，包含更新前後 API／管理雙埠拒絕重綁，URL／KEY digest／device／metadata cost／DPAPI／onboarding 保留，拒絕錯簽章、錯 feed、忙碌更新，最低版本門檻重啟後保留。僅本機略過 renderer，未改使用者剪貼簿或電源。
 - 整合前／後 frozen 真訂閱各 7／7：text、兩來源 schema、兩來源工具提案、兩來源檔案 canary；各 8 項資料／隱私／成本檢查通過。每筆 usage.cost 以當次公開牌價及 receipt 核對；frozen controller spy 不具跨程序 argv 觀察能力，未將該項列入通過。
-- [PR22](https://github.com/AI-GO-APP/aigo-llm-bridge/pull/22) 15 checks 通過，原生完整 renderer／更新 53／53、隔離 runner 電源 8／8。[原生 PR 收據](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39898818433)；[main 原生](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39899269643) 亦通過。
+- [PR22](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/22) 15 checks 通過，原生完整 renderer／更新 53／53、隔離 runner 電源 8／8。[原生 PR 收據](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39898818433)；[main 原生](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39899269643) 亦通過。
 
 ## 發布及正式驗收
 
-- 合併來源 d6205e16d3f8469f7f8b29c594e90351234bc7fc；[publish 39899272979](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39899272979) 成功，[Windows 0.8.2](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/windows-installer-internal-v0.8.2) 公開，尚無 Authenticode。
+- 合併來源 d6205e16d3f8469f7f8b29c594e90351234bc7fc；[publish 39899272979](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39899272979) 成功，[Windows 0.8.2](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/windows-installer-internal-v0.8.2) 公開，尚無 Authenticode。
 - 六個公開附件匿名下載、hash／實包／簽章 policy 共 16／16。policy sequence 7、minimum 0.7.0、公鑰 fingerprint 9682eb28e5ab9020 均延續原渠道；nupkg SHA256 `0a3908486046ae4f1fa6f281cbc029372df4a3fcb42327335f300bbe8af298fd`。
 - 原並行 Session 明確交接並停止修改服務後，核對其 0.7.1 source 程序的 path／PID，暫停接單、等零工作及零 child、SQLite backup，再停止該 idle Bridge，使用既有 0.8.1 native updater 真正升級至 0.8.2。未 kill by name，未碰其他 CLI。34 個 KEY row、193 筆 request、原設定全數保留；34 包含歷史已撤銷測試 KEY，不代表 34 個有效服務 KEY。
 - 正式 0.8.2 四次真 HTTPS 通過：Codex text／schema、Claude schema／tools。成本分別 0.08594、0.08726、0.001705、0.003551 USD（當次 OpenRouter 牌價估值）；每次與 usage／receipt 核對。10 次 Claude argv 樣本無原文 marker／schema flag；profile 掃描無合成原文／完整 KEY。

@@ -19,8 +19,8 @@
 ## 已完成原生與公開發布閘門
 
 - frozen 真實 7／7，URL／KEY／metadata／成本等 8 項檢查通過；跨程序 controller spy 無法觀察 frozen argv，因此未計入該項。
-- 本機真 Setup→A→B 33／33，略過 renderer 以保留使用者剪貼簿；GitHub runner 完整 native 49／49、隔離電源 8／8。[main 原生](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39896163566)。
-- [PR18](https://github.com/AI-GO-APP/aigo-llm-bridge/pull/18)、[PR19](https://github.com/AI-GO-APP/aigo-llm-bridge/pull/19) 已合併。最終來源 e6e2d1e7c3cba086cec921fa7d580fa1e43ee49e；[publish](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39896167853) 成功，[0.8.1 release](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/windows-installer-internal-v0.8.1) 公開。
+- 本機真 Setup→A→B 33／33，略過 renderer 以保留使用者剪貼簿；GitHub runner 完整 native 49／49、隔離電源 8／8。[main 原生](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39896163566)。
+- [PR18](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/18)、[PR19](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/19) 已合併。最終來源 e6e2d1e7c3cba086cec921fa7d580fa1e43ee49e；[publish](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39896167853) 成功，[0.8.1 release](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/windows-installer-internal-v0.8.1) 公開。
 - 匿名 HTTPS assets／原公鑰 policy 回讀 16／16；sequence 6、minimum 0.7.0、公鑰 fingerprint 9682eb28e5ab9020。實際包含 Python 3.14.9／OpenSSL 3.5.9／certifi 2026.10.19，無 Authenticode。
 - 正式原生 0.7.3→0.8.1 成功；Codex text／schema、Claude schema／tools 四次真 HTTPS 通過，usage.cost 與 OpenRouter 牌價、實際 token、receipt 核對一致。正式 Claude argv 共 13 次樣本無 caller marker／schema flag。
 - 原 29 個 key row、7 個設定、183 筆完成 log 保留。第一次 row hash 比對因 baseline 23 欄、現行 28 欄誤判，保留失敗收據；以升級前備份證明五個 nullable 欄早已存在，再投影原 23 欄及比對完整 28 欄，183／183 未改。未以修改正式資料來通過測試。

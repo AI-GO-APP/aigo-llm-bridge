@@ -5,7 +5,7 @@ Windows 的 [安裝 onboarding](ONBOARDING.md) 與 Mac 的 [原生五步設定](
 這份 prompt 是使用者可複製的安裝請求範本；文件本身不授權部署。適用 Windows Setup、Mac Release source ZIP、repo 或既有安裝。Windows 的文件位於 frozen runtime 的 `_internal` 資源內，CLI 在同一版本的 `current/aigo-bridge.exe`；原始碼安裝由 source-install.json 尋找位置，不假設舊 ZIP 的 BYO-Setup 永遠存在。
 
 ```text
-請協助安裝與啟用這個 LLM Bridge。先讀 AGENTS.md、docs/README.md、skills/byo-cloudflare/SKILL.md、docs/BYO-QUICKSTART.md、docs/DEVICE-IDENTITY.md。所有規格／schema／API／設計／決策／驗收以 repo 文件為準，不從聊天記憶猜測。
+請協助安裝與啟用 Local Token Buffet Bridge。先讀 AGENTS.md、docs/README.md、skills/byo-cloudflare/SKILL.md、docs/BYO-QUICKSTART.md、docs/DEVICE-IDENTITY.md。所有規格／schema／API／設計／決策／驗收以 repo 文件為準，不從聊天記憶猜測。
 
 先辨識 OS、來源安裝／舊 ZIP／Windows Velopack Setup 及既有 profile。Windows 新安裝優先 Setup，CLI 是實際安裝目錄 current/aigo-bridge.exe；先 version 確認 package，然後 setup，或 byo doctor／plan／deploy。所有指令沿用同一 data-dir，不把原始碼 clone 當永久安裝路徑。repo source 安裝依 CROSS-PLATFORM-INSTALL，用 source-install.json 的專用 Python、app、data_dir；舊 ZIP 才用 Install.ps1 與 BYO-Setup。Mac 優先從 macos-source-v… Release 下載現行 BYO ZIP 與 SHA256，驗 hash、解壓，Python 3.12+ 執行 Install.command／tools/install.py；讀 source-install.json，再開 Bridge.command 進五步原生精靈。Mac 依 MACOS-SETUP／MACOS-RELEASE 與獨立實機報告判定，不能用 Windows 結果宣稱通過；不使用歷史 desktop-macos 包。
 

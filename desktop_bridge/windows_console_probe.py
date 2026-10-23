@@ -45,6 +45,7 @@ def acceptance(window,api,directory,value):
         progress(stage)
         wait(lambda:window.evaluate_js("Boolean(window.BridgePlatform?.native && typeof showToken==='function')"))
         checks['actual_webview2_adapter_ready']=True
+        checks['product_branding_rendered']=bool(window.evaluate_js(r"document.title.startsWith('Local Token Buffet Bridge') && document.querySelector('.brand').textContent.includes('Local Token Buffet') && !/ai[\s_-]+go/i.test(document.body.textContent)"))
         stage='onboarding_renderer'
         progress(stage)
         wait(lambda:window.evaluate_js("Boolean(document.querySelector('#windows-onboarding') && state?.windows_onboarding)"))

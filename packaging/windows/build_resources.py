@@ -9,7 +9,7 @@ DOCUMENTS = ('AGENTS.md', 'CLAUDE.md', 'skills/byo-cloudflare/SKILL.md', *(
     'docs/' + name for name in (
         'README.md', 'REQUIREMENTS.md', 'ARCHITECTURE.md', 'SCHEMA.md', 'API.md',
         'DESIGN-SYSTEM.md', 'DECISIONS.md', 'ACCEPTANCE.md',
-        'ONBOARDING.md', 'CI-CD.md', 'RELEASE.md', 'SECURITY.md',
+        'ONBOARDING.md', 'CI-CD.md', 'RELEASE.md', 'SECURITY.md', 'BRANDING.md',
         'BYO-QUICKSTART.md', 'DEVICE-IDENTITY.md', 'AI-AGENT-SETUP.md', 'P1-Windows-guide.md',
         'OPENROUTER-PRICING.md', 'THIRD-PARTY-INTEGRATION.md', 'AI-EA-CLOUD-BEST-PRACTICE.md',
         'JEV-COMPATIBILITY.md', 'JEV-COMPATIBILITY-PLAN.md',
@@ -38,7 +38,7 @@ def stage_documents(root, stage, commit):
                 return match[0]
             if relative not in tracked and not any(p.startswith(relative + '/') for p in tracked):
                 raise ValueError('Documentation points at an untracked resource: ' + target)
-            url = 'https://github.com/AI-GO-APP/aigo-llm-bridge/blob/' + commit + '/' + quote(relative)
+            url = 'https://github.com/AI-GO-APP/local-token-buffet-bridge/blob/' + commit + '/' + quote(relative)
             if parsed.fragment:
                 url += '#' + parsed.fragment
             return '](' + url + ')'

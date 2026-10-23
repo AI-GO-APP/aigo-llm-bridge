@@ -1,6 +1,8 @@
 # 產品文件入口
 
-現行產品是 **BYO Cloudflare LLM Bridge**：安裝者自己的電腦、CLI 訂閱、Worker 與長效 client KEY。Windows 產品線使用 PyInstaller＋Velopack＋系統 WebView2。不是 AI GO Hosted／Custom App，不需要 Supabase。文件、原始碼與驗收紀錄一同版控，AI agent 不應依靠聊天或本地記憶補出產品契約。
+產品名稱與改名相容性見 [BRANDING](BRANDING.md)：Local Token Buffet Bridge。
+
+現行產品是 **BYO Cloudflare LLM Bridge**：安裝者自己的電腦、CLI 訂閱、Worker 與長效 client KEY。Windows 產品線使用 PyInstaller＋Velopack＋系統 WebView2。不需要外部租戶平台或 Supabase。文件、原始碼與驗收紀錄一同版控，AI agent 不應依靠聊天或本地記憶補出產品契約。
 
 ## 閱讀順序與權威範圍
 
@@ -41,4 +43,4 @@ Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [最新 Mac 
 
 ## 歷史資料
 
-[舊 README](../README-LEGACY.md)、編號 01–13 的文件與 `hosted/`、`worker/`、`desktop/` 是歷史產品線。可能描述平台表、串流、短效 session 或自動雲端 fallback，**不得套用到現行 BYO API**。它們保留給既有安裝維護；本入口列出的現行文件優先。
+[舊 README](../README-LEGACY.md) 與編號 01–13 的文件已改為停用導引頁，原文保留在 Git 歷史。`hosted/`、`worker/`、`desktop/` 的程式只供歷史相容維護，**不是現行產品的部署目標**；安裝與功能契約以本入口的現行 BYO 文件為準。

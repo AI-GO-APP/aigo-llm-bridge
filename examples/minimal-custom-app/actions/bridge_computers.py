@@ -7,7 +7,7 @@ params:
 一律以平台身分 ctx.user_id 為擁有者 —— 使用者不能綁別人的電腦,也看不到別人的電腦。
 """
 
-WORKER_URL = "https://raw.githubusercontent.com/AI-GO-APP/aigo-llm-bridge/main/worker/aigo_bridge_worker.py"
+WORKER_URL = "https://raw.githubusercontent.com/AI-GO-APP/local-token-buffet-bridge/main/worker/aigo_bridge_worker.py"
 
 # ── 從這裡開始貼 ──────────────────────────────────────────────────────────
 BRIDGE_WAIT_S = 20        # 留 10 秒給 egress 閘道與 action 本身;不要調到 25 以上

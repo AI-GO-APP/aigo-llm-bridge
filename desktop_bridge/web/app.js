@@ -30,7 +30,7 @@ function navigate(next) {
   if (next !== "integration") $("test-api-key").value = "";
   document.querySelectorAll(".page").forEach(el => el.hidden = el.id !== `page-${next}`);
   document.querySelectorAll("[data-page]").forEach(el => { el.classList.toggle("active", el.dataset.page === next); if (el.dataset.page === next) el.setAttribute("aria-current", "page"); else el.removeAttribute("aria-current"); });
-  $("crumb").textContent = names[next]; document.title = `${names[next]} · LLM Bridge`;
+  $("crumb").textContent = names[next]; document.title = `Local Token Buffet Bridge · ${names[next]}`;
   history.replaceState(null, "", `#${next}`);
   if (next === "logs") refreshLogs().catch(error => toast(error.message));
 }

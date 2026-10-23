@@ -23,10 +23,10 @@ def build(target, output):
     package = output / f'aigo-llm-bridge-{target}-{version}.zip'
     with zipfile.ZipFile(package, 'w', zipfile.ZIP_DEFLATED) as z:
         z.writestr('aigo-llm-bridge/README.txt',
-                   f'AI GO LLM Bridge {version} ({target})\n'
+                   f'Local Token Buffet Bridge {version} ({target})\n'
                    'Requires Python 3.10+ and your own signed-in Claude Code / Codex CLI.\n'
                    f'See desktop_platform/{target}/README.md for install and uninstall.\n'
-                   'Full documentation: https://github.com/AI-GO-APP/aigo-llm-bridge/blob/main/docs/13-desktop.md\n')
+                   'Full documentation: https://github.com/AI-GO-APP/local-token-buffet-bridge/blob/main/docs/13-desktop.md\n')
         for path in paths:
             z.write(ROOT / path, 'aigo-llm-bridge/' + path)
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()

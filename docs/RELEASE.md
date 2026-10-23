@@ -18,9 +18,9 @@
 4. 在 main 執行下列 CLI（本機 `gh` 必須有此 repo 操作權，安裝者不需要）：
 
 ```powershell
-gh workflow run windows-installer-publish.yml --repo AI-GO-APP/aigo-llm-bridge --ref main -f announce=true -f minimum_version=0.7.0
-gh run list --repo AI-GO-APP/aigo-llm-bridge --workflow windows-installer-publish.yml --limit 5
-gh run watch <本次 run ID> --repo AI-GO-APP/aigo-llm-bridge --exit-status
+gh workflow run windows-installer-publish.yml --repo AI-GO-APP/local-token-buffet-bridge --ref main -f announce=true -f minimum_version=0.7.0
+gh run list --repo AI-GO-APP/local-token-buffet-bridge --workflow windows-installer-publish.yml --limit 5
+gh run watch <本次 run ID> --repo AI-GO-APP/local-token-buffet-bridge --exit-status
 ```
 
 `announce=false` 僅建立候選 artifact。`announce=true` 仍會先完整 package／native gates，失敗不宣布。不要同時發兩個相同 Windows 版本；發布 workflow 已序列化。這不是部署 Cloudflare，也不觸發 Mac release。
@@ -34,7 +34,7 @@ gh run watch <本次 run ID> --repo AI-GO-APP/aigo-llm-bridge --exit-status
 已宣布版本 B 不重建，只提高最低版本或續簽有效期：
 
 ```powershell
-gh workflow run windows-installer-publish.yml --repo AI-GO-APP/aigo-llm-bridge --ref main -f announce=true -f published_version=<已發布B版號> -f minimum_version=<最低允許版號>
+gh workflow run windows-installer-publish.yml --repo AI-GO-APP/local-token-buffet-bridge --ref main -f announce=true -f published_version=<已發布B版號> -f minimum_version=<最低允許版號>
 ```
 
 版本、commit、release URL、full/feed SHA256 固定；序號遞增，不降已知 minimum。相同內容安全重試；policy 三十天有效、到期前七天可續期。新 floor 會停新工作，不殺已執行推論；未知新 policy 的離線安裝不能遠端知道要更新。已快取最低限制不因斷網／過期而消失。

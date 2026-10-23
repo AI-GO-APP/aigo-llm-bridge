@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""把一個目錄部署成 AI GO Hosted App:第一次建立,之後開新 deployment;上傳 → 輪詢到 active / failed。
+"""把一個目錄部署成 歷史租戶平台容器應用:第一次建立,之後開新 deployment;上傳 → 輪詢到 active / failed。
 
   python tools/deploy_hosted.py --slug <slug> --src <dir> [--name 顯示名稱] [--files a,b,c]
 

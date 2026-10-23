@@ -91,6 +91,8 @@ jobs:
           python-version: "3.12"
       - name: 版本號一致(VERSION、三個常數、CHANGELOG 段落)
         run: python tools/version.py --check
+      - name: Product branding and repository links
+        run: python tools/lint_branding.py
       - name: Tool tests and locked security scanner prerequisites
         run: |
           python -m pip install --require-hashes -r packaging/windows/requirements-signing-lock.txt

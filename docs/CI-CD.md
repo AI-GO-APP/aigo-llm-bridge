@@ -1,5 +1,7 @@
 # CI/CD 與平台責任
 
+所有平台共用 `python tools/lint_branding.py`，檢查產品文字及 repo 連結；Windows 原生 renderer 另外檢查實際頁面標題、側欄與頁面文字。識別與既有安裝相容性契約見 [BRANDING](BRANDING.md)。
+
 本文件參照 AI EA 的分平台、來源／包／宣布／安裝證據分層，描述 **Bridge 自己的實作**。不複製 AI EA Cloud 的授權、Supabase、發布 RPC 或跨平台 UUID 協定；本專案沒有中央 Supabase，BYO Worker 也不是軟體更新站。
 
 ## 渠道與版本來源

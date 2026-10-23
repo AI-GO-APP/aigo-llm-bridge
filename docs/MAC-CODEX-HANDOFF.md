@@ -4,9 +4,9 @@
 
 ## 一、程式來源與範圍
 
-請接手 aigo-llm-bridge，在這台實體 Mac 完成相容性改造、本機安裝、BYO Cloudflare 部署與真實 Codex 訂閱呼叫驗收，最後交付可用的固定 HTTPS endpoint、長效 API KEY，以及第三方串接說明。請直接完成已授權工作，不要只提出計畫。
+請接手 Local Token Buffet Bridge，在這台實體 Mac 完成相容性改造、本機安裝、BYO Cloudflare 部署與真實 Codex 訂閱呼叫驗收，最後交付可用的固定 HTTPS endpoint、長效 API KEY，以及第三方串接說明。請直接完成已授權工作，不要只提出計畫。
 
-Repo：https://github.com/AI-GO-APP/aigo-llm-bridge.git
+Repo：https://github.com/AI-GO-APP/local-token-buffet-bridge.git
 
 交接建立時已核對的功能基準為 main／來源標籤 v0.6.5：
 `0354fbb9feb821f496db8ed5586c775db8446564`。
@@ -15,7 +15,7 @@ Repo：https://github.com/AI-GO-APP/aigo-llm-bridge.git
 
 目前 Windows 已有正式運行實例；macOS 尚待實機驗收。Windows release、既有 Mac 分支或 CI 成功，都不能當成這台 Mac 安裝成功的證明。
 
-這是獨立的本機 Bridge，不是 AI GO 平台 Custom／Hosted App，不需要存取 AI GO 租戶。
+這是獨立的本機 Bridge，只使用安裝者自己的 CLI 訂閱與 BYO Cloudflare 帳戶。
 
 本次可修改 Mac 相容程式、安裝與啟動流程、必要文件並部署這台 Mac 的專屬 Worker。不要修改 AI EA 應用、正式 Cloud provider registry、正式 Windows Worker、endpoint、KEY 或裝置資料。不要切換正式流量。
 

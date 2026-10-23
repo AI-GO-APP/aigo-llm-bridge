@@ -1,6 +1,6 @@
 # Windows 管理台操作指南
 
-檔名為歷史沿用；內容適用現行 WebView／BYO 管理台。完整規格入口：[產品文件](README.md)。本服務不需要 AI GO 租戶、Supabase 或 OpenRouter KEY。
+檔名為歷史沿用；內容適用現行 WebView／BYO 管理台。完整規格入口：[產品文件](README.md)。本服務不需要外部租戶平台、Supabase 或 OpenRouter KEY。
 
 ## 安裝、首次部署與更新
 

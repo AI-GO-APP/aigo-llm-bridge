@@ -13,4 +13,4 @@ Python 3.10+；已在 macOS 以自己的帳號登入 Claude Code／Codex。安�
 紀錄：`~/.aigo-llm-bridge/desktop/service.log`。安裝／解除安裝不需要 sudo。
 
 本平台只依賴 `desktop/` 共用核心，不匯入 Windows 平台；建置入口 `python3 packaging/macos/build.py`。
-完整說明見 [個人端點](https://github.com/AI-GO-APP/aigo-llm-bridge/blob/main/docs/13-desktop.md)。
+完整說明見 [個人端點](https://github.com/AI-GO-APP/local-token-buffet-bridge/blob/main/docs/13-desktop.md)。

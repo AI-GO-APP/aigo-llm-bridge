@@ -1,5 +1,11 @@
 # Changelog
 
+## Windows installer 0.9.1
+
+- Rename the product to Local Token Buffet Bridge and the repository to local-token-buffet-bridge; update console and native window branding, guides and repository links.
+- Retire obsolete platform deployment instructions while retaining installed profile paths, credentials, package identity and signed update continuity.
+- Add a CI branding guard. No installer-owned Worker deployment or Mac release is performed by this change.
+
 ## Windows installer 0.9.0
 
 - Integrate Jev Decisions, model discovery and per-call billing without losing the 0.8.1/0.8.2 Windows security controls; extend exclusive binds to Windows source/ZIP entry points.
@@ -36,6 +42,11 @@
 0.x 期間 API 可能變動,每次變動都會寫在這裡。
 
 ## [Unreleased]
+
+## [0.9.2] - 2026-10-23
+
+- Adopt independent Local Token Buffet Bridge branding in product UI, documentation, repository description and links; preserve existing device and update identities.
+- Keep Windows installer 0.9.1 and Mac release channels independent. Historical platform runtime sources remain compatibility-only.
 
 ## [0.9.1-mac.1] - 2026-10-23
 
@@ -184,14 +195,14 @@ Windows 新版改採裝置擁有的 BYO Cloudflare 公開 HTTPS 入口，提供�
 
 ## [0.2.0] - 2026-09-28
 
-這個 repo 同時是一個 **Agent Skill**:`npx skills add AI-GO-APP/aigo-llm-bridge` 安裝後,
-AI agent 會依 `SKILL.md` 協助部署、接上與營運 Bridge,並與 aigo-builder 同樣自動保持最新。
+這個 repo 同時是一個 **Agent Skill**:`npx skills add AI-GO-APP/local-token-buffet-bridge` 安裝後,
+AI agent 會依 `SKILL.md` 協助部署、接上與營運 Bridge,並與 歷史平台部署工具 同樣自動保持最新。
 Bridge、worker、客戶端的行為沒有變。
 
 ### Added
 - `SKILL.md`:Skill 主文件——自我更新(Phase -1)、使用邊界、意圖分流、呼叫端與部署的硬規則、版本對照
-- `tools/check_update.py`:與 aigo-builder 相同的更新檢查(3 小時節流、多安裝註冊、發現新版即強制同步);
-  狀態檔 `~/.aigo/llm_bridge_update_check.json`,與 aigo-builder 分開
+- `tools/check_update.py`:與 歷史平台部署工具 相同的更新檢查(3 小時節流、多安裝註冊、發現新版即強制同步);
+  狀態檔 `~/.aigo/llm_bridge_update_check.json`,與 歷史平台部署工具 分開
 - `resources/hooks/`:Claude Code 與 Codex 的 SessionStart hook 範本
 - `tools/version.py`:`VERSION` 為單一來源,同步 Bridge、worker、Python 客戶端的版本常數;
   `--bump` 同時把 CHANGELOG 的 [Unreleased] 改成新版段落

@@ -35,4 +35,4 @@ LaunchAgent 屬於使用者 GUI 登入階段，並非未登入即可供應的系
 
 ## 同一台電腦的執行數量
 
-產品契約是一台電腦只執行一個 Bridge runtime；Claude／Codex 共用這個設定檔與 Worker。Mac source 0.8.1-mac.2 起，不同設定檔、安裝目錄、本機 API port 或 OS 使用者都不能另開第二套；原 runtime 正常結束後才可切換設定檔。不複製原 DB／配對讓兩套連到同一 Worker。這個限制不刪除任何既有設定檔、Worker、URL 或 KEY，也不自動選另一套 profile 或切換 CLI 登入。Windows 待 [issue #20](https://github.com/AI-GO-APP/aigo-llm-bridge/issues/20) 修復；舊版不遵守新鎖，升級前先正常停止。
+產品契約是一台電腦只執行一個 Bridge runtime；Claude／Codex 共用這個設定檔與 Worker。Mac source 0.8.1-mac.2 起，不同設定檔、安裝目錄、本機 API port 或 OS 使用者都不能另開第二套；原 runtime 正常結束後才可切換設定檔。不複製原 DB／配對讓兩套連到同一 Worker。這個限制不刪除任何既有設定檔、Worker、URL 或 KEY，也不自動選另一套 profile 或切換 CLI 登入。Windows 待 [issue #20](https://github.com/AI-GO-APP/local-token-buffet-bridge/issues/20) 修復；舊版不遵守新鎖，升級前先正常停止。
