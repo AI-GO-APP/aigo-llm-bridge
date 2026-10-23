@@ -1,8 +1,12 @@
+import os
+import subprocess
+import sys
 import threading
 import json
 import urllib.request
 import urllib.error
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import pytest
 
@@ -191,3 +195,58 @@ def test_64_normal_http_calls_share_capacity_and_leave_models_available(tmp_path
         rt.stop()
         api.stop()
         store.close()
+
+
+MAC_FILE_LIMIT_PROBE = r'''
+import json, resource, sys, tempfile, threading, urllib.request
+from concurrent.futures import ThreadPoolExecutor
+resource.setrlimit(resource.RLIMIT_NOFILE, (256, resource.getrlimit(resource.RLIMIT_NOFILE)[1]))
+from desktop_bridge.capacity import ensure_file_limit
+limit = ensure_file_limit()
+from desktop_bridge.process import Child
+from desktop_bridge.service import ApiServer, Runtime
+from desktop_bridge.store import Store
+release, all_running, lock, entered = threading.Event(), threading.Event(), threading.Lock(), [0]
+def runner(*_):
+    with tempfile.TemporaryDirectory() as cwd:
+        child = Child([sys.executable, '-c', 'import sys; sys.stdin.read()'], cwd, None)
+        try:
+            with lock:
+                entered[0] += 1
+                if entered[0] == 64: all_running.set()
+            release.wait(30)
+            child.proc.communicate(b'', timeout=10)
+        finally: child.close()
+    return 'OK', {'prompt_tokens': 1, 'completion_tokens': 1}, 'stop'
+store = Store(tempfile.mkdtemp()); _, key = store.create_key('fd-limit')
+rt = Runtime(store, runner); api = ApiServer(rt, 0); api.start()
+def call(_):
+    request = urllib.request.Request(f'http://127.0.0.1:{api.port}/api/v1/chat/completions',
+        data=json.dumps({'model': 'openai/gpt-6-astra', 'messages': [{'role': 'user', 'content': 'synthetic'}]}).encode(),
+        headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'})
+    try:
+        with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request, timeout=60) as response:
+            return response.status
+    except urllib.error.HTTPError as error: return error.code
+    except OSError: return 0
+try:
+    with ThreadPoolExecutor(max_workers=64) as clients:
+        futures = [clients.submit(call, i) for i in range(64)]
+        running = all_running.wait(30); release.set()
+        statuses = [future.result() for future in futures]
+finally:
+    release.set(); rt.stop(); api.stop(); store.close()
+print(json.dumps({'limit': limit, 'running': running, 'statuses': statuses}))
+'''
+
+
+@pytest.mark.skipif(sys.platform == 'win32', reason='POSIX descriptor limit')
+def test_64_real_child_processes_fit_after_raising_launchd_descriptor_limit():
+    # macOS LaunchAgents start with a 256 soft limit; 64 CLI pipe sets plus sockets exceed it.
+    root = Path(__file__).resolve().parents[2]
+    result = subprocess.run([sys.executable, '-c', MAC_FILE_LIMIT_PROBE], cwd=root, capture_output=True,
+                            timeout=120, env={**os.environ, 'PYTHONPATH': str(root)})
+    assert result.returncode == 0, result.stderr.decode()[-2000:]
+    value = json.loads(result.stdout.decode().strip().splitlines()[-1])
+    assert value['limit'] >= 1024
+    assert value['running'] and value['statuses'] == [200] * 64

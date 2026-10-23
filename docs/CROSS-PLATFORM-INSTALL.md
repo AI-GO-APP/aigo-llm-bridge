@@ -106,3 +106,7 @@ Mac source 0.9.4-mac.1 整合 [64 併發規格](CONCURRENCY.md)。新 profile �
 ```
 
 指令先 pause／wait-idle、停止此 Bridge，再設為 1–64 並啟動原 LaunchAgent。URL、device ID、既有 Key 與 RPM 不變，數值跨更新保留。新 Key 預設 600 RPM；既有較低 RPM 仍可能回 429。同步並行 POST 即可，不需工單輪詢；超時不自動重送，先查 UUID 收據。64 是設定容量，不保證延遲或訂閱吞吐；Mac 本輪只做少量合成 HTTPS 跑通，未做真實 64 負載。
+
+0.9.5-mac.1 起，macOS LaunchAgent 預設檔案描述符軟上限 256 會使 64 組 CLI pipe 與 API／Relay socket 耗盡描述符（實測約 40／64 可執行，其餘回 500）。Bridge 啟動時只將本程序軟上限提高到 4096（不超過硬上限），不改 launchctl 或系統設定。公開 HTTPS 的 64 名額另需原地更新同一 Worker。
+
+增加同時推論可減少短請求被長工作阻塞，但不保證任意負載或輸出均在舊 client 的 60 秒期限內完成；訂閱限額、模型服務延遲與休眠仍可能使請求失敗。不以自動重試或未核實的零成本掩蓋失敗。

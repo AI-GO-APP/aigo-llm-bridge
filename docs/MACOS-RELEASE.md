@@ -4,6 +4,8 @@
 
 0.9.4-mac.1 候選整合 PR #32 的 64 併發；本輪先驗基本流程；owner 後續授權本機 Claude 64 併發測試。交付狀態見 [Mac 併發收據](qa/2026-10-23-macos-concurrency.md)。
 
+0.9.5-mac.1 在其上修正 LaunchAgent 256 檔案描述符上限造成 64 併發只約 40 筆可執行的問題；公開 HTTPS 的 64 名額需另以 `byo_setup.py deploy` 原地更新同一 Worker。
+
 Mac 現行渠道為 `macos-source-v<Mac VERSION>` 的 GitHub Release。它交付現行 BYO source ZIP、SHA256、來源 manifest 與 self-test；包含 Cocoa／WKWebView 管理台及 source 安裝器，需 Python 3.12+。這是支援的 Mac 發布格式；不宣稱提供公證 .app／DMG、自動簽章 feed 或 Windows Velopack 更新。
 
 ## 從公開 Release 安裝
