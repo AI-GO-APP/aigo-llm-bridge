@@ -8,10 +8,10 @@
 
 | 閘門 | 本輪狀態 |
 |---|---|
-| 文件覆蓋／連結、隨包文件 | schema／settings／API／tokens及連結檢查通過；隨包stage待native建置 |
+| 文件覆蓋／連結、隨包文件 | schema／settings／API／tokens及連結檢查通過；核心文件已在真native建置stage隨包 |
 | Python／Node／terms／secret檢查 | 147 Python passed、2 skipped；Node relay 7＋platform 2 passed；22字詞及secret掃描通過 |
 | 六頁淺深色與窄版render、modal、Windows卡 | 1440×1000及390×844，淺／深色×六頁24組均無整頁橫向溢出；建立KEY modal四組尺寸／主題皆完整、兩來源預選；輪替取消、空篩選、成本欄及keyboard focus通過；無console error |
-| 隔離Setup→A→B、native copy／CSV／關窗 | 待執行 |
+| 隔離Setup→A→B、native copy／CSV／關窗 | 39／39通過；來源ede4c1a乾淨commit，A=0.7.0／B=0.7.1為測試包號，皆包含本輪新UI；KEY／URL／metadata／DPAPI保留，測試KEY已撤銷 |
 | PR／CI／公開Windows release | 待執行 |
 | 正式Windows更新與URL／KEY／資料保留 | 待執行 |
 
@@ -27,3 +27,5 @@ Mac新UI未驗收，瀏覽器／WebView共享前端不代表Mac原生殼驗收�
 ![深色設定與Windows更新卡](assets/windows-0.7.3-settings-dark.png)
 
 主要前景對比實測：淺色內文19.17、說明5.53、操作文字5.75；深色16.24／7.96／8.80；主按鈕白字4.70、深藍表頭白字11.25。上述達4.5:1目標，不宣稱完整WCAG認證。鍵盤Tab移至下一導覽時有solid outline。空篩選可見明確說明，成本0.012345正確顯示。
+
+本機tools測試47項通過，既有Mac shell gate因Windows選到未安裝的WSL而失敗；同PR Ubuntu CI docs job已通過全部工具測試，未修改Mac程式。Windows版本閘門另補文件PNG分類與防止程式檔繞過案例，7項針對性回歸通過。

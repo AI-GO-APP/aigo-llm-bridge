@@ -1,6 +1,6 @@
 # 從 repo 安裝：Windows / macOS
 
-本流程供進階使用者與其 AI agent 使用。Windows 亦可使用不需 Python 的原生 ZIP；macOS 目前提供原始碼安裝器，尚未提供原生 .app／DMG。macOS 是否已實機驗收須以最新驗收報告為準，不能用 Windows 測試或 CI 設定取代。
+本流程供進階使用者與其 AI agent 使用。Windows 新安裝優先使用不需 Python 的 [Velopack Setup](WINDOWS-INSTALL-UPDATE.md)，舊原生 ZIP 為另一條安裝路徑；macOS 目前提供原始碼安裝器，尚未提供原生 .app／DMG。macOS 是否已實機驗收須以最新驗收報告為準，不能用 Windows 測試或 CI 設定取代。
 
 ## 前置條件
 

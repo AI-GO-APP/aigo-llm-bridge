@@ -1,6 +1,6 @@
 # 自有 Cloudflare 安裝指南
 
-0.4 版 repo 的 Windows 安裝請先用 [repo 安裝流程](CROSS-PLATFORM-INSTALL.md)。原生 Windows ZIP 仍可照下方流程；macOS **待實機驗證，尚未發布**。部署完成後的 [第三方 AI IDE／Web IDE 標準串接訊息](THIRD-PARTY-INTEGRATION.md) 可從管理台複製，或使用 CLI `handoff`／`key-create --handoff`。新功能請使用 0.4+ 的安裝工具。
+Windows 新安裝優先使用 [PyInstaller＋Velopack Setup](WINDOWS-INSTALL-UPDATE.md)，不需要 Python；原始碼安裝見 [repo 流程](CROSS-PLATFORM-INSTALL.md)。舊 ZIP 路線保留在下方，不能和 Setup 共用程式目錄。Mac 由其維護者獨立驗收與發布。產品正本見 [文件入口](README.md)；完成後交付 [第三方串接訊息](THIRD-PARTY-INTEGRATION.md)、固定 endpoint 與可用長效 KEY。
 
 適合進階使用者與其 AI agent。每個安裝者自己擁有 Worker、Cloudflare 帳單、裝置設定與登入。發布方只提供程式，不管理任何安裝者的入口或帳戶。沒有中央註冊、共享 API key 或預設公開 endpoint。
 
@@ -13,7 +13,24 @@
 - Windows 指令使用 npm.cmd／wrangler.cmd，避免 PowerShell 把同名 .ps1 擋下；不需改全域 ExecutionPolicy。
 - 由使用者在 Claude Code／Codex 登入自己的訂閱。Bridge 不代登入或登出正在使用的 CLI。
 
-## 安裝包：不使用 Python 的完整 CLI 路線
+## Windows Setup：目前建議路線
+
+從本 repo 的 Windows installer internal Release 下載 Setup，完成安裝後在實際安裝目錄的 `current` 開啟 PowerShell；此目錄有 `aigo-bridge.exe`。先確認輸出版本／package ID，不把解壓暫存路徑當永久安裝路徑。
+
+```powershell
+$cli = (Resolve-Path '.\aigo-bridge.exe').Path
+& $cli version
+& $cli setup
+# setup 會 doctor、確認自己的 account、plan、明確確認 deploy，並可一次性建立服務 KEY。
+& $cli byo status
+& $cli start
+```
+
+也可用 `& $cli byo doctor`／`byo plan --account-id ...`／`byo deploy` 分步執行；需要自訂 profile 時每次帶相同 `--data-dir`。KEY 與 handoff 的命令都是 `byo key-create`／`byo handoff`。完整 KEY 不可寫檔／argv／報告。更新使用 `& $cli update check`、`update apply`、`update status`，保留原 data-dir；**日常 Windows 程式更新不需要重新 deploy Worker**。詳見 [安裝及更新](WINDOWS-INSTALL-UPDATE.md)。
+
+## 舊 ZIP：不使用 Python 的 CLI 路線
+
+以下僅供既有 ZIP 安裝；新版 Setup 請用上一節，不執行 Install.ps1。
 
 解壓 ZIP，進入內層 `AIGO-LLM-Bridge-BYO`（包含 Install.ps1 的目錄），在 PowerShell 執行：
 
