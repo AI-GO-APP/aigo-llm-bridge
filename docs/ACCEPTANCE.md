@@ -1,5 +1,7 @@
 # 驗收與交付矩陣
 
+Mac **0.9.1-mac.1 已合併、發布 source Release、公開下載安裝並完成 owner 更新／真 HTTPS 驗證**；最終 SHA、附件 hash、CI 與資料保留證據見 [Mac 發布收據](qa/2026-10-23-macos-release.md)。
+
 Mac `0.8.1-mac.1` 的單元、原生 renderer、安裝更新與公開 HTTPS 證據另見 [Mac 同步 QA](qa/2026-10-23-macos-parity.md)；不發布 Mac release，不替代 Windows 安裝器測試。
 
 Windows 0.9.0 已整合安全修補及 Jev／模型查詢，合併發布並升級正式安裝，真實本機三型、HTTPS chat、受控重啟、原 URL／KEY／資料／成本及雙埠獨占驗收通過。新公開 Jev／discovery 路徑尚未部署、實測 404，不能以既有 chat HTTPS 通過替代新端點驗收。[0.8.2 收據](qa/2026-10-23-windows-082-security.md)、[0.8.1 收據](qa/2026-10-23-windows-081-security.md)、[0.8.0 發布](qa/2026-10-23-windows-080-release.md)、[原 onboarding QA](qa/2026-10-23-windows-onboarding.md) 及 [鎖定 QA](qa/2026-10-23-windows-locked.md) 保留各階段歷史。
