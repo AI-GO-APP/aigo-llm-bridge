@@ -85,3 +85,10 @@ def test_schema_regex_cannot_hold_parent_process():
     assert not validate_instances([[schema,{'value':'a'*32+'!'}]])
     assert time.monotonic()-start<9
     assert validate_instances([[{'type':'object','properties':{'value':{'type':'integer'}}},{'value':4}]])
+
+
+def test_provider_environment_preserves_macos_keychain_username(monkeypatch):
+    monkeypatch.setenv('USER', 'bridge-fixture-user')
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'unrelated-synthetic-secret')
+    assert providers.environment()['USER'] == 'bridge-fixture-user'
+    assert 'ANTHROPIC_API_KEY' not in providers.environment()

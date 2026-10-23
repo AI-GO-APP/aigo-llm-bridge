@@ -1,6 +1,6 @@
 # Mac 設定、常駐與來源更新
 
-Mac source `0.9.3-mac.1` 使用 Cocoa／WKWebView、登入 Keychain 與使用者 LaunchAgent，保留既有五步設定、安全與單機 runtime 規格，新增公開 Worker 路由及明確 Chat／Decisions 驗證狀態。最新發布、正式安裝與公開 API 實測見 [上線收據](qa/2026-10-23-macos-public-api.md)，先前 UI／設定基礎見 [Mac 同步 QA](qa/2026-10-23-macos-parity.md)。Mac 發布現行 BYO source ZIP，下載與更新見 [Mac Release](MACOS-RELEASE.md)；不提供公證 .app／DMG，Windows 發布渠道不適用 Mac。
+Mac source `0.9.4-mac.1` 使用 Cocoa／WKWebView、登入 Keychain 與使用者 LaunchAgent，保留既有五步設定、安全與單機 runtime 規格，新增公開 Worker 路由及明確 Chat／Decisions 驗證狀態。最新發布、正式安裝與公開 API 實測見 [上線收據](qa/2026-10-23-macos-public-api.md)，先前 UI／設定基礎見 [Mac 同步 QA](qa/2026-10-23-macos-parity.md)。Mac 發布現行 BYO source ZIP，下載與更新見 [Mac Release](MACOS-RELEASE.md)；不提供公證 .app／DMG，Windows 發布渠道不適用 Mac。
 
 ## 安裝與管理視窗
 

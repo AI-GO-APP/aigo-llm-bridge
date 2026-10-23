@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.5-mac.1] - 2026-10-23
+
+- Mac 64 併發：Bridge 啟動時將檔案描述符軟上限由 LaunchAgent 預設 256 提高至 4096，修正 64 筆同時推論只有約 40 筆可執行的問題；新增 256 上限下 64 個真實子程序的 HTTP 回歸。
+
+## [0.9.4-mac.1] - 2026-10-23
+
+- Deliver PR #32 shared 64-slot Chat/Decisions core in the Mac source installer; preserve existing profile capacity until explicitly changed with mac_service workers.
+- Align Mac key handoff default with 600 RPM; retain existing key limits. Verify installed health capacity without subscription load testing.
+
 ## Windows installer 0.9.2
 
 - Enforce machine-wide runtime ownership before opening Store, HTTP or Relay across profiles, source/native installs, API ports, Windows users and TS sessions.

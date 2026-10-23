@@ -71,7 +71,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--install-root',default=str(Path.home()/'Library/Application Support/AIGO LLM Bridge'))
     parser.add_argument('--label',default='AI EA Cloud mac-primary')
-    parser.add_argument('--rpm',type=int,default=60)
+    parser.add_argument('--rpm',type=int,default=600)
     args=parser.parse_args()
     try:return deliver(args.install_root,args.label,args.rpm)
     except (OSError,ValueError,subprocess.SubprocessError):

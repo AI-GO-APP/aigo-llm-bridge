@@ -72,6 +72,9 @@ def run(args, instance):
 
 
 def serve(args, instance, lifetime):
+    if sys.platform!='win32':
+        from .capacity import ensure_file_limit
+        ensure_file_limit()
     store=Store(args.data_dir)
     lifetime.callback(store.close)
     runtime=Runtime(store)

@@ -49,7 +49,9 @@ raise SystemExit(app.main())
             threading.Thread(target=lambda:ready.put(child.stdout.readline()),daemon=True).start()
             port=int(ready.get(timeout=60).strip())
             with urllib.request.urlopen(f'http://127.0.0.1:{port}/health',timeout=5) as response:
-                assert json.load(response)['version']==receipt['version']
+                health=json.load(response)
+                assert health['version']==receipt['version']
+                assert health['max_concurrent_requests']==64 and health['shared_provider_capacity'] is True
             second=root/'second-profile'
             denied=subprocess.run([manifest['python'],'-m','desktop_bridge','--headless','--port','0',
                                    '--data-dir',str(second)],cwd=manifest['app'],capture_output=True,timeout=60)
@@ -60,7 +62,7 @@ raise SystemExit(app.main())
             assert connection.connect_ex(('127.0.0.1',port))!=0
         print(json.dumps({'success':True,'version':receipt['version'],'source_commit':receipt['commit'],
                           'download_installed':True,'fixed_machine_lock':True,'rejected_profile_no_database':True,
-                          'shutdown_api_closed':True,'credentials_or_power_changed':False}))
+                          'shutdown_api_closed':True,'max_concurrent_requests':64,'credentials_or_power_changed':False}))
 
 
 if __name__=='__main__':

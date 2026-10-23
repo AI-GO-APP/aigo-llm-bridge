@@ -21,6 +21,10 @@
 - 標準範圍以上的 Runtime／測試工具設定目前拒絕啟用，避免將未驗證容量當成已支援規格。
 - `/health` 提供 `max_concurrent_requests:64` 與 `shared_provider_capacity:true`。更新既有部署時須分別核對本機及 Worker actor；外層版本 header 不能證明舊 actor 已更新。
 
+## macOS
+
+Mac 自 0.9.5-mac.1 採同一規格。LaunchAgent 啟動的程序檔案描述符軟上限預設 256；64 個 CLI 子程序各占 3 個 pipe，再加上 API、Relay 與 Worker 連線會超過，實測只有約 40 筆能執行，其餘回 500。Bridge 在 POSIX 啟動時把軟上限提高到 4096（不超過硬上限，不修改系統設定）。回歸測試在 256 上限下以 64 個真實子程序經 HTTP 並行驗證。舊 Mac 設定檔保存的 `inference_workers` 需以 `mac_service.py workers --count 64` 明確更新。實機收據見 [Mac 64 併發](qa/2026-10-23-macos-concurrency.md)。
+
 ## 驗證狀態
 
 先前 0.6.3 基礎的 Windows 隔離原始碼 Runtime 已用真實 Codex 訂閱完成單工至 64 併發、固定批量重測、判斷專用及主 LLM 專用測試。主模型為 `gpt-6-astra`，判斷模型為 `gpt-6-luna`；判斷測項每筆含 10 題與證據驗證。這是判斷 adapter 所使用的結構化 LLM 路徑，不是 Jev 原生模型校準測試。
@@ -35,3 +39,5 @@ Claude 的預設與排程同樣為 64，已以不消耗訂閱的並行測試驗�
 - Claude 64 併發的真實訂閱、取消與長時間負載。
 - 更新安裝版及 Worker 後，經公開 HTTPS 的 64 筆標準 POST 與控制請求驗收。
 - 64 併發下的長上下文、大型附件、長輸出及 Cloud deadline 整鏈。
+
+Mac 0.9.4-mac.1 整合與基本流程驗收另見 [Mac 併發交付](qa/2026-10-23-macos-concurrency.md)；Claude 真實 64 併發須以該收據的實際結果為準。

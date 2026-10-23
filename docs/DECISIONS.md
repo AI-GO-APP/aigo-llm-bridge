@@ -61,3 +61,7 @@ D-29（2026-10-23）：公開 API 的交付證據分為本機支援、無 Key �
 
 
 **D-31 採用 2026-10-23：64 併發為標準。** 每裝置 Claude／Codex、Chat／Decisions 共用 64 同時推論；新 KEY 預設 600 RPM，保留既有頻率／裝置身分。串接採普通同步 API 並行 POST，無需工單或輪詢。控制請求另保留 8 名額，Schema 子程序保持 4 個並內部短暫等待。大於 64、Claude 真實負載及長上下文另列待驗。本次使用者明確授權更新既有裝置 Worker，並不將 Windows 發布變成對所有安裝者自動部署。
+
+**D-32 採用 2026-10-23：Mac 64 容量沿用原地更新。** 新安裝使用共用標準；舊 profile 不隱式覆寫明確容量，由既有排空／停止／workers 指令設為 64。Mac Key handoff 預設 600 RPM，原 Key 頻率保留。本輪先跑少量公開 Chat／Decisions 與成本，另依新增授權本機 Claude 64 測試；不將 64 設定值視為負載實測。
+
+**D-33 採用 2026-10-23：Mac 自行提高描述符上限。** LaunchAgent 繼承 256 軟上限，不足以容納 64 個 CLI 子程序與 socket。Bridge 啟動時只提高本程序 RLIMIT_NOFILE 軟上限至 4096（不超過硬上限），不改 launchctl、sysctl 或 LaunchAgent 以外設定。
