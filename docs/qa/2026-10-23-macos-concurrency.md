@@ -26,3 +26,18 @@ POSIX 啟動 `serve()` 前將本程序 RLIMIT_NOFILE 軟上限提高到 4096（�
 
 - 新增回歸：含新增「256 上限下 64 個真實子程序 HTTP 全數 200」測試，移除修正時該測試只有 39／64 成功。
 - Worker relay 13 passed；tools 56 passed；品牌與產品文件檢查通過。禁字清單檔不在本機，`lint_terms --require` 由 CI 執行。
+
+### 已安裝版本實機驗收（2026-10-23）
+
+- 原設定檔以 `mac_service.py update` 更新為 0.9.5-mac.1；profile、URL、owner Key 保留，`inference_workers=64`，本機 `/health` 回 `max_concurrent_requests:64`、`shared_provider_capacity:true`。Claude／Codex 訂閱狀態皆 ready。
+- Claude 真實訂閱低用量壓測（`anthropic/claude-haiku-4.5`、提示「Reply exactly OK.」、無工具／串流，臨時 claude scope Key 測後撤銷）：
+
+| 同時 | 成功 | 內容正確 | 牆鐘 | p50／p95／max | input／output tokens | usage.cost | Bridge fd 峰值 | CLI 子程序峰值 |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 1／1 | 1 | 2.1 s | 2.1／2.1／2.1 s | 563／82 | 0.0010 | 56 | 1 |
+| 16 | 16／16 | 16 | 3.5 s | 2.8／3.5／3.5 s | 9,005／1,066 | 0.0143 | 101 | 16 |
+| 64 | 64／64 | 64 | 10.0 s | 8.4／9.2／10.0 s | 36,029／4,210 | 0.0571 | 261 | 64 |
+
+- 64 筆占滿時加送的第 65 筆在推論前回 429 `queue_full`，不消耗訂閱。64 段 fd 峰值 261 已超過 LaunchAgent 原 256 上限，證實本修正為必要條件。
+- 公開 Worker：以 `byo_setup.py deploy` 原地更新同一名稱／URL（0.9.4-relay 範本，64 推論＋8 控制名額），未重寫配對 secret。部署前後所有公開路徑皆回 Cloudflare 1101；`wrangler tail` 例外為 Durable Objects 免費方案每日執行時間配額已用盡，非程式錯誤。Relay 長輪詢使 DO 幾乎全天保持活躍，免費配額餘裕很小；公開 HTTPS 64 併發待配額重置（UTC 00:00）或改用付費方案後驗證。
+- 本機 Node 22.14.0 低於部署基線，部署改用 nodejs.org 官方 v22.23.4（SHA256 驗證）置於使用者目錄，未改系統 Node。
