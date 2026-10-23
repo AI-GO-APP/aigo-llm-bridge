@@ -30,10 +30,11 @@ def setup(manifest, action, timeout=180):
 
 def control(action, root, timeout=180, workers=None, accepting=True):
     if sys.platform != 'darwin': raise ValueError('This command requires macOS.')
-    if action == 'workers' and (type(workers) is not int or not 1<=workers<=64):
-        raise ValueError('Workers must be an integer from 1 to 64.')
     m = manifest_at(root)
     sys.path.insert(0, m['app'])
+    from desktop_bridge.capacity import STANDARD_CONCURRENCY
+    if action == 'workers' and (type(workers) is not int or not 1<=workers<=STANDARD_CONCURRENCY):
+        raise ValueError('Workers must be an integer from 1 to 64.')
     from desktop_bridge.windows import mac_startup_path, set_startup
     data = m['data_dir']; agent = mac_startup_path(data)
     domain = f'gui/{os.getuid()}'; label = agent.stem; target = domain + '/' + label

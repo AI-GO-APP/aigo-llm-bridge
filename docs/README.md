@@ -49,3 +49,5 @@ Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [最新 Mac 
 
 
 - [64 併發規格](CONCURRENCY.md)：共用容量、普通 API 呼叫、驗證證據及待驗範圍。
+
+Mac 0.9.4-mac.1 整合與基本流程驗收另見 [Mac 併發交付](qa/2026-10-23-macos-concurrency.md)；Claude 真實 64 併發須以該收據的實際結果為準。

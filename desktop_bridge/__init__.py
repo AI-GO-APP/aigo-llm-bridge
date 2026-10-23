@@ -1,2 +1,2 @@
 """Local desktop LLM bridge. Persistent state contains metadata only."""
-__version__ = "0.9.4"
+__version__ = "0.9.4-mac.1"

@@ -62,3 +62,5 @@ Mac的新UI／封裝／更新仍需Mac維護者獨立驗收；本輪不介入其
 
 
 64 併發的來源、Windows 安裝包及公開 Worker 驗收分層記錄於 [本次收據](qa/2026-10-23-windows-093-concurrency.md)。先前 626 筆本機 Codex 實測不替代新版正式 HTTPS 驗收；Claude 真實 64 負載及 >64 仍待驗證。
+
+Mac 0.9.4-mac.1 整合與基本流程驗收另見 [Mac 併發交付](qa/2026-10-23-macos-concurrency.md)；Claude 真實 64 併發須以該收據的實際結果為準。

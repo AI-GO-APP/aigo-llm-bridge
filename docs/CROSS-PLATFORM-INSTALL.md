@@ -99,12 +99,10 @@ Mac 可用 `"$BRIDGE_PY" "$BRIDGE_APP/tools/mac_key_handoff.py"` 建立 Codex sc
 
 ### Mac 同時請求與排隊
 
-所有既有設定檔預設仍以一個隔離 CLI 子程序執行推論。多個 Cloud client 同時呼叫時，排隊會消耗呼叫者的期限；不能把回退到其他供應商後的成功當成本機通過。實機確認訂閱可承受後，可在已安裝的 Mac 使用：
+Mac source 0.9.4-mac.1 整合 [64 併發規格](CONCURRENCY.md)。新 profile 預設 64，Claude／Codex、Chat／Decisions 共用；Relay 另保留控制容量。既有 profile 更新保留原 inference_workers；管理者明確切換時執行：
 
-```bash
-"$BRIDGE_PY" "$BRIDGE_APP/tools/mac_service.py" workers --count 2 --install-root "$BRIDGE_ROOT"
+```sh
+"$BRIDGE_PY" "$BRIDGE_APP/tools/mac_service.py" workers --count 64 --install-root "$BRIDGE_ROOT"
 ```
 
-此指令先 pause／wait-idle，只停止這個 Bridge，將該資料目錄的 `inference_workers` 設為 1–4，再啟動原 LaunchAgent。每個請求仍使用獨立、短暫且不啟用主機工具的 CLI 子程序；request ID 去重、每把 KEY 的頻率與全機九筆在途上限不變。數值在重啟／source 更新後保留，管理 API settings 可查閱；改回 `--count 1` 可恢復序列執行。既有 Windows 設定檔與正式服務不受 Mac 設定影響。
-
-增加同時推論可減少短請求被長工作阻塞，但不保證任意負載或輸出均在舊 client 的 60 秒期限內完成；訂閱限額、模型服務延遲與休眠仍可能使請求失敗。不以自動重試或未核實的零成本掩蓋失敗。
+指令先 pause／wait-idle、停止此 Bridge，再設為 1–64 並啟動原 LaunchAgent。URL、device ID、既有 Key 與 RPM 不變，數值跨更新保留。新 Key 預設 600 RPM；既有較低 RPM 仍可能回 429。同步並行 POST 即可，不需工單輪詢；超時不自動重送，先查 UUID 收據。64 是設定容量，不保證延遲或訂閱吞吐；Mac 本輪只做少量合成 HTTPS 跑通，未做真實 64 負載。

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.9.4-mac.1] - 2026-10-23
+
+- Deliver PR #32 shared 64-slot Chat/Decisions core in the Mac source installer; preserve existing profile capacity until explicitly changed with mac_service workers.
+- Align Mac key handoff default with 600 RPM; retain existing key limits. Verify installed health capacity without subscription load testing.
+
 ## Windows installer 0.9.2
 
 - Enforce machine-wide runtime ownership before opening Store, HTTP or Relay across profiles, source/native installs, API ports, Windows users and TS sessions.

@@ -35,3 +35,5 @@ Claude 的預設與排程同樣為 64，已以不消耗訂閱的並行測試驗�
 - Claude 64 併發的真實訂閱、取消與長時間負載。
 - 更新安裝版及 Worker 後，經公開 HTTPS 的 64 筆標準 POST 與控制請求驗收。
 - 64 併發下的長上下文、大型附件、長輸出及 Cloud deadline 整鏈。
+
+Mac 0.9.4-mac.1 整合與基本流程驗收另見 [Mac 併發交付](qa/2026-10-23-macos-concurrency.md)；Claude 真實 64 併發須以該收據的實際結果為準。
