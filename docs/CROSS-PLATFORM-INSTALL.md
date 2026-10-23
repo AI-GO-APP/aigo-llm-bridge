@@ -64,6 +64,8 @@ $created.integration.prompt | Set-Clipboard
 
 要取得不含 key 的串接說明：`handoff --data-dir ... --providers codex`。`status` 回報 URL／配對狀態，`key-list` 僅回傳前綴及 ID；不提供舊明文 key 的查回功能。模型由 GET models 決定，需與本機訂閱權限、CLI 模型及 OpenRouter 牌價相符。
 
+模型與 Jev 使用端另依 [模型查詢與 Decisions](JEV-COMPATIBILITY.md)驗證，交付的 handoff 已包含兩種格式。新路徑需更新 Worker、Relay 與 Bridge；若本次不部署，記錄外部驗收待完成。
+
 最後必須完成 [第三方串接驗收](THIRD-PARTY-INTEGRATION.md)。安裝、Cloudflare 部署與真實訂閱推論各是獨立檢查；登入或 Keychain 不可用時明確回報未完成。
 
 若下一階段要以新Mac取代現有Windows作為Cloud常駐供應端，依[供應裝置交接](AI-EA-CLOUD-BEST-PRACTICE.md#下一階段改用另一台-mac-作常駐供應端)先建獨立profile並驗外部HTTPS、模型／成本、工具與錯誤，再切Cloud registry。保留原Windows URL／key作回退；本段不是Mac實機驗收或Mac release。

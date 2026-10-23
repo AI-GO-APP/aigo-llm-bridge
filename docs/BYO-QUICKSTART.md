@@ -122,3 +122,7 @@ Windows 使用者更換／重灌：經授權恢復原裝置 DB 後，先登入�
 API 診斷：若 Cloudflare 直接回 HTML／文字 403、1010，而非 Bridge JSON，先檢查客戶端 User-Agent 與自己帳戶的安全規則；不要更換 KEY 或重建 Worker。Python urllib 測試請明確標示 User-Agent（例如 `aigo-llm-bridge-client/1.0`），並使用有效 CA 憑證；不要關閉 TLS 驗證。本機 relay 已內建 User-Agent 與 CA bundle。[Cloudflare 1010 說明](https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1010/)。
 
 新 KEY 預設允許 Claude／Codex 所有已登錄模型，之後新增模型不需重發 KEY。仍須符合本機訂閱與模型目錄；需要限制時明確傳入 `--providers codex` 或 `--providers claude`。既有 KEY 及其輪替範圍不會自動擴權。
+
+## 模型能力與 Jev
+
+0.9 新增不推論的模型能力查詢及 Jev Decisions。安裝後依 [模型與 Jev 指南](JEV-COMPATIBILITY.md)用服務 key 驗證；probe 會消耗推論。升級沿用原 profile、URL 及 key，新路徑需 Worker、Relay、Bridge 同步更新；仍依本次部署授權操作。

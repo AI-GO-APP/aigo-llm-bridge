@@ -20,6 +20,9 @@ def main():
     parser.add_argument("--no-activate",action="store_true")
     parser.add_argument("--native-ui",action="store_true",help="Use the legacy Tkinter window")
     args=parser.parse_args()
+    if sys.platform=='win32':
+        from .windows_http import install as protect_listeners
+        protect_listeners()
     from .windows import Instance
     instance=Instance(args.data_dir)
     if not instance.primary:
@@ -31,7 +34,7 @@ def main():
     except OSError:
         runtime.stop(); store.close()
         instance.close()
-        if args.headless: return 2
+        if args.headless or (sys.platform=='win32' and args.background): return 2
         import tkinter as tk
         from tkinter import messagebox
         root=tk.Tk(); root.withdraw(); messagebox.showinfo("Bridge 已執行或連接埠被使用","請開啟既有管理視窗，或更換連接埠。",parent=root); root.destroy()

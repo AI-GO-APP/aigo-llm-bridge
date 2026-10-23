@@ -15,6 +15,14 @@
 5. 檢查client/SDK是否偷偷附加temperature、token上限、provider路由或stream。非等價參數回400，不能把錯誤吞掉。0.6.3支援最多256個工具定義及tool_choice／工具歷史，需符合原函式schema；不會代執行本機工具。provider.data_collection=deny/allow可作路由相容欄位。
 6. 模擬供應端關閉／無效 key，確認消費端能顯示 503／401，不會無限重試或默默改用其他付費供應商。
 
+## 模型查詢與 Jev 使用端
+
+先 GET origin + /bridge/v1/model-capabilities；依 availability、證據時間及 key scope 選模型，不把模型選單當成訂閱權限。需要即時重讀時 POST /bridge/v1/models/refresh，body 為空 object；查詢不執行推論。POST /bridge/v1/models/probe 會消耗用量，只接受 model 與 protocol（chat／decisions）。
+
+原本的 Jev 使用端只換完整 URL 至 origin + /api/alpha/decisions、key、model，保留 state／questions 及 answers 解析。可建議裝置已驗證可用的 Luna／Haiku，不隱藏換模型。三種題型、成本、收據及限制見 [Jev 相容指南](JEV-COMPATIBILITY.md)。機率為一般 LLM 估計，原門檻需重測；每題實際呼叫成本加總，未知用量不當成免費。
+
+新路徑需 Worker、Relay、Bridge 都更新；僅本機測試不等於外部端點驗收。
+
 ## 適用範圍
 
 | 消費端 | 接入方式／阻力 |

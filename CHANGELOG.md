@@ -26,6 +26,13 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-23
+
+- Add caller-scoped model discovery, timestamped capability evidence and explicit synthetic probes without treating picker lists as subscription entitlement.
+- Add Jev-compatible Decisions for noul, choice and score; isolate each question, validate through bounded schema helpers and preserve actual-model usage and incomplete billing receipts.
+- Include Decisions/discovery examples in Windows setup, BYO/AI IDE handoff and the shared console; preserve the device endpoint, long-lived keys, metadata and Windows 0.8.1/0.8.2 security controls.
+- Ship Worker route/template updates without deploying existing Cloud endpoints or releasing Mac packages. New external routes require a separately authorized Worker update.
+
 ## [0.8.1-mac.1] - 2026-10-23
 
 同步 Windows 0.7.3 六頁設計、0.8.0 首次設定及 0.8.1 共用安全修補，新增 Mac WKWebView、原生剪貼簿／CSV、AC 自動睡眠同意與還原、KEY／HTTPS 交付及安全來源更新。

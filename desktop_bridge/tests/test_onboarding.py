@@ -102,6 +102,9 @@ def test_source_installer_preserves_identity_across_reinstall(tmp_path,monkeypat
     if os.name=='nt':(root/'Bridge.cmd').read_text(encoding='ascii')
     store=Store(data);device=store.get('device_id');_,key=store.create_key('preserve');store.set('public_url','https://fixed.example.test');store.close()
     second=installer.install(root,dependencies=False)
+    app=Path(second['app'])
+    assert (app/'docs/JEV-COMPATIBILITY.md').is_file()
+    assert all((app/'desktop_bridge'/name).is_file() for name in ('model_catalog.py','decision_contract.py','decisions.py'))
     assert second['data_dir']==first['data_dir'] and second['app']!=first['app']
     assert Path(first['app']).is_dir() and Path(second['app']).is_dir()
     store=Store(data);assert store.get('device_id')==device and store.authenticate(key) and store.get('public_url')=='https://fixed.example.test';store.close()

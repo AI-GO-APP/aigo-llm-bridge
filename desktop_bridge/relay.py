@@ -73,7 +73,7 @@ class Relay:
             local_opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
             try:
                 path=work.get("path","")
-                allowed=(path in {"/api/v1/models","/v1/models","/api/v1/chat/completions","/v1/chat/completions","/bridge/v1/jobs","/bridge/v1/preflight"}
+                allowed=(path in {"/api/v1/models","/v1/models","/api/v1/chat/completions","/v1/chat/completions","/api/alpha/decisions","/bridge/v1/jobs","/bridge/v1/preflight","/bridge/v1/model-capabilities","/bridge/v1/models/refresh","/bridge/v1/models/probe"}
                          or path.startswith("/bridge/v1/jobs/") or path.startswith('/bridge/v1/receipts/'))
                 if not allowed or work.get("method") not in {"GET","POST"}: raise ValueError("Invalid relay request")
                 req=urllib.request.Request(f"http://127.0.0.1:{self.port}"+path,

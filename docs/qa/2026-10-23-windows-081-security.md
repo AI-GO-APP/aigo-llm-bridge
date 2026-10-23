@@ -31,6 +31,8 @@
 
 另以自有隔離 socket 證明 Windows SO_REUSEADDR 允許同址雙 listener；新增 0.8.2 Windows-only 修補與驗收，見 [0.8.2 QA](2026-10-23-windows-082-security.md)。
 
+後續來源 Session 明確交接並停止修改服務，已受控升級到 0.8.2，完成重啟後 HTTPS 及原資料／KEY 保留；測試 KEY 已撤銷、受保護檔已刪。上述 0.8.1 未完成重啟的歷史收據保留，不改寫成當時已成功。
+
 Worker 修補只交付範本，不代表既有雲端已修補；未部署、未重配 DEVICE_KEY。Mac 與 Cloud 團隊工作不在本次範圍。
 
 ## 宣布前的封裝流程修復

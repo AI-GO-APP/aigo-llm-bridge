@@ -104,6 +104,17 @@ class Quote:
             raise BridgeError(502,'usage_unavailable','CLI token 明細無法核對，未捏造金額。') from None
 
 
+def combine_usage(previous, current):
+    """Aggregate already priced calls; request fees and tiered rates apply per call."""
+    if previous is None: return dict(current)
+    result = {key: previous[key]+current[key] for key in ('prompt_tokens','completion_tokens','total_tokens')}
+    result['cost'] = float(Decimal(str(previous['cost']))+Decimal(str(current['cost'])))
+    for field in ('prompt_tokens_details','completion_tokens_details'):
+        a, b = previous.get(field,{}), current.get(field,{})
+        if a or b: result[field] = {k:a.get(k,0)+b.get(k,0) for k in set(a)|set(b)}
+    return result
+
+
 class Catalog:
     def __init__(self,directory,*,loader=None,clock=time.time):
         self.path=Path(directory)/'openrouter-pricing.json';self.loader=loader or fetch_catalog

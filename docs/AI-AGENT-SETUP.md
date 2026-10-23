@@ -20,6 +20,8 @@ Claude／Codex 訂閱由我自行登入，不操作既有視窗、不 logout/log
 驗收後另建 owner 服務長效 KEY：Windows Setup 使用 byo key-create --label 'My service' --handoff；source helper 直接 key-create。新 KEY 預設兩來源全開，仍受登錄模型／訂閱限制。owner KEY 保留有效，只撤銷測試 KEY。一次性結果交 owner 放服務端 secret，不寫 repo／報告；持久聊天只提供不含 KEY 的 handoff，完整 KEY 在本機一次性介面取得。
 
 交付固定 public_url + /api/v1、有效長效 KEY 與 integration.prompt。只承諾支援的 Chat Completions 子集：可關串流、移除抽樣／token上限；tools 是呼叫端執行的提案，不是本機工具；Responses 未支援。列出真實通過／未驗證／需要 owner 完成的登入，不能只以 HTTP 200 或 source tests 聲稱安裝交付完成。
+
+若我的既有服務使用 Jev，讀取 JEV-COMPATIBILITY.md，交付完整 /api/alpha/decisions URL、Bridge KEY、實際 model，保留原 state／questions／criteria／provider.data_collection 與 answers 解析。驗證三種題型、實際模型成本及 partial billing receipt；機率為一般 LLM 估計，業務門檻未校準。模型能力 GET／refresh 不推論，probe 會消耗額度，不能在模型選單偷偷測所有模型。新公開路徑需 Worker／Relay／Bridge 同步；只在 owner 明確授權時部署原 Worker，不換 URL／KEY、不任意呼叫正在使用的 Claude。
 ```
 
 工具入口：[Windows Setup／CLI](WINDOWS-INSTALL-UPDATE.md)、[source 安裝](CROSS-PLATFORM-INSTALL.md)、[完整 API](API.md)。不要將歷史報告中的網址或配對資料當成新裝置預設。

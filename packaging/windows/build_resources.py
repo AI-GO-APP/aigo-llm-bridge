@@ -12,6 +12,7 @@ DOCUMENTS = ('AGENTS.md', 'CLAUDE.md', 'skills/byo-cloudflare/SKILL.md', *(
         'ONBOARDING.md', 'CI-CD.md', 'RELEASE.md', 'SECURITY.md',
         'BYO-QUICKSTART.md', 'DEVICE-IDENTITY.md', 'AI-AGENT-SETUP.md', 'P1-Windows-guide.md',
         'OPENROUTER-PRICING.md', 'THIRD-PARTY-INTEGRATION.md', 'AI-EA-CLOUD-BEST-PRACTICE.md',
+        'JEV-COMPATIBILITY.md', 'JEV-COMPATIBILITY-PLAN.md',
         'CROSS-PLATFORM-INSTALL.md', 'WINDOWS-INSTALL-UPDATE.md',
         'qa/2026-10-22-windows-velopack-acceptance.md')))
 
