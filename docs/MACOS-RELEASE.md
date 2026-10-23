@@ -1,5 +1,7 @@
 # Mac BYO source Release：安裝、更新與發布
 
+最新已發布並正式安裝驗證的版本為 [0.9.3-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.3-mac.1)。公開附件／來源 hash、原 profile 更新、公開 Chat／Decisions 及 Key 保留見 [完成收據](qa/2026-10-23-macos-public-api.md)。此版本提供公開 Worker 相容性提示；本機更新仍不會自動部署任何安裝者 Worker。
+
 Mac 現行渠道為 `macos-source-v<Mac VERSION>` 的 GitHub Release。它交付現行 BYO source ZIP、SHA256、來源 manifest 與 self-test；包含 Cocoa／WKWebView 管理台及 source 安裝器，需 Python 3.12+。這是支援的 Mac 發布格式；不宣稱提供公證 .app／DMG、自動簽章 feed 或 Windows Velopack 更新。
 
 ## 從公開 Release 安裝
