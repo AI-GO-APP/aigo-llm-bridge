@@ -11,7 +11,7 @@ Mac source `0.9.4-mac.1` 使用 Cocoa／WKWebView、登入 Keychain 與使用者
 ## 五步首次設定
 
 1. 檢查插電自動睡眠，明確同意後套用。已是 `sleep 0` 只讀回；需要變更時本人點選系統管理員授權。保留電池、顯示器、螢幕保護、鎖定、闔蓋及實體按鍵行為。
-2. 檢查 Codex／Claude 訂閱，已就緒則沿用。只有本人按登入才開新的 Terminal 執行官方登入，不操作既有 CLI 視窗。CLI 安裝及瀏覽器 OAuth 由本人處理；Bridge 尚有工作時拒絕發起來源登入。
+2. 檢查 Codex／Claude 訂閱，已就緒則沿用。只有本人按登入才開新的 Terminal 執行官方登入，不操作既有 CLI 視窗。CLI 安裝及瀏覽器 OAuth 由本人處理，步驟見 [自備 AI 方案接上 Bridge](SUBSCRIPTION-SETUP.md)；Bridge 尚有工作時拒絕發起來源登入。
 3. 準備 Node.js 24.22.1+（或 22.23.4+）／Wrangler 4.152.0，完成自己的 Cloudflare OAuth，明確選定自有帳戶。部署登入、LLM 訂閱、Keychain 裝置 secret 與 client KEY 分離。
 4. 選一鍵部署或複製此安裝位置專用的 AI IDE prompt。沿用同一帳戶、裝置與 Worker 的 plan／verify／publish 流程。開啟管理台不代表部署授權，不能直接部署 repo 範本。
 5. 建立或貼回已保存的長效 KEY，選模型並明確按一次真 HTTPS 測試。GET models 成功後只發一次合成 POST，需取得 PONG 與有限、非負數值的 `usage.cost`。保存 KEY 並複製第三方串接訊息後才完成。驗證綁定同一 KEY、endpoint、model／provider／native，變更後須重測。
