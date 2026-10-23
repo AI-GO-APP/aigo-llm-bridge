@@ -28,20 +28,19 @@ def install(root, data_dir=None, *, dependencies=True):
     if not env.exists():venv.EnvBuilder(with_pip=True).create(env)
     python=env/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
     if dependencies:
-        result=subprocess.run([str(python),'-m','pip','install','--disable-pip-version-check','-r',str(SOURCE/'desktop_bridge/requirements.txt')],capture_output=True)
+        requirements = 'requirements-macos.txt' if sys.platform == 'darwin' else 'requirements.txt'
+        result=subprocess.run([str(python),'-m','pip','install','--disable-pip-version-check','-r',str(SOURCE/'desktop_bridge'/requirements)],capture_output=True)
         if result.returncode:raise ValueError('Dependency installation failed. Check Python/network and retry; no provider login was changed.')
     version={}
     exec((SOURCE/'desktop_bridge/__init__.py').read_text(encoding='utf-8'),version)
     release=root/'versions'/(version['__version__']+'-'+uuid.uuid4().hex[:12])
     release.mkdir(parents=True)
-    for folder in ('desktop_bridge','cloudflare/src','skills/byo-cloudflare'):
+    for folder in ('desktop_bridge','cloudflare/src','skills/byo-cloudflare','docs'):
         source=SOURCE/folder
         if any(p.is_symlink() for p in source.rglob('*')):raise ValueError('Refusing symbolic links in distributable sources.')
         shutil.copytree(source,release/folder,ignore=shutil.ignore_patterns('__pycache__','tests','*.pyc'))
-    (release/'docs').mkdir()
-    for name in ('BYO-QUICKSTART.md','DEVICE-IDENTITY.md','AI-AGENT-SETUP.md','OPENROUTER-PRICING.md','THIRD-PARTY-INTEGRATION.md','CROSS-PLATFORM-INSTALL.md','AI-EA-CLOUD-BEST-PRACTICE.md'):
-        shutil.copyfile(SOURCE/'docs'/name,release/'docs'/name)
-    for name in ('AGENTS.md','CLAUDE.md'):shutil.copyfile(SOURCE/name,release/name)
+    for name in ('AGENTS.md','CLAUDE.md','README.md','README-LEGACY.md','CONTEXT.md','CONTRIBUTING.md','VERSION','CHANGELOG.md'):
+        shutil.copyfile(SOURCE/name,release/name)
     (release/'tools').mkdir()
     for name in ('byo_setup.py','mac_service.py','mac_key_handoff.py'):
         shutil.copyfile(SOURCE/'tools'/name,release/'tools'/name)
@@ -52,7 +51,7 @@ def install(root, data_dir=None, *, dependencies=True):
     try:
         source_commit=subprocess.check_output(['git','-C',str(SOURCE),'rev-parse','HEAD'],stderr=subprocess.DEVNULL,text=True).strip()
     except (OSError,subprocess.SubprocessError):source_commit=None
-    value={'source_commit':source_commit,'version':version['__version__'],'python':str(python),'app':str(release),'data_dir':str(data),'launcher':str(launcher),'install_root':str(root)}
+    value={'source_commit':source_commit,'source_checkout':str(SOURCE),'version':version['__version__'],'python':str(python),'app':str(release),'data_dir':str(data),'launcher':str(launcher),'install_root':str(root)}
     if previous:
         backup=root/'source-install.previous.json'
         backup.write_text(json.dumps(previous,indent=2),encoding='utf-8')

@@ -4,6 +4,8 @@
 
 ## 前置條件
 
+Mac `0.8.0-mac.1` 的 WKWebView、五步精靈及來源更新見 [Mac 操作契約](MACOS-SETUP.md)。關閉視窗仍在背景接單；安裝不自動更改電源或啟動 OAuth。
+
 - Python 3.12+（含 venv/pip）、Node.js 22+、網路，以及安裝者自己的 Cloudflare 帳戶。
 - 安裝 Wrangler：Windows `npm.cmd install -g wrangler@4.95.0`；macOS `npm install -g wrangler@4.95.0`。若沒有全域安裝權限，可在 repo 的 cloudflare 目錄安裝相同版本，helper 會找本機 node_modules。
 - 安裝者自行完成 `wrangler login`、`wrangler whoami`。Windows 使用 `wrangler.cmd`。全新帳戶還需依官方互動提示註冊 workers.dev 子網域；部署不需要購買網域，亦不會代為升級帳單方案。

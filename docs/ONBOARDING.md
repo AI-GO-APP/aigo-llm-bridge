@@ -1,5 +1,7 @@
 # Windows 首次安裝 onboarding
 
+Mac source 的獨立安裝、系統授權與原生視窗見 [Mac 設定](MACOS-SETUP.md)；共用部署／KEY／HTTPS 驗證契約，不套用 Windows UAC、DPAPI 或 Velopack。
+
 適用 Windows Velopack 0.8.0；發布狀態與實測範圍，見 [ACCEPTANCE](ACCEPTANCE.md)。本文件是操作契約，不能當成驗收通過證明。macOS 的安裝／權限／發布由其維護者另行處理。
 
 ## 安裝者的完整路徑

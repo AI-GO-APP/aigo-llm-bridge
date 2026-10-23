@@ -18,6 +18,16 @@
 
 ## [Unreleased]
 
+## [0.8.0-mac.1] - 2026-10-23
+
+同步 Windows 0.7.3 六頁設計與 0.8.0 候選首次設定，新增 Mac WKWebView、原生剪貼簿／CSV、AC 自動睡眠同意與還原、KEY／HTTPS 交付及安全來源更新。
+
+### 升級影響
+- Mac：需更新來源安裝並重啟，保留原 profile、URL、有效 KEY、模型與推論容量；不自動改電源或登入。
+- Windows：只共用設定流程的可覆寫平台方法，不更新其已安裝服務或發布渠道。
+- Cloudflare／呼叫端：協定不變，不因這次本機更新重建 Worker 或重發 KEY。
+- 發布：Mac source 候選，不建立 tag／Release／DMG；驗收範圍見 docs/qa/2026-10-23-macos-parity.md。
+
 ## [0.6.6-mac.2] - 2026-10-23
 
 Mac source 實機修復候選，不建立 tag／Release、不發布安裝包。設定檔可明確選擇 1–4 個隔離推論子程序，預設維持 1；Mac CLI 先 pause／wait-idle 再重啟。此 Mac 改為 4，消除實測短請求排隊耗盡 Cloud 期限的瓶頸。原 KEY、模型 scope、endpoint、去重與 metadata-only LOG 保留，Windows 正式服務／Worker／裝置資料不變。

@@ -63,14 +63,11 @@ class ManagementServer:
                 if origin and origin != owner.origin:
                     return self.reply(403, {"error": "不允許跨來源管理操作。"})
                 path = urlsplit(self.path).path
-                assets = {"/": ("index.html", "text/html; charset=utf-8"),
-                          "/platform.js": ("platform.js", "text/javascript; charset=utf-8"),
-                          "/app.js": ("app.js", "text/javascript; charset=utf-8"),
-                          "/integration.js": ("integration.js", "text/javascript; charset=utf-8"),
-                          "/style.css": ("style.css", "text/css; charset=utf-8")}
-                if not post and path in assets:
-                    name, mime = assets[path]
-                    return self.reply(200, (Path(__file__).parent / "web" / name).read_bytes(), mime)
+                if not post:
+                    asset = owner.asset(path)
+                    if asset is not None:
+                        raw, mime = asset
+                        return self.reply(200, raw, mime)
                 supplied = self.headers.get("Authorization", "")
                 if not secrets.compare_digest(supplied.encode(), ("Bearer " + owner.token).encode()):
                     return self.reply(401, {"error": "管理連線已失效，請從 Bridge 捷徑重新開啟。"})
@@ -120,6 +117,14 @@ class ManagementServer:
         self.origin = f"http://127.0.0.1:{self.port}"
         self.url = self.origin + "/#session=" + self.token
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True, name="bridge-management")
+
+    def asset(self, path):
+        names = {'/': ('index.html', 'text/html'), '/platform.js': ('platform.js', 'text/javascript'),
+                 '/app.js': ('app.js', 'text/javascript'), '/integration.js': ('integration.js', 'text/javascript'),
+                 '/style.css': ('style.css', 'text/css')}
+        if path in names:
+            name, mime = names[path]
+            return (Path(__file__).parent / 'web' / name).read_bytes(), mime + '; charset=utf-8'
 
     def start(self):
         self.thread.start()

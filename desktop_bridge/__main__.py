@@ -52,17 +52,29 @@ def main():
         return 0
     if not args.native_ui:
         import webbrowser
-        from .management import ManagementServer
+        if sys.platform == 'darwin':
+            from .macos_management import MacManagementServer as ManagementServer
+        else:
+            from .management import ManagementServer
         done=threading.Event()
         manager=ManagementServer(store,runtime,api,relay,on_shutdown=done.set)
         manager.start()
         signal.signal(signal.SIGINT,lambda *_:done.set())
         if hasattr(signal,"SIGTERM"): signal.signal(signal.SIGTERM,lambda *_:done.set())
-        if not args.background and not args.no_activate: webbrowser.open(manager.url)
+        def open_console():
+            if sys.platform == 'darwin': manager.open_console()
+            else: webbrowser.open(manager.url)
+        if not args.background and not args.no_activate: open_console()
         last_cleanup=0
         try:
             while not done.wait(.5):
-                if instance.requested(): webbrowser.open(manager.url)
+                if instance.requested(): open_console()
+                if sys.platform == 'darwin':
+                    requested = store.directory / 'macos-onboarding-open.request'
+                    if requested.exists():
+                        requested.unlink()
+                        manager.onboarding.open_requested = True
+                        open_console()
                 if time.monotonic()-last_cleanup>60:
                     store.prune()
                     with runtime.lock: runtime.cleanup()

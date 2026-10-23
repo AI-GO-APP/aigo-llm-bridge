@@ -28,7 +28,7 @@ def setup(manifest, action, timeout=180):
     return result.stdout.decode()
 
 
-def control(action, root, timeout=180, workers=None):
+def control(action, root, timeout=180, workers=None, accepting=True):
     if sys.platform != 'darwin': raise ValueError('This command requires macOS.')
     if action == 'workers' and (type(workers) is not int or not 1<=workers<=4):
         raise ValueError('Workers must be an integer from 1 to 4.')
@@ -73,7 +73,7 @@ def control(action, root, timeout=180, workers=None):
         # Runs from the installed source, so set_startup discovers its stable Bridge.pyw.
         set_startup(True, data)
         if action != 'enable':
-            setup(m, 'resume')
+            setup(m, 'resume' if accepting else 'pause')
             if not loaded() and launch('bootstrap', domain, str(agent)).returncode:
                 raise ValueError('LaunchAgent bootstrap failed; use the logged-in macOS GUI session.')
             if launch('kickstart', target).returncode: raise ValueError('LaunchAgent did not start.')
@@ -83,14 +83,103 @@ def control(action, root, timeout=180, workers=None):
     return result
 
 
+def update(root, source, timeout=180):
+    """Apply an explicitly selected local source; restore the prior manifest on failure."""
+    import fcntl
+    root = Path(root).expanduser().resolve()
+    source = Path(source).expanduser().resolve()
+    installer = source / 'tools/install.py'
+    if not installer.is_file() or not (source / 'desktop_bridge/__init__.py').is_file():
+        raise ValueError('Select a Bridge source checkout.')
+    original = manifest_at(root)
+    import sqlite3
+    database = Path(original['data_dir']) / 'bridge.sqlite'
+    accepting = True
+    if database.exists():
+        with sqlite3.connect(database.as_uri() + '?mode=ro', uri=True) as db:
+            row = db.execute("select value from settings where name='accepting'").fetchone()
+            if row: accepting = json.loads(row[0])
+    sys.path.insert(0, original['app'])
+    from desktop_bridge.windows_release import atomic_json
+    def record(value):
+        atomic_json(root / 'macos-update.json', {**value, 'checked_at': time.time()})
+    with open(root / 'macos-update.lock', 'a+b') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        # Drain failure does not permit installation or manifest replacement.
+        control('stop', root, timeout)
+        record({'status': 'updating', 'previous_version': original['version']})
+        try:
+            result = subprocess.run([original['python'], str(installer), '--install-root', str(root)],
+                                    capture_output=True, timeout=300)
+            if result.returncode:
+                raise ValueError('Source installation did not complete.')
+            current = manifest_at(root)
+            if Path(current['data_dir']).resolve() != Path(original['data_dir']).resolve():
+                raise ValueError('Update changed the profile.')
+            state = control('start', root, timeout, accepting=accepting)
+            # Launchctl loaded alone does not establish HTTP readiness.
+            import urllib.request
+            import urllib.error
+            until = time.monotonic() + 30
+            while True:
+                from desktop_bridge.store import Store
+                store = Store(current['data_dir'], startup=False)
+                try: port = store.get('port')
+                finally: store.close()
+                try:
+                    with urllib.request.urlopen(f'http://127.0.0.1:{port}/health', timeout=2) as response:
+                        healthy = json.loads(response.read())
+                    if healthy.get('ok') and healthy.get('version') == current['version']:
+                        break
+                except (OSError, ValueError): pass
+                if time.monotonic() >= until:
+                    raise ValueError('Updated Bridge did not become healthy.')
+                time.sleep(.2)
+            value = {'updated': True, 'previous_version': original['version'], 'version': current['version'],
+                     'profile_preserved': True, 'loaded': state['loaded']}
+            record({'status': 'completed', **value})
+            return value
+        except Exception:
+            # Stop a failed new process before returning to the saved launcher manifest.
+            try: control('stop', root, timeout)
+            except Exception:
+                record({'status': 'failed', 'recovered': False, 'previous_version': original['version']})
+                raise
+            temporary = root / 'source-install.recovery.tmp'
+            temporary.write_text(json.dumps(original), encoding='utf-8')
+            os.replace(temporary, root / 'source-install.json')
+            try:
+                control('start', root, timeout, accepting=accepting)
+                record({'status': 'failed', 'recovered': True, 'previous_version': original['version']})
+            except Exception:
+                record({'status': 'failed', 'recovered': False, 'previous_version': original['version']})
+                raise
+            raise
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['status','enable','disable','start','stop','restart','rollback','workers'])
+    parser.add_argument('action', choices=['status','enable','disable','start','stop','restart','rollback','workers','update','onboarding-open','onboarding-status'])
+    parser.add_argument('--source', help='Explicit local Bridge source checkout for update.')
     parser.add_argument('--count',type=int,help='Parallel isolated inference processes (workers action, 1–4; default profile is 1).')
     parser.add_argument('--install-root', default=str(Path.home() / 'Library/Application Support/AIGO LLM Bridge'))
     parser.add_argument('--timeout', type=int, default=180)
     args = parser.parse_args()
-    try: print(json.dumps(control(args.action, args.install_root, args.timeout, args.count), ensure_ascii=False)); return 0
+    try:
+        if args.action == 'update':
+            if not args.source: raise ValueError('update requires --source.')
+            value = update(args.install_root, args.source, args.timeout)
+        elif args.action.startswith('onboarding-'):
+            m = manifest_at(args.install_root)
+            if args.action == 'onboarding-open':
+                (Path(m['data_dir']) / 'macos-onboarding-open.request').touch(mode=0o600)
+                value = {'open_requested': True}
+            else:
+                path = Path(m['data_dir']) / 'macos-onboarding.json'
+                value = json.loads(path.read_text()) if path.exists() else {'completed_at': None}
+        else:
+            value = control(args.action, args.install_root, args.timeout, args.count)
+        print(json.dumps(value, ensure_ascii=False)); return 0
     except (OSError, ValueError, subprocess.SubprocessError):
         print('Mac service operation incomplete. Check this installation and drain/stop only its Bridge.', file=sys.stderr)
         return 1
