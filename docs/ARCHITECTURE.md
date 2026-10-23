@@ -64,6 +64,12 @@ Mac 的啟動器、Keychain、並行與 release 為獨立平台責任。共用�
 
 Velopack after-install hook 只寫安裝 UUID；一般 update 不觸發此 hook。coordinator 比對此 UUID 與 profile 的完成紀錄，首次顯示精靈、完成者跳過。部署仍走既有 BYO 帳戶鎖定及 pending secret 機制；KEY 仍在 SQLite 只存 hash；HTTPS proof 與完整 KEY 在 RAM，持久化只留測試 metadata。完成判斷在後端檢查，不信任前端自行送 success。
 
-`windows_power.PowerPolicy` 與 `NativePower` 分離規則／Win32。先備份後建立專用 AC 計畫，背景每 5 秒依供電調整目前使用者鎖定值；DC／正常停止復原。`windows_power_admin` 是明確點選後的 UAC 窄 helper，只更改電源計畫，不操作管理員的 HKCU／CLI 登入；原使用者值由未提權程序保存與套用。電源與鎖定限制見 [ONBOARDING](ONBOARDING.md)。[CI-CD](CI-CD.md)／[RELEASE](RELEASE.md) 為維護操作正本。
+`windows_power.PowerPolicy` 與 `NativePower` 分離規則／Win32。同意並備份後只調整 AC 自動睡眠、休眠及 unattended sleep 三項 timeout，讀回並可還原；保留鎖定、螢幕、實體按鍵與 DC，不常駐改寫 HKCU。`windows_power_admin` 是電源 ACL 不足且明確點選後的 UAC 窄 helper，不操作 CLI 登入。限制見 [ONBOARDING](ONBOARDING.md)。[CI-CD](CI-CD.md)／[RELEASE](RELEASE.md) 為維護操作正本。
 
 Windows 0.8.1 的安全邊界、依賴與 Schema／CLI 傳輸限制見 [SECURITY](SECURITY.md)；更新不重新授權 CLI、不重建 endpoint 或 KEY，也不自動部署 Worker。
+
+## 模型與 Decisions（0.9）
+
+`model_catalog.ModelCatalog` 是依 provider scope 的 RAM cache：CLI 登入／設定 stat hash 識別世代，模型目錄 30 秒、推論證據 60 秒，重複 refresh 至少間隔 5 秒。Codex 的獨立 app-server 只做 model/list、不建立 thread／turn；Claude 沒有等價目錄，以登錄及近期證據呈現。查詢不寫 inference log，不傳原始憑證。
+
+`decision_contract` 只接受明確 model 與有限 state／questions，生成不含 caller 自訂引用的 bounded schema；`Runtime` 用既有 queue／RPM／deadline 依題順序執行，每題 payload 只含本題與 state，透過既有 stdin 與無工具 provider。`decisions` 經隔離 validator 後計算答案／confidence；不是 Jev 原模型校準結果。逐次 quote.usage 後聚合，先保存已知計量再驗語意或執行後續題目；receipt 揭露未完整計量，不保存題目或答案。外部新增路徑只在 Worker 範本 allowlist，不隨 Windows 更新部署。

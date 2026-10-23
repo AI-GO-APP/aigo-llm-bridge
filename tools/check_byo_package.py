@@ -53,8 +53,13 @@ def main():
                 if time.monotonic()>deadline:raise RuntimeError('Packaged API did not start')
                 time.sleep(.25)
         req=urllib.request.Request(f'http://127.0.0.1:{port}/api/v1/models',headers={'Authorization':'Bearer '+key})
-        with opener.open(req,timeout=5) as response:models=json.loads(response.read())
-        result.update(packaged_api_version=health['version'],packaged_api_auth=len(models['data'])==2)
+        with opener.open(req,timeout=30) as response:models=json.loads(response.read())
+        capabilities=urllib.request.Request(f'http://127.0.0.1:{port}/bridge/v1/model-capabilities',headers={'Authorization':'Bearer '+key})
+        with opener.open(capabilities,timeout=30) as response:caps=json.loads(response.read())
+        result.update(packaged_api_version=health['version'],
+                      packaged_api_auth=models.get('object')=='list' and isinstance(models.get('data'),list),
+                      capability_query_is_non_inference=caps.get('inference_performed') is False,
+                      decisions_guidance_included=(app/'docs/JEV-COMPATIBILITY.md').is_file())
     finally:
         if process.poll() is None:process.terminate();process.wait(timeout=10)
         store=Store(data,startup=False);store.revoke(kid);store.close()

@@ -142,10 +142,10 @@ function renderIntegration() {
 }
 function renderExample() {
   if (!state) return;
-  const missing = !$("example-model").value && $("example-operation").value === "chat";
+  const missing = !$("example-model").value && ["chat", "decisions", "probe"].includes($("example-operation").value);
   $("copy-example").disabled = missing;
   $("example-code").textContent = missing ? "請先登錄模型。" : BridgeExamples.build(state.endpoint, $("example-model").value, $("example-format").value, $("example-operation").value);
-  $("example-model").disabled = $("example-operation").value === "models";
+  $("example-model").disabled = !["chat", "decisions", "probe"].includes($("example-operation").value);
 }
 for (const id of ["example-model", "example-format", "example-operation"]) $(id).addEventListener("change", renderExample);
 $("copy-example").addEventListener("click", () => copy($("example-code").textContent));

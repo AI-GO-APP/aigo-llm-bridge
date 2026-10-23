@@ -1,4 +1,4 @@
-"""Exclusive loopback listeners for native Windows bundles only."""
+"""Exclusive loopback listeners for Windows entry points."""
 from http.server import ThreadingHTTPServer
 import socket
 
@@ -14,6 +14,6 @@ class ExclusiveLoopbackServer(ThreadingHTTPServer):
 
 def install():
     from . import management, service
-    # Do not change the stdlib class or source/Mac entry points.
+    # Do not change the stdlib class or Mac entry point behavior.
     management.ThreadingHTTPServer = ExclusiveLoopbackServer
     service.ThreadingHTTPServer = ExclusiveLoopbackServer

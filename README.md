@@ -6,7 +6,7 @@
 
 ## 安裝與交付
 
-[Windows 0.8.1 internal 已發布](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/windows-installer-internal-v0.8.1)，安全修補範圍與正式 runtime 待確認項見 [安全驗收收據](docs/qa/2026-10-23-windows-081-security.md)。首次安裝整合為五步 [onboarding](docs/ONBOARDING.md)：插電設定同意、訂閱 CLI、Cloudflare OAuth、自有 Worker、一鍵／AI IDE 協作、長效 KEY 與真 HTTPS 驗證。正常更新／日常啟動保留完成狀態；發行者另有 [CI/CD](docs/CI-CD.md) 與 [Release 手冊](docs/RELEASE.md)。
+[Windows 0.8.2 internal 已發布](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/windows-installer-internal-v0.8.2)，安全修補、正式升級及重啟 HTTPS 驗證見 [安全驗收收據](docs/qa/2026-10-23-windows-082-security.md)。0.9 Jev 功能尚在整合驗收。首次安裝整合為五步 [onboarding](docs/ONBOARDING.md)：插電設定同意、訂閱 CLI、Cloudflare OAuth、自有 Worker、一鍵／AI IDE 協作、長效 KEY 與真 HTTPS 驗證。正常更新／日常啟動保留完成狀態；發行者另有 [CI/CD](docs/CI-CD.md) 與 [Release 手冊](docs/RELEASE.md)。
 
 - **Windows 安裝器**：在 [GitHub Releases](https://github.com/AI-GO-APP/aigo-llm-bridge/releases) 選 `windows-installer-internal-v…`，執行其 Setup。此渠道使用 PyInstaller＋Velopack＋系統 Evergreen WebView2；尚無 Authenticode 公發憑證。詳細步驟見 [Windows 安裝與更新](docs/WINDOWS-INSTALL-UPDATE.md)。
 - **首次 BYO 部署**：依 [BYO Quickstart](docs/BYO-QUICKSTART.md) 或把 [agent prompt](docs/AI-AGENT-SETUP.md) 交給自己的 AI agent。明確選擇自己的 Cloudflare 帳戶，CLI 引導不會擅自登入／登出供應商。
@@ -26,6 +26,8 @@
 | Cloud 呼叫端結算 | [整合最佳實踐](docs/AI-EA-CLOUD-BEST-PRACTICE.md) |
 
 新 KEY 預設開放 Claude／Codex 全部已登錄模型，仍受訂閱及模型目錄限制；既有 KEY／輪替 scope 保留。每次可明確指定 model。不是 OpenRouter 全功能代理：streaming、抽樣控制、Responses 等未支援項目會明確拒絕；支援的 tools 僅產生提案，工具在呼叫端執行。
+
+模型能力查詢與 Jev `state`／`questions` 相容端點見 [串接指南](docs/JEV-COMPATIBILITY.md) 及 [設計與歷史驗證](docs/JEV-COMPATIBILITY-PLAN.md)。GET／refresh 不推論，明確 probe 才消耗額度；機率是一般 LLM 估計，原 Jev 業務門檻仍須驗證。新公開路徑須由安裝者授權更新自己的 Worker，Windows 更新不會自動部署。
 
 ## 程式與 CI/CD
 

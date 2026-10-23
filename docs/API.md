@@ -10,7 +10,11 @@ Base URL `https://<自己的-worker>.<自己的-subdomain>.workers.dev/api/v1`�
 
 | 方法／路徑 | 成功與責任 |
 |---|---|
-| GET `/api/v1/models`、`/v1/models` | 200 `{object:"list",data:[...]}`，依 KEY provider scope 篩選已登錄模型；不是 OpenRouter 完整價格／能力目錄。 |
+| GET `/api/v1/models`、`/v1/models` | 200 `{object:"list",data:[...]}`，依 KEY provider scope／CLI 狀態篩選登錄及發現模型；不是 OpenRouter 完整價格／能力或訂閱權限證明。 |
+| GET `/bridge/v1/model-capabilities` | scope 下的模型、native id、availability／checked_at／expires_at 與 Decisions 驗證證據；不推論。 |
+| POST `/bridge/v1/models/refresh` | 空 object 更新能力資料，不推論；短時間重複刷新合併，參見下方快取規則。 |
+| POST `/bridge/v1/models/probe` | 僅接受 model 與 protocol（chat／decisions）；固定合成輸入的真實推論，消耗用量／限流，沒有自訂 prompt。 |
+| POST `/api/alpha/decisions` | Jev 相容 state／questions body；200 answers 與 input_tokens／output_tokens／cost，逐題隔離、依原順序呼叫。不是 Jev 模型或校準機率。 |
 | POST `/api/v1/chat/completions`、`/v1/chat/completions` | 200 標準非串流 completion，或明確 error；不以 202 取代 completion。 |
 | POST `/bridge/v1/jobs` | 同推論 body；202 `{id,status,created}`。Bridge 擴充，適合排隊／長工作。 |
 | GET `/bridge/v1/jobs/{id}` | 同 KEY 查詢；有 RAM result 回標準 completion；結果過期描述為 expired／410，HTTP 本身仍可為 200。 |
@@ -19,6 +23,10 @@ Base URL `https://<自己的-worker>.<自己的-subdomain>.workers.dev/api/v1`�
 | GET `/health` | 不需 KEY，公開健康／版本／接單；Worker 另有近期裝置在線判斷，不公開帳號或機器識別。 |
 
 選用 `X-AIEA-Request-Id` UUID：本機以 KEY＋UUID 去重。相同 body 在 RAM 有 task 時回同一工作；內容不同 409 request_conflict；已受理但 RAM 不在時 409 request_already_processed，不重跑。不是通用 OpenRouter idempotency 規格。`X-Bridge-Deadline` 是 Unix 毫秒 deadline 的 Bridge 擴充，會縮短可用執行時間。
+
+Decisions／模型查詢完整欄位與範例見 [專用指南](JEV-COMPATIBILITY.md)。Decisions 必填實際 model／state／questions，支援 noul、choice、score，最多 100 題；不接受 auto，不暗中換模型或重試。逐次按 CLI 回報實際模型核對後計價，再加總每次已計算成本，保留 cache／reasoning 細項；模型缺失／不符時回 502 並標記未知計量，不以請求模型捏造金額。失敗後同 KEY receipt 的 billing_status.complete／calls_started／calls_completed 區分已知成本與未完整計量，未知不是零。jobs／preflight 亦接受 Decisions body，去重包含 protocol 與問題／criteria 順序；trace／state／questions 不落地。
+
+模型快取 30 秒、成功／失敗推論證據 60 秒；登入檔／CLI 設定變動使證據失效，執行中偵測變動即停止後續題目。GET／refresh 不建立推論 thread／turn，Codex 只用 model/list；Claude 僅登錄與登入／近期推論證據。相同登入下 refresh 最短 5 秒合併，避免持 key 者反覆啟動 CLI 探查；登入世代改變不等待此間隔。這些變更只更新 repo Worker 範本，既有 Cloud 端點需另外授權部署；不得以本機通過宣稱新 HTTPS 路徑已驗證。
 
 ## 頂層參數矩陣
 

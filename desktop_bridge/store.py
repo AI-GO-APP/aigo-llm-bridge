@@ -22,7 +22,8 @@ DEFAULTS = {"port": 8920, "accepting": True, "retention_days": 30, "timeout_s": 
 DEFAULTS.update(device_id="",cloudflare_account_id="",cloudflare_worker_name="")
 LOG_COLUMNS = ("id", "key_id", "model", "provider", "created_ts", "started_ts", "finished_ts",
                "status", "http_status", "error_code", "duration_ms", "input_bytes", "output_bytes",
-               "prompt_tokens", "completion_tokens", "cost_usd", "pricing_model", "pricing_fetched_ts", "cached_tokens", "cache_write_tokens", "reasoning_tokens")
+               "prompt_tokens", "completion_tokens", "cost_usd", "pricing_model", "pricing_fetched_ts", "cached_tokens", "cache_write_tokens", "reasoning_tokens",
+               "protocol", "question_count", "calls_started", "calls_completed", "billing_complete")
 
 
 def keep_default(models,current):
@@ -58,7 +59,8 @@ class Store:
             create index if not exists requests_time on requests(created_ts);
         """)
         columns={row[1] for row in self.db.execute('pragma table_info(requests)')}
-        for name,kind in (('cost_usd','real'),('pricing_model','text'),('pricing_fetched_ts','real'),('client_request_id','text'),('request_digest','text'),('cached_tokens','integer'),('cache_write_tokens','integer'),('reasoning_tokens','integer')):
+        for name,kind in (('cost_usd','real'),('pricing_model','text'),('pricing_fetched_ts','real'),('client_request_id','text'),('request_digest','text'),('cached_tokens','integer'),('cache_write_tokens','integer'),('reasoning_tokens','integer'),
+                          ('protocol','text'),('question_count','integer'),('calls_started','integer'),('calls_completed','integer'),('billing_complete','integer')):
             if name not in columns:self.db.execute(f'alter table requests add column {name} {kind}')
         self.db.execute("create unique index if not exists request_dedupe on requests(key_id,client_request_id) where client_request_id is not null")
         # Installation identity belongs to this device profile, never to a CLI login.

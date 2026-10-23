@@ -47,7 +47,7 @@ def test_claude_dynamic_content_is_only_in_stdin(monkeypatch,tmp_path):
         def __init__(self,command,*_):captured['command']=command
         def communicate(self,payload,*_):
             captured['payload']=payload.decode()
-            return json.dumps({'type':'result','result':'```json\n{}\n```','usage':{'input_tokens':1,'output_tokens':1}}).encode()
+            return json.dumps({'type':'result','result':'```json\n{}\n```','usage':{'input_tokens':1,'output_tokens':1},'modelUsage':{'test':{}}}).encode()
         def close(self):pass
     monkeypatch.setattr(providers,'Child',Child)
     monkeypatch.setattr(providers,'status',lambda *_:{'ready':True})
