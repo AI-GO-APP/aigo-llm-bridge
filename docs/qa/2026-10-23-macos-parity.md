@@ -45,6 +45,9 @@
 - 真實 source 升級 `0.8.0-mac.1` → `0.8.1-mac.1`：同一臨時 KEY 升級前後 models 200；device／URL／帳戶／Worker／全部既有 KEY rows／七模型／四路容量一致。鎖定前後 chat 200、6.365 秒、usage.cost=0.008450 USD；request ID 去重、JSON schema 200、工具提案 200、unsupported_parameter 400 及 handoff 皆通過，臨時 KEY 撤銷。
 - Mac 共用安全程式包含 Relay redirect 拒絕／有界讀取、provider environment allowlist、stdin caller data 與 schema 子程序預算。Windows Job Object 的記憶體限制不能當成 Mac 保證，見 MACOS-SETUP；既有 Worker 未自動部署。
 
+- 最後 UI 文字同步使用來源 `936ff38`，逐檔核對 Python／JS／CSS／HTML 一致，health、原 KEY／設定及穩定 manifest LaunchAgent 通過。額外 in-process 驗收 wrapper 曾載入 checkout 套件而選錯啟動器，health 閘門回復 manifest；改用正式獨立安裝 CLI 後更新成功，未加 runtime 繞過或放寬閘門。
+- `936ff38` 的 [通用 CI](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39895242112)、[Mac 原生／source](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39895242145)、[Windows 桌面](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39895242129) 與 [依賴安全](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39895242138) 通過；[Windows 真安裝／更新](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39895242110) 最後另行核對。這份文字收據不取代 [PR #17 最終來源的全部 checks](https://github.com/AI-GO-APP/aigo-llm-bridge/pull/17/checks)；合併須全部通過。
+
 ## 已知邊界與操作紀錄
 
 - 實際部署、OAuth、管理員電源寫入及 Claude 訂閱真推論沒有重做。既有 Codex／Keychain／Relay 實際使用；電源改動及取消以 fake adapter 驗證，不以此聲稱工作站已套用新電源設定。
