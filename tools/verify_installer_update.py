@@ -27,22 +27,7 @@ def run(command, **kwargs):
 
 
 def cli(exe,*args,**kwargs):
-    try:
-        value=run([exe,*args],capture_output=True,text=True,**kwargs)
-    except subprocess.CalledProcessError as error:
-        # Native CLI emits sanitized UpdateError messages. Do not emit arbitrary
-        # process output; match only literal errors from the maintained source.
-        import ast
-        tree=ast.parse((ROOT/'desktop_bridge/windows_updates.py').read_text())
-        known=[node.args[0].value for node in ast.walk(tree) if isinstance(node,ast.Call)
-            and isinstance(node.func,ast.Name) and node.func.id=='UpdateError' and node.args
-            and isinstance(node.args[0],ast.Constant) and isinstance(node.args[0].value,str)]
-        known.append('Operation failed; check the selected profile and installer guide.')
-        raw=error.stderr or ''
-        if isinstance(raw,bytes):raw=raw.decode('utf-8','replace')
-        category=next((message for message in known if message in raw),'Unknown native CLI failure')
-        print(json.dumps({'native_cli_failed':True,'return_code':error.returncode,'safe_error':category}),flush=True)
-        raise
+    value=run([exe,*args],capture_output=True,text=True,**kwargs)
     if not value.stdout.strip() and args[:2]==('update','apply'):
         return {'native_handoff':True}
     return json.loads(value.stdout.strip().splitlines()[-1])
