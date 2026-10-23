@@ -25,7 +25,7 @@ jobs:
           BANNED_TERMS: ${{ secrets.BANNED_TERMS }}
         run: |
           # 本 repo 必須設定清單;fork 沒有清單時只警告、不擋
-          if [ "${{ github.repository }}" = "AI-GO-APP/aigo-llm-bridge" ]; then
+          if [ "${{ github.repository_id }}" = "1390643409" ]; then
             python tools/lint_terms.py --commits --require
           else
             python tools/lint_terms.py --commits

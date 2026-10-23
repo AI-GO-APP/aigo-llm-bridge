@@ -44,3 +44,5 @@
 Mac 的本次修復、原生驗證、Release、公開下載安裝、owner 真升級與外部標準呼叫已交付，沒有待處理的 Mac 發布／修復項。source ZIP 是支援的發布格式；Python 3.12+、登入後 LaunchAgent、清醒與連網、CLI／Keychain 可用都是操作條件。公證 .app／DMG、Windows policy、自動跨使用者憑證搬移與供應商模型業務校準不屬於本次格式／能力。
 
 既有 onboarding／電源同意紀錄原樣保留；這是已部署裝置的更新驗收，未代本人勾選、偽造首次設定完成或重做帳戶 OAuth。關 viewer X 繼續背景供應；真正停止使用管理台「結束 Bridge」，或 mac_service.py stop 先排空。Windows 全機 runtime 修復仍由 issue #20 的 Windows session 管理，不列為 Mac 發布未完成。
+
+- 收據提交期間 repo 改名為 `AI-GO-APP/local-token-buffet-bridge`；核對 repository ID 1390643409 相同，沿用原 PR／tag／assets。新 canonical URL 再次匿名下載 ZIP，SHA256 完全相同。CI 的必填 terminology 判斷改用固定 repository ID，避免改名影響原 gate；不改 Release runtime／附件。
