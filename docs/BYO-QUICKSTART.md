@@ -1,5 +1,16 @@
 # 自有 Cloudflare 安裝指南
 
+## 既有 Worker 的新路徑回 404
+
+先在管理台檢查公開路由。`/health` 在線只證明裝置連線；舊版 Worker 可能仍沒有 Decisions／模型探索。取得對原 Worker 的部署授權後，從 source-install.json 的已安裝 app／python／data_dir 執行下列既有 helper 動作；Windows Setup 使用相同 `byo` 子命令：
+
+1. `status` 核對固定 URL／Worker，`wrangler whoami` 核對原綁定帳戶。以 `wrangler deployments list --json --config <原data-dir>/byo-worker/wrangler.json` 保存目前啟用 version ID 等 metadata；不要保存憑證或推論原文。
+2. `pause`、`wait-idle`，再 `plan`／`deploy`，每步使用同一 data-dir。既有綁定沿用原 account ID，範本來自已安裝版本；不要直接部署 repo wrangler.jsonc 或搬移帳戶。
+3. `resume` 後等待邊緣版本生效及 relay 重連，檢查實際 `/health` 版本與新路由，再明確執行真 Chat／Decisions 測試。CLI 成功與外網生效可能有延遲，不能只憑 deploy exit 0 放行。
+4. 部署失敗或外網驗收未通過時，保留 profile／pending Keychain 配對，不刪 DB、不換網址／client key。核對目前 deployments；若需回復，以 `wrangler rollback <先前已驗證version-ID> --config <同一設定檔>` 回復同一 Worker，然後恢復接單並驗舊功能。這只適用於仍相容的既有 DO migration／binding，不能當作任意資料遷移還原。
+
+普通更新沿用 transport secret，避免在 deploy 後重寫不變 secret 而啟用舊程式。Keychain 或帳戶驗證失敗需處理原授權，不以新 Worker 或明文 secret 繞過。
+
 Windows 0.8.0 可透過 [首次安裝精靈](ONBOARDING.md) 執行官方 CLI 授權、明確選帳戶、一鍵部署或複製 AI IDE 協作 prompt。首次本人電源同意、KEY 保存及真 HTTPS／cost 測試完成後，日常啟動直接主畫面；已發布 internal，來源與未驗範圍見 [發布收據](qa/2026-10-23-windows-080-release.md)。
 
 Windows 新安裝優先使用 [PyInstaller＋Velopack Setup](WINDOWS-INSTALL-UPDATE.md)，不需要 Python；原始碼安裝見 [repo 流程](CROSS-PLATFORM-INSTALL.md)。舊 ZIP 路線保留在下方，不能和 Setup 共用程式目錄。Mac 由其維護者獨立驗收與發布。產品正本見 [文件入口](README.md)；完成後交付 [第三方串接訊息](THIRD-PARTY-INTEGRATION.md)、固定 endpoint 與可用長效 KEY。

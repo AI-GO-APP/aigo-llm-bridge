@@ -17,6 +17,7 @@ from .store import LOG_COLUMNS,keep_default
 from .tunnel import Tunnel
 from .connection_test import probe
 from .handoff import integration
+from .public_endpoint import PublicEndpoint
 from .windows import startup_enabled, set_startup
 
 
@@ -32,6 +33,8 @@ class ManagementServer:
         self.auth_lock = threading.Lock()
         self.mutation_lock = threading.Lock()
         self.test_lock = threading.Lock()
+        self.public_endpoint = PublicEndpoint(store)
+        self.public_check_lock = threading.Lock()
         owner = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -75,7 +78,7 @@ class ManagementServer:
                     query = parse_qs(urlsplit(self.path).query)
                     if not post:
                         if path == "/manage/state": return self.reply(200, owner.state())
-                        if path == "/manage/handoff": return self.reply(200, integration(owner.store,query.get('model',[None])[0]))
+                        if path == "/manage/handoff": return self.reply(200, integration(owner.store,query.get('model',[None])[0],public_status=owner.public_endpoint.snapshot()))
                         if path == "/manage/logs":
                             return self.reply(200, {"logs": owner.logs(query)})
                         if path == "/manage/export":
@@ -100,6 +103,10 @@ class ManagementServer:
                         if not isinstance(data, dict): raise ValueError("請求格式無效。")
                         if path == "/manage/test-connection":
                             return self.reply(200, owner.test_connection(data))
+                        if path == "/manage/check-public":
+                            if data or not owner.public_check_lock.acquire(blocking=False): raise ValueError()
+                            try: return self.reply(200, owner.public_endpoint.check())
+                            finally: owner.public_check_lock.release()
                         with owner.mutation_lock:
                             result = owner.action(path, data)
                         return self.reply(200, result)
@@ -163,6 +170,7 @@ class ManagementServer:
                 "endpoint": (settings["public_url"] or f"http://127.0.0.1:{self.api.port}") + "/api/v1",
                 "local_port": self.api.port, "startup": startup_enabled(self.store.directory), "keys": keys,
                 "counts": counts, "auth": auth, "auth_checking": checking,
+                "public_endpoint": self.public_endpoint.snapshot(),
                 "tunnel": self.tunnel.state, "relay": self.relay.state if self.relay else "未啟用",
                 "logs": self.store.logs(limit=6)}
 
@@ -172,6 +180,8 @@ class ManagementServer:
     def test_connection(self, data):
         # Network waits must not hold the management mutation lock.
         provider, model, key = data.get('provider'), data.get('model'), data.get('key')
+        protocol = data.get('protocol', 'chat')
+        if protocol not in {'chat', 'decisions'}: raise ValueError()
         if provider not in {'claude', 'codex'} or not isinstance(model, str): raise ValueError()
         if not isinstance(key, str) or not key.strip() or len(key) > 256: raise ValueError()
         key = key.strip()
@@ -188,7 +198,10 @@ class ManagementServer:
             return {**result, 'code': 'scope_denied', 'message': '這把金鑰未開放此模型來源；未送出測試請求。'}
         if not self.test_lock.acquire(blocking=False):
             return {**result, 'code': 'busy', 'message': '另一個連線測試仍在執行，請稍後再試。'}
-        try: return {**result, **probe(endpoint, model, key)}
+        try:
+            value = probe(endpoint, model, key) if protocol == 'chat' else probe(endpoint, model, key, protocol)
+            self.public_endpoint.observe(endpoint, model, protocol, value)
+            return {**result, **value, 'protocol': protocol}
         finally: self.test_lock.release()
 
     def action(self, path, data):

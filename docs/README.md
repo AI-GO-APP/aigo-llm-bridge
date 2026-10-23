@@ -1,5 +1,7 @@
 # 產品文件入口
 
+Mac 公開 Decisions／模型探索上線及本機／Worker／真實推論證據分層，見 [公開 API 收據](qa/2026-10-23-macos-public-api.md)。管理台可明確檢查公開路由，仍須另行執行會使用訂閱用量的推論測試。
+
 產品名稱與改名相容性見 [BRANDING](BRANDING.md)：Local Token Buffet Bridge。
 
 現行產品是 **BYO Cloudflare LLM Bridge**：安裝者自己的電腦、CLI 訂閱、Worker 與長效 client KEY。Windows 產品線使用 PyInstaller＋Velopack＋系統 WebView2。不需要外部租戶平台或 Supabase。文件、原始碼與驗收紀錄一同版控，AI agent 不應依靠聊天或本地記憶補出產品契約。

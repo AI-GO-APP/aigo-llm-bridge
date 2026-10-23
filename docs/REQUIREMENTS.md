@@ -35,6 +35,8 @@ Mac source 同步的共通功能及平台差異以 [Mac 設定契約](MACOS-SETU
 
 ## 非功能需求與邊界
 
+R-23：管理台及串接訊息分別呈現本機支援、公開 Worker 路由相容性與真實推論證據。路由檢查不傳服務 Key、不推論、不部署；明確測試才呼叫 Chat／Decisions。舊 Worker 的新路徑 404 必須引導在原帳戶更新同一 Worker。證據包含端點、模型、協定、時間與成本 metadata，僅留 RAM；變更網址或程序重啟不可沿用先前證據。
+
 - Windows 預設同時執行 1 筆，連同排隊最多 9 筆；每 KEY 預設 30 RPM，可設 1–600。Mac 並行設定由獨立維護者管理，這次不修改其行為。
 - 管理 plane 只監聽 loopback 動態 port，驗 Host／Origin 與獨立管理憑證；client KEY 無管理權。固定外部 endpoint 與短效本機管理 URL 是不同概念。
 - HTTPS Worker 與雲端 RAM 轉送可能離線／中斷；關機時網址仍存在，但不能承諾仍可推論。同步雲端等候有時限，未知執行結果不可自動重試以免重複計量。

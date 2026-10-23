@@ -1,5 +1,7 @@
 # 現行 API 與 OpenRouter 相容契約
 
+本機管理 API：POST `/manage/check-public` body `{}` 明確執行無 Key、無推論的公開 route check；原 Host／Origin／管理 session 邊界不變，不能由 client key 操作。GET `/manage/state` 的 `public_endpoint` 與 `/manage/handoff` 包含 route evidence／時間及未驗說明。POST `/manage/test-connection` 新增選用 `protocol`（chat 預設、decisions），沿用 endpoint、provider、model、key 核對及單測試鎖；Decisions 使用固定 noul 合成內容，成功需答案型別／範圍、實際 model 與數值成本。Chat 亦核對實際模型及成本。404 指向同一 Worker 更新，不自動重試或部署。
+
 Mac source 與 Windows 共用下列外部 API。Mac 管理台另提供 `/manage/macos-onboarding/{action}`（與 Windows 的 action 契約相同，平台授權除外）、`/manage/macos-console/browser` 及 `/manage/macos-update/apply`，均受原 loopback／Host／session 驗證保護。更新只使用安裝時記錄的來源路徑，不接受瀏覽器指定任意目錄。見 [Mac 設定](MACOS-SETUP.md)。
 
 適用 `desktop_bridge/contract.py`、`tool_contract.py`、`service.py` 與 BYO relay。這是相容子集，不是 OpenRouter 全功能代理。JSON object key 排列不構成協定契約；不保證 OpenRouter 供應商產生的 id／指紋／回答值相同。
