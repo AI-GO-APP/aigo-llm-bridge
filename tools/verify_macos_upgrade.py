@@ -37,10 +37,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--install-root', default=str(Path.home() / 'Library/Application Support/AIGO LLM Bridge'))
     parser.add_argument('--apply', action='store_true', help='Actually update the selected existing source installation.')
+    parser.add_argument('--source', default=str(ROOT), help='Verified checkout or extracted public Release source.')
     args = parser.parse_args()
     if not args.apply:
         parser.error('Live update requires explicit --apply.')
     root = Path(args.install_root).expanduser().resolve()
+    source = Path(args.source).expanduser().resolve()
+    expected_version = (source / 'VERSION').read_text().strip()
+    receipt = source / 'source-release.json'
+    expected_commit = (json.loads(receipt.read_text())['commit'] if receipt.exists() else
+        subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip())
     original = json.loads((root / 'source-install.json').read_text())
     store = Store(original['data_dir'], startup=False)
     before = snapshot(store)
@@ -78,10 +84,12 @@ def main():
         check('original_key_before_update', code == 200 and any(m['id'] == model for m in value.get('data', [])), http=code)
         # Keep this same temporary key across update; owner service keys remain untouched.
         expected = snapshot(store)
-        result = subprocess.run([sys.executable, str(ROOT / 'tools/mac_service.py'), 'update',
-            '--install-root', str(root), '--source', str(ROOT)], capture_output=True, timeout=420)
+        result = subprocess.run([original['python'], str(Path(original['app']) / 'tools/mac_service.py'), 'update',
+            '--install-root', str(root), '--source', str(source)], capture_output=True, timeout=420)
         check('source_update', result.returncode == 0)
         current = json.loads((root / 'source-install.json').read_text())
+        check('installed_release_provenance', current['version'] == expected_version and current['source_commit'] == expected_commit,
+              version=current['version'], source_commit=current['source_commit'])
         after = snapshot(store)
         check('device_keys_models_capacity_preserved', after == expected,
               version=current['version'], inference_workers=store.get('inference_workers'))
