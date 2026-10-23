@@ -27,6 +27,7 @@ def main(argv=None):
     parser.add_argument('--local-probe', action='store_true')
     parser.add_argument('--pack-id')
     parser.add_argument('--probe-data-dir')
+    parser.add_argument('--probe-machine-port', type=int)
     args = parser.parse_args(argv)
     if sys.platform != 'win32':
         parser.error('Build this installer on Windows.')
@@ -36,6 +37,8 @@ def main(argv=None):
         parser.error('Only local probes may override package identity.')
     if args.probe_data_dir and not args.local_probe:
         parser.error('An embedded profile is only permitted in a non-distributable local probe.')
+    if args.probe_machine_port is not None and (not args.local_probe or not 1024 <= args.probe_machine_port <= 65535):
+        parser.error('An isolated reservation is only permitted in a non-distributable local probe.')
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
     Ed25519PublicKey.from_public_bytes(base64.b64decode(args.public_key, validate=True))
     cfg = {**target, 'version': args.version, 'local_probe': args.local_probe, 'public_key': args.public_key,
@@ -45,6 +48,8 @@ def main(argv=None):
     cfg['dirty'] = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).strip())
     if args.probe_data_dir:
         cfg['probe_data_dir'] = str(Path(args.probe_data_dir).resolve())
+    if args.probe_machine_port is not None:
+        cfg['probe_machine_port'] = args.probe_machine_port
     cfg['redistributable'] = not cfg['local_probe'] and not cfg['dirty']
     if cfg['dirty'] and not cfg['local_probe']:
         parser.error('Distributable installers require a clean committed tree.')

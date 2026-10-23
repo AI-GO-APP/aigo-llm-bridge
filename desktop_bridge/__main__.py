@@ -25,13 +25,28 @@ def main():
         from .windows_http import install as protect_listeners
         protect_listeners()
     from .windows import Instance
-    instance=Instance(args.data_dir)
+    try:
+        instance=Instance(args.data_dir)
+    except OSError:
+        if sys.platform != 'win32': raise
+        print('無法取得此設定檔的啟動識別；本次未開啟資料庫或服務。', file=sys.stderr)
+        return 2
     if not instance.primary:
         if not args.background and not args.no_activate: instance.notify()
         instance.close(); return 0
     threading.excepthook=lambda _args:None
     machine = None
     try:
+        if sys.platform == 'win32':
+            from .windows_instance import MachineInstance, BUSY_EXIT, BUSY_MESSAGE
+            try:
+                machine = MachineInstance()
+            except OSError:
+                print('無法取得全機 Bridge 啟動鎖；本次未開啟設定檔。請檢查本機 TCP 8919。', file=sys.stderr)
+                return 2
+            if not machine.primary:
+                print(BUSY_MESSAGE, file=sys.stderr)
+                return BUSY_EXIT
         if sys.platform == 'darwin':
             from .macos_instance import MachineInstance
             try:

@@ -9,6 +9,14 @@ from desktop_bridge.store import Store
 from desktop_bridge.windows_http import ExclusiveLoopbackServer, install
 
 
+@pytest.fixture
+def isolated_source():
+    with socket.socket() as available:
+        available.bind(('127.0.0.1', 0)); port = available.getsockname()[1]
+    wrapper = "import sys;from desktop_bridge import windows_instance,__main__;windows_instance.MACHINE_ADDRESS=('127.0.0.1',int(sys.argv.pop(1)));raise SystemExit(__main__.main())"
+    return [sys.executable, '-c', wrapper, str(port)]
+
+
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows Winsock semantics')
 def test_native_api_and_management_refuse_port_hijacking(tmp_path, monkeypatch):
     monkeypatch.setattr(service, 'ThreadingHTTPServer', service.ThreadingHTTPServer)
@@ -45,13 +53,13 @@ def test_adapter_does_not_replace_standard_library_server(monkeypatch):
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows source entry point')
-def test_background_port_conflict_exits_without_desktop_dialog(tmp_path):
+def test_background_port_conflict_exits_without_desktop_dialog(tmp_path, isolated_source):
     import subprocess
     from pathlib import Path
     with socket.socket() as reserved:
         reserved.setsockopt(socket.SOL_SOCKET,socket.SO_EXCLUSIVEADDRUSE,1)
         reserved.bind(('127.0.0.1',0));reserved.listen()
-        completed=subprocess.run([sys.executable,'-m','desktop_bridge','--background',
+        completed=subprocess.run([*isolated_source,'--background',
             '--data-dir',str(tmp_path),'--port',str(reserved.getsockname()[1])],
             cwd=Path(__file__).resolve().parents[3],capture_output=True,timeout=10,
             creationflags=subprocess.CREATE_NO_WINDOW)
@@ -59,12 +67,12 @@ def test_background_port_conflict_exits_without_desktop_dialog(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows source entry point')
-def test_source_headless_entry_uses_exclusive_listener(tmp_path):
+def test_source_headless_entry_uses_exclusive_listener(tmp_path, isolated_source):
     import subprocess,time,urllib.request
     from pathlib import Path
     with socket.socket() as available:
         available.bind(('127.0.0.1',0));port=available.getsockname()[1]
-    child=subprocess.Popen([sys.executable,'-m','desktop_bridge','--headless',
+    child=subprocess.Popen([*isolated_source,'--headless',
         '--data-dir',str(tmp_path),'--port',str(port)],
         cwd=Path(__file__).resolve().parents[3],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
         creationflags=subprocess.CREATE_NO_WINDOW)

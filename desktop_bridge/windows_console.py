@@ -187,6 +187,9 @@ def ensure_service(directory):
             return value
         except (OSError,ValueError):
             code = process.poll()
+            from .windows_instance import BUSY_EXIT, BUSY_MESSAGE, RuntimeBusyError
+            if code == BUSY_EXIT:
+                raise RuntimeBusyError(BUSY_MESSAGE)
             if code == 0:
                 # The previous service may have deleted its owner file but still
                 # hold the profile instance lock while shutting down. A second

@@ -1,5 +1,11 @@
 # Changelog
 
+## Windows installer 0.9.2
+
+- Enforce machine-wide runtime ownership before opening Store, HTTP or Relay across profiles, source/native installs, API ports, Windows users and TS sessions.
+- Keep same-profile activation, background service after window close, safe drain/update/restart and existing device keys/data. Reject another profile promptly instead of retrying a background process loop.
+- Add real standard-user/cross-session disposable-runner acceptance and frozen/source contention. No owner OS account changes, Mac publication or Cloud deployment.
+
 ## Windows installer 0.9.1
 
 - Rename the product to Local Token Buffet Bridge and the repository to local-token-buffet-bridge; update console and native window branding, guides and repository links.

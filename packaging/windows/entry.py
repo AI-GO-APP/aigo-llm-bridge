@@ -14,6 +14,12 @@ def main():
     from desktop_bridge.windows_http import install as protect_listeners
     protect_listeners()
     cfg = config()
+    if cfg['local_probe'] and 'probe_machine_port' in cfg:
+        from desktop_bridge import windows_instance
+        port = cfg['probe_machine_port']
+        if type(port) is not int or not 1024 <= port <= 65535:
+            raise ValueError('Invalid isolated probe reservation.')
+        windows_instance.MACHINE_ADDRESS = ('127.0.0.1', port)
     from pathlib import Path
     from desktop_bridge import byo
     byo.template_directory = lambda: Path(sys._MEIPASS) / 'cloudflare'
@@ -63,12 +69,20 @@ def main():
     selected, _ = selector.parse_known_args(argv)
     directory=profile(cfg, selected.data_dir)
     from desktop_bridge import windows_console
-    if selected.console or selected.console_probe:
-        return windows_console.run(directory,browser=selected.browser,probe=selected.console_probe,hidden=selected.console_hidden)
-    if '--background' not in argv and '--headless' not in argv and '--native-ui' not in argv:
-        value=windows_console.ensure_service(directory)
-        windows_console.request_owner(value,'/manage/windows-console/open',{'browser':selected.browser})
-        return 0
+    from desktop_bridge.windows_instance import RuntimeBusyError, BUSY_EXIT
+    try:
+        if selected.console or selected.console_probe:
+            windows_console.ensure_service(directory)
+            return windows_console.run(directory,browser=selected.browser,probe=selected.console_probe,hidden=selected.console_hidden)
+        if '--background' not in argv and '--headless' not in argv and '--native-ui' not in argv:
+            value=windows_console.ensure_service(directory)
+            windows_console.request_owner(value,'/manage/windows-console/open',{'browser':selected.browser})
+            return 0
+    except RuntimeBusyError as error:
+        if '--no-activate' not in argv:
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(None, str(error), 'Local Token Buffet Bridge', 0x40)
+        return BUSY_EXIT
     if not selected.data_dir:
         argv += ['--data-dir', str(profile(cfg))]
     sys.argv = [sys.argv[0], *argv]

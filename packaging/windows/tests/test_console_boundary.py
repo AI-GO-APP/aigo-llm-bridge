@@ -2,6 +2,19 @@ import pytest
 from desktop_bridge.windows_console import local_page, NativeApi, clipboard_text
 
 
+def test_other_profile_machine_rejection_does_not_spawn_retry_loop(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from desktop_bridge import windows_console as console
+    from desktop_bridge.windows_instance import BUSY_EXIT, RuntimeBusyError
+    launches = []
+    monkeypatch.setattr(console, 'config', lambda: {})
+    monkeypatch.setattr(console, 'owner', lambda *_: (_ for _ in ()).throw(FileNotFoundError()))
+    monkeypatch.setattr(console, 'stable_entry', lambda: 'synthetic.exe')
+    monkeypatch.setattr(console.subprocess, 'Popen', lambda *a, **k: (launches.append(a), SimpleNamespace(poll=lambda: BUSY_EXIT))[1])
+    with pytest.raises(RuntimeBusyError): console.ensure_service(tmp_path)
+    assert len(launches) == 1 and not list(tmp_path.iterdir())
+
+
 @pytest.mark.parametrize('url',['https://127.0.0.1:8000/','http://localhost:8000/',
     'http://127.0.0.1:8001/','file:///local','http://127.0.0.1:8000/other',
     'http://127.0.0.1:8000/?next=external','http://evil.example/'])

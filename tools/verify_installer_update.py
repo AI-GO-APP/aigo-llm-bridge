@@ -58,6 +58,8 @@ def main():
     server=ThreadingHTTPServer(('127.0.0.1',0),partial(Handler,directory=str(web)))
     thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     origin='http://127.0.0.1:'+str(server.server_port)
+    with socket.socket() as reservation:
+        reservation.bind(('127.0.0.1',0)); machine_port=reservation.getsockname()[1]
     spec=importlib.util.spec_from_file_location('sign_update',ROOT/'packaging/windows/sign_update.py')
     signer=importlib.util.module_from_spec(spec);spec.loader.exec_module(signer)
     checks={};successful=False
@@ -65,7 +67,7 @@ def main():
         for label,version in [('a','0.7.0'),('b','0.7.1')]:
             print('BUILD '+label.upper(),flush=True)
             run([sys.executable,ROOT/'packaging/windows/build_installer.py','--local-probe',
-                '--pack-id',package_id,'--probe-data-dir',data,'--version',version,'--public-key',public,
+                '--pack-id',package_id,'--probe-data-dir',data,'--probe-machine-port',machine_port,'--version',version,'--public-key',public,
                 '--policy-url',origin+'/policy.json','--vpk',args.vpk,'--output',root/label],timeout=600)
             # The native updater downloads an immutable release directory, not a mutable latest feed.
             import shutil
@@ -109,6 +111,26 @@ def main():
                 assert value['object']=='list' and isinstance(value['data'],list)
                 return value
         checks['a_original_key_authenticates']=wait(models)['object']=='list'
+        # Exercise the frozen and source entry paths against the same reservation.
+        denied_profile=root/'rejected-profile'
+        existing=Store(denied_profile,startup=False)
+        existing.insert_request({'id':'single-runtime-sentinel','status':'running'})
+        existing.close()
+        original_profile=hashlib.sha256((denied_profile/'bridge.sqlite').read_bytes()).digest()
+        started=time.monotonic()
+        denied=subprocess.run([str(executable),'start','--data-dir',str(denied_profile)],
+            capture_output=True,creationflags=subprocess.CREATE_NO_WINDOW,timeout=25)
+        checks['native_controller_rejects_other_profile_without_retry_loop']=denied.returncode==1 and time.monotonic()-started<20
+        rejected=subprocess.run([str(installed/'current/AIGO-LLM-Bridge.exe'),'--background',
+            '--data-dir',str(denied_profile),'--port','0'],capture_output=True,
+            creationflags=subprocess.CREATE_NO_WINDOW,timeout=20)
+        checks['frozen_background_rejects_second_runtime']=rejected.returncode==3
+        wrapper="import sys;from desktop_bridge import windows_instance,__main__;windows_instance.MACHINE_ADDRESS=('127.0.0.1',int(sys.argv.pop(1)));raise SystemExit(__main__.main())"
+        source=subprocess.run([sys.executable,'-c',wrapper,str(machine_port),'--headless',
+            '--data-dir',str(denied_profile),'--port','0'],cwd=ROOT,capture_output=True,
+            creationflags=subprocess.CREATE_NO_WINDOW,timeout=20)
+        checks['source_and_frozen_share_machine_ownership']=source.returncode==3
+        checks['rejected_profile_database_bytes_unchanged']=hashlib.sha256((denied_profile/'bridge.sqlite').read_bytes()).digest()==original_profile
         def exclusive_listener(port):
             with socket.socket() as intruder:
                 intruder.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)

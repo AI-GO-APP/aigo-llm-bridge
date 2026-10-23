@@ -177,8 +177,8 @@ def main(argv=None):
         elif args.action == 'setup':
             return setup(cfg, directory)
         elif args.action == 'start':
-            subprocess.Popen([str(stable_entry()), '--data-dir', str(directory), '--background'],
-                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+            from .windows_console import ensure_service
+            ensure_service(directory)
             result = {'starting': True}
         elif args.action == 'status':
             from .byo import main as byo_main
@@ -199,5 +199,6 @@ def main(argv=None):
     except Exception as exc:
         # Never expose CLI output, credentials, request content, URLs with query tokens or raw tracebacks.
         from .windows_updates import UpdateError
-        print(str(exc) if isinstance(exc, UpdateError) else 'Operation failed; check the selected profile and installer guide.', file=sys.stderr)
+        from .windows_instance import RuntimeBusyError
+        print(str(exc) if isinstance(exc, (UpdateError, RuntimeBusyError)) else 'Operation failed; check the selected profile and installer guide.', file=sys.stderr)
         return 1

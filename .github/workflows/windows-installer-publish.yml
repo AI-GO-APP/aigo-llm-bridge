@@ -60,6 +60,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           .desktop-build/venv/Scripts/python tools/tests/run_native_update.py --output "$env:RUNNER_TEMP/bridge-update-proof" --vpk "$env:RUNNER_TEMP/bridge-vpk/vpk.exe"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          .desktop-build/venv/Scripts/python tools/verify_windows_machine.py parent --output "$env:RUNNER_TEMP/bridge-machine-ownership"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           .desktop-build/venv/Scripts/python tools/verify_windows_onboarding.py --output "$env:RUNNER_TEMP/bridge-onboarding-power"
       - name: Build redistributable Windows internal package
         shell: pwsh
@@ -79,6 +81,15 @@ jobs:
         with:
           name: windows-dependency-audit
           path: ${{ runner.temp }}/bridge-dependency-audit.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: windows-machine-ownership
+          path: |
+            ${{ runner.temp }}/bridge-machine-ownership/acceptance.json
+            ${{ runner.temp }}/bridge-machine-ownership/*-failure.json
+            ${{ runner.temp }}/bridge-machine-ownership/**/worker-failure.json
+          if-no-files-found: warn
   announce:
     needs: package
     if: always() && inputs.announce && github.ref == 'refs/heads/main' && (needs.package.result == 'success' || inputs.published_version != '')

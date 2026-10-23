@@ -1,5 +1,7 @@
 # 資料字典與持久化邊界
 
+Windows 0.9.2 的全機 runtime 鎖是 RAM／OS socket reservation，不新增資料表、設定、PID 檔、裝置憑證或共享管理 token。拒啟動在 Store 前完成，不將既有 running request 改成 interrupted；正常接手仍沿用同一 SQLite／DPAPI／URL／KEY。[全機所有權](ARCHITECTURE.md)、[驗收](qa/2026-10-23-windows-machine-runtime.md)。
+
 實作來源：[store.py](../desktop_bridge/store.py)。本檔描述 logical schema，不包含任何安裝者資料或憑證。本次 UI 更新沒有 DB migration。
 
 ## SQLite
