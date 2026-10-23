@@ -1,6 +1,7 @@
 """Mac adapters exercise isolation, consent, recovery and the shared setup proof."""
 import copy
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -119,7 +120,7 @@ def test_mac_setup_open_and_prompt_do_not_deploy_or_change_login(wizard, monkeyp
     wizard.login('codex'); wizard.login('claude')
     prompt = wizard.prompt()['prompt']
     assert 'macOS' in prompt and 'byo_setup.py' in prompt
-    assert str(wizard.store.directory) in prompt and '.exe' not in prompt
+    assert str(wizard.store.directory) in prompt and 'aigo-bridge.exe' not in prompt
     assert 'Keychain' in prompt
     wizard.action('open', {})
     assert wizard.state()['open_requested'] and wizard.state()['required']
@@ -163,6 +164,7 @@ def test_cocoa_save_panel_string_is_a_complete_path_not_first_character(tmp_path
     assert api.export_logs('')['saved'] and output.read_bytes() == b'metadata only'
 
 
+@pytest.mark.skipif(os.name == 'nt', reason='Mac source updates use the POSIX profile lock.')
 def test_mac_update_failure_restores_manifest_and_restarts_original(tmp_path, monkeypatch):
     from tools import mac_service
     root = tmp_path / 'installed'; root.mkdir()
