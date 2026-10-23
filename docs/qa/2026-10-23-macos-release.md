@@ -22,3 +22,5 @@
 - 發布前主線新增已合併 #23（core 0.9.0、模型目錄／Decisions）；完整保留新功能與 Windows 安全碼後重整合。Mac 最終版改為 0.9.1-mac.1，R-21／R-22、D-27／D-28 避免覆蓋先合併的 ID，重新跑 Mac／共用／原生驗收。
 
 - 整合 0.9.0 後重跑：332 passed／13 個 Windows／PowerShell 平台案例 skipped；Node relay 12、platform 3 passed。新版 48 畫面／原生操作與現行 ZIP 安裝再次全通過。另補啟動中途失敗的完整清理：API 已開但 relay 建立失敗時先關 HTTP／停止 runtime，再釋放全機鎖；新增第 10 個單實例案例通過。
+
+- 最終啟動清理版全量回歸 333 passed／13 個平台跳過；CLAUDE／CONTRIBUTING 與 BYO skill 一併改為現行雙平台入口、Mac source 發布及正常更新不重部署，避免包內仍帶歷史維護步驟。

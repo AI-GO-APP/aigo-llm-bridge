@@ -17,7 +17,7 @@ Claude／Codex 訂閱由我自行登入，不操作既有視窗、不 logout/log
 
 用專用臨時 KEY 真測 HTTPS models GET、非串流 chat POST、數值 usage.cost、撤銷，以及只重啟 Bridge 後同 URL／同 KEY 仍有效。原始 request／response 與完整 KEY 不落磁碟，僅保留 allowlist metadata。未知結果不盲目重試，依 UUID 查 receipt。測試 KEY 結束撤銷；更新驗收不能重建新 KEY 冒充舊 KEY 保留。
 
-驗收後另建 owner 服務長效 KEY：Windows Setup 使用 byo key-create --label 'My service' --handoff；source helper 直接 key-create。新 KEY 預設兩來源全開，仍受登錄模型／訂閱限制。owner KEY 保留有效，只撤銷測試 KEY。一次性結果交 owner 放服務端 secret，不寫 repo／報告；持久聊天只提供不含 KEY 的 handoff，完整 KEY 在本機一次性介面取得。
+新安裝驗收後另建 owner 服務長效 KEY；既有更新保留原 owner KEY，不強制另建：Windows Setup 使用 byo key-create --label 'My service' --handoff；source helper 直接 key-create。新 KEY 預設兩來源全開，仍受登錄模型／訂閱限制。owner KEY 保留有效，只撤銷測試 KEY。一次性結果交 owner 放服務端 secret，不寫 repo／報告；持久聊天只提供不含 KEY 的 handoff，完整 KEY 在本機一次性介面取得。
 
 交付固定 public_url + /api/v1、有效長效 KEY 與 integration.prompt。只承諾支援的 Chat Completions 子集：可關串流、移除抽樣／token上限；tools 是呼叫端執行的提案，不是本機工具；Responses 未支援。列出真實通過／未驗證／需要 owner 完成的登入，不能只以 HTTP 200 或 source tests 聲稱安裝交付完成。
 
