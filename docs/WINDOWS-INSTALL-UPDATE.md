@@ -10,7 +10,7 @@
 
 ## 首次安裝及 CLI
 
-0.8.0 候選新增 [首次安裝精靈](ONBOARDING.md)：CLI／Cloudflare 授權、明確選帳戶、一鍵或 AI IDE 部署、插電電源同意與還原、長效 KEY 及真 HTTPS cost 驗證。完成後日常啟動直接主畫面；升級保留完成紀錄及原 profile。`onboarding open/status` 可由 CLI 操作。現行發布狀態見 QA，不將候選原始碼當作已發布包。
+0.8.0 新增 [首次安裝精靈](ONBOARDING.md)：CLI／Cloudflare 授權、明確選帳戶、一鍵或 AI IDE 部署、插電電源同意與還原、長效 KEY 及真 HTTPS cost 驗證。完成後日常啟動直接主畫面；升級保留完成紀錄及原 profile。`onboarding open/status` 可由 CLI 操作。0.8.0 internal 已發布；見 [發布收據](qa/2026-10-23-windows-080-release.md)。本輪未升級 owner 正式安裝。
 
 執行 Setup.exe，開啟管理介面。安裝目錄中的 `current/aigo-bridge.exe` 是 console CLI；GUI 與 CLI 共用 frozen runtime，不需要 Python。首次設定使用 `aigo-bridge.exe setup`，或使用 `byo doctor`、`byo plan`、`byo deploy` 分步完成。部署仍需 Node.js 22+、Wrangler 與安裝者自己的帳戶；不自動變更 provider／Cloudflare 登入。
 
