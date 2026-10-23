@@ -48,3 +48,13 @@ def stage_documents(root, stage, commit):
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(''.join(parts), encoding='utf-8')
     (stage / 'documents.json').write_text(json.dumps(DOCUMENTS), encoding='utf-8')
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='Stage installer guides with commit-pinned external links.')
+    parser.add_argument('--stage', required=True)
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parents[2]
+    commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+    stage_documents(root, args.stage, commit)
