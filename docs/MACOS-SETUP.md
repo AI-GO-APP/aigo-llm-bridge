@@ -1,6 +1,6 @@
 # Mac 設定、常駐與來源更新
 
-Mac source `0.8.1-mac.2` 同步 Windows 0.7.3 設計、0.8.0 首次設定及 0.8.1 共用安全修補，使用 Cocoa／WKWebView、登入 Keychain 與使用者 LaunchAgent。實測範圍見 [Mac 同步 QA](qa/2026-10-23-macos-parity.md)。Mac 發布現行 BYO source ZIP，下載與更新見 [Mac Release](MACOS-RELEASE.md)；不提供公證 .app／DMG，Windows 發布渠道不適用 Mac。
+Mac source `0.9.1-mac.1` 同步 Windows 0.7.3 設計、0.8.0 首次設定及 0.8.1 共用安全修補，使用 Cocoa／WKWebView、登入 Keychain 與使用者 LaunchAgent。實測範圍見 [Mac 同步 QA](qa/2026-10-23-macos-parity.md)。Mac 發布現行 BYO source ZIP，下載與更新見 [Mac Release](MACOS-RELEASE.md)；不提供公證 .app／DMG，Windows 發布渠道不適用 Mac。
 
 ## 安裝與管理視窗
 
@@ -49,7 +49,7 @@ Mac 適配僅執行固定的 `pmset -c sleep <整數>`，以 `pmset -g custom` �
 
 Mac 使用相同的拒絕 Relay redirect、回應讀取上限、provider 環境 allowlist、Claude stdin 及有限 schema 子程序；詳見 [SECURITY](SECURITY.md)。Windows Job Object 的 256 MiB 限制及 Windows Python／OpenSSL 基線屬 Windows 原生封裝，不能視為 Mac 已有相同 OS 記憶體限制。Mac schema 保留輸入／時間／並行預算。既有 Worker 的 queue 修補需另行授權部署；本次 Mac source 更新不自動部署，也不改 endpoint／KEY。
 
-## 單一 Bridge 與乾淨停止（0.8.1-mac.2）
+## 單一 Bridge 與乾淨停止（0.9.1-mac.1）
 
 一台 Mac 只允許一個 Bridge runtime，涵蓋不同資料目錄、API port、安裝位置與 macOS 使用者。再次開啟同 profile 只喚回原視窗；另一 profile 會在開啟資料庫及 relay 前拒絕。固定本機 TCP 8919 僅供 OS 互斥 bind、不監聽或交換資料；被其他程式占用時也拒絕，不強殺占用者。不要嘗試以改鎖地址多開。現存舊版不遵守新鎖，更新前先正常停止舊服務。
 

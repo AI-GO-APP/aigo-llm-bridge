@@ -11,7 +11,7 @@ export default {
     const id=env.DEVICE.idFromName("primary-device");
     const response=await env.DEVICE.get(id).fetch(request);
     const headers=new Headers(response.headers);
-    headers.set('X-Bridge-Relay-Version','0.3.5-relay');
+    headers.set('X-Bridge-Relay-Version','0.9.0-relay');
     return new Response(response.body,{status:response.status,headers});
   }
 };
@@ -89,9 +89,9 @@ export class DeviceRelay {
         }
         return error(404,"not_found","Unknown agent endpoint.");
       }
-      if(path==="/health")return Response.json({ok:true,device_online:Date.now()-this.lastSeen<35_000,version:"0.3.5-relay"},{headers:{"Cache-Control":"no-store"}});
-      const allowed=(request.method==="POST"&&["/api/v1/chat/completions","/v1/chat/completions","/bridge/v1/jobs","/bridge/v1/preflight"].includes(path))
-        ||(request.method==="GET"&&(["/api/v1/models","/v1/models"].includes(path)||/^\/bridge\/v1\/jobs\/[a-f0-9]{32}$/.test(path)||/^\/bridge\/v1\/receipts\/[a-f0-9-]{36}$/i.test(path)));
+      if(path==="/health")return Response.json({ok:true,device_online:Date.now()-this.lastSeen<35_000,version:"0.9.0-relay"},{headers:{"Cache-Control":"no-store"}});
+      const allowed=(request.method==="POST"&&["/api/v1/chat/completions","/v1/chat/completions","/api/alpha/decisions","/bridge/v1/jobs","/bridge/v1/preflight","/bridge/v1/models/refresh","/bridge/v1/models/probe"].includes(path))
+        ||(request.method==="GET"&&(["/api/v1/models","/v1/models","/bridge/v1/model-capabilities"].includes(path)||/^\/bridge\/v1\/jobs\/[a-f0-9]{32}$/.test(path)||/^\/bridge\/v1\/receipts\/[a-f0-9-]{36}$/i.test(path)));
       if(!allowed)return error(404,"not_found","Unknown API endpoint.");
       const authorization=request.headers.get("Authorization")||"";
       if(!authorization.startsWith("Bearer ")||authorization.length>263)return error(401,"authentication","Invalid API key.");

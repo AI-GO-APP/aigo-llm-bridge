@@ -31,7 +31,7 @@ test('outer build header preserves the original actor identity and response',asy
  }}};
  const res=await worker.fetch(new Request('https://test.workers.dev/health'),env);
  assert.equal(actor,'primary-device');
- assert.equal(res.headers.get('X-Bridge-Relay-Version'),'0.3.5-relay');
+ assert.equal(res.headers.get('X-Bridge-Relay-Version'),'0.9.0-relay');
  assert.equal(res.headers.get('Cache-Control'),'no-store');
  assert.equal((await res.json()).version,'legacy');
 });
@@ -106,4 +106,24 @@ test('a new process retires the old empty poll before receiving new work',async(
  const item=(await (await fresh).json()).request;assert.ok(item);
  await r.fetch(req('/agent/result',{id:item.id,status:200,body:'{}'}));
  assert.equal((await external).status,200);
+});
+
+for(const [method,path,body] of [
+ ['GET','/bridge/v1/model-capabilities',null],
+ ['POST','/bridge/v1/models/refresh',{}],
+ ['POST','/bridge/v1/models/probe',{model:'synthetic',protocol:'decisions'}],
+ ['POST','/api/alpha/decisions',{model:'synthetic',state:{text:'合成'},questions:{q:{type:'noul',instructions:'Synthetic?'}},provider:{data_collection:'deny'}}]
+]) test(`new ${method} ${path} forwards unchanged once without storage`,async()=>{
+ const r=new DeviceRelay({storage:{put(){throw Error('storage forbidden')}}},{DEVICE_KEY:device});
+ const key='synthetic-new-client',keys=[await digest(key)];r.keys=new Set(keys);r.lastSeen=Date.now();
+ const request=new Request('https://test.workers.dev'+path,{method,headers:{Authorization:'Bearer '+key},...(body?{body:JSON.stringify(body)}:{})});
+ const external=r.fetch(request);
+ await new Promise(resolve=>setTimeout(resolve,10));
+ const item=(await (await r.fetch(req('/agent/poll',{key_digests:keys}))).json()).request;
+ assert.equal(item.path,path);assert.equal(item.method,method);
+ assert.deepEqual(item.body,body?JSON.stringify(body):'');
+ const response=JSON.stringify({answers:{q:{type:'noul',noul:.9}},usage:{input_tokens:1,output_tokens:1,cost:.01}});
+ await r.fetch(req('/agent/result',{id:item.id,status:200,body:response}));
+ assert.equal(await (await external).text(),response);assert.equal(r.pending.size,0);
+ assert.equal((await r.fetch(new Request('https://x'+path,{method:method==='GET'?'POST':'GET',headers:{Authorization:'Bearer '+key}}))).status,404);
 });

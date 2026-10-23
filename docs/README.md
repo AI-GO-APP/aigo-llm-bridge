@@ -28,6 +28,9 @@
 - [第三方串接訊息](THIRD-PARTY-INTEGRATION.md)、[牌價換算](OPENROUTER-PRICING.md)、[Cloud 呼叫端整合](AI-EA-CLOUD-BEST-PRACTICE.md)。
 - [跨平台原始碼安裝](CROSS-PLATFORM-INSTALL.md)、[Mac 安裝／操作](MACOS-SETUP.md)、[Mac Release／更新](MACOS-RELEASE.md)。Windows Setup 與 Mac source ZIP 分流，驗收及發布各自負責。
 
+- [模型查詢與 Jev Decisions](JEV-COMPATIBILITY.md)、[設計及歷史實測](JEV-COMPATIBILITY-PLAN.md)。新路徑需安裝者另授權更新 Worker，Windows Release 不自動部署。
+- [跨平台原始碼安裝](CROSS-PLATFORM-INSTALL.md)。Mac 實機及 release 以 Mac 維護者的驗收文件為準；Windows 工作不替 Mac 發布或驗收。
+
 ## 維護約定
 
 Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [本輪 QA](qa/2026-10-23-macos-parity.md) 分別定義契約與獨立證據，不以 Windows 結果代替。

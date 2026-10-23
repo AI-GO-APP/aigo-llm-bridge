@@ -8,6 +8,8 @@ Windows 新安裝需依 [ONBOARDING](docs/ONBOARDING.md) 完成本人訂閱 CLI�
 
 本專案提供 Windows 原生安裝器與 macOS BYO source Release，**只採 BYO Cloudflare**。每位安裝者在自己選定的 Cloudflare 帳戶部署、管理、付費及更新專屬 Worker；發布方只提供原始碼與安裝包，不代管入口、帳戶、裝置憑證或訂閱。這不是 AI GO 平台上的 Custom／Hosted App，安裝時不需存取 AI GO 租戶。
 
+0.9 整合即時模型能力查詢、固定合成 probe 與 Jev 相容 Decisions；安裝及第三方串接前讀 [模型與 Jev 指南](docs/JEV-COMPATIBILITY.md)。GET／refresh 不推論，probe 會消耗用量。模型目錄不等於訂閱權限；Jev 格式相容不等於機率校準相同。新路徑需同步 Worker、Relay、Bridge，仍依本次授權決定是否部署；Windows 更新不自動部署 Worker。
+
 ## 安裝或協助部署時
 
 先讀 [BYO skill](skills/byo-cloudflare/SKILL.md)、[安裝指南](docs/BYO-QUICKSTART.md) 與 [裝置及帳號生命週期](docs/DEVICE-IDENTITY.md)。給使用者複製的 prompt 在 [AI-AGENT-SETUP](docs/AI-AGENT-SETUP.md)。

@@ -78,12 +78,17 @@ startup 不在 settings 表，是 Windows HKCU Run／平台啟動設定；隔離
 | cached_tokens | INTEGER | 可取得的輸入快取讀取 tokens |
 | cache_write_tokens | INTEGER | 可取得的輸入快取寫入 tokens |
 | reasoning_tokens | INTEGER | 輸出中的 reasoning 子集，不重複計費 |
+| protocol | TEXT | chat／decisions；舊列可 null |
+| question_count | INTEGER | Decisions 題數；chat 為 0；舊列可 null |
+| calls_started | INTEGER | 已開始 CLI 呼叫數；不是題數成功證明，舊列可 null |
+| calls_completed | INTEGER | 已核對模型與用量的 CLI 呼叫數；舊列可 null |
+| billing_complete | INTEGER | 1 表示目前已開始呼叫的計量已核對，0 表示尚有未知用量；receipt 還需終態才 complete；舊列 null 不假定完整 |
 | client_request_id | TEXT | 選用 UUID request 識別碼，用於去重／receipt；不納入一般 CSV |
 | request_digest | TEXT | 帶 key id 的 canonical JSON SHA256，僅檢查識別碼內容衝突；不存原文、不納入 CSV |
 
 所有非主鍵欄位在 SQL 層可 null，應用於各階段補入。索引 `requests_time(created_ts)`；`request_dedupe(key_id,client_request_id)` 是 client_request_id 非 null 時的 UNIQUE partial index。沒有原文／訊息／附件／完整 key 欄位。
 
-`LOG_COLUMNS` 是一般寫入／更新／管理讀取／CSV 的 allowlist：上表除 client_request_id、request_digest 的 21 個欄位。只有專用 request_identity 路徑可寫入兩個內部去重欄位。管理匯出用 UTF-8 BOM，對 `= + - @` 開頭字串前置單引號避免 CSV formula injection。最多 10,000 列，UI 最多 500 列；clear 保留 queued／running。
+`LOG_COLUMNS` 是一般寫入／更新／管理讀取／CSV 的 allowlist：上表除 client_request_id、request_digest 的 26 個欄位。只有專用 request_identity 路徑可寫入兩個內部去重欄位。管理匯出用 UTF-8 BOM，對 `= + - @` 開頭字串前置單引號避免 CSV formula injection。最多 10,000 列，UI 最多 500 列；clear 保留 queued／running。
 
 ## 非 SQLite 狀態
 
@@ -101,7 +106,7 @@ startup 不在 settings 表，是 Windows HKCU Run／平台啟動設定；隔離
 
 ## 遷移、備份與刪除
 
-啟動先 CREATE IF NOT EXISTS，再按 PRAGMA table_info 逐欄補上 cost／pricing、去重與 cache／reasoning 欄位。這是目前的 additive migration，尚無獨立 schema_version 表。未來不相容修改必須另訂遷移與最低可讀版本，不可假設任意舊版能讀。
+啟動先 CREATE IF NOT EXISTS，再按 PRAGMA table_info 逐欄補上 cost／pricing、去重、cache／reasoning 與 protocol／呼叫計量欄位。不回填或改寫原有列；舊版本／另一已授權安裝格式已存在的欄位照原值保留。這是目前的 additive migration，尚無獨立 schema_version 表。未來不相容修改必須另訂遷移與最低可讀版本，不可假設任意舊版能讀。
 
 啟動將 queued／running 設為 interrupted／503／process_restarted；原文不在磁碟，不能重播。更新使用 SQLite backup 並記 schema digest；recover 只允許原版本、相同 pack id／schema，不覆蓋新資料。手動備份不可只在運作時複製 sqlite 而漏 WAL；應停止此 profile 或使用 SQLite backup API。
 

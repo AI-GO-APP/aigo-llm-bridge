@@ -39,3 +39,11 @@ Windows 全依賴及 announce signer 子集使用 published artifact SHA256 鎖�
 ## 回報與修補驗收
 
 不要把憑證、正式 I/O 或未修漏洞的詳細 exploit 發到公開 issue。先私下整理受影響版本、觸發條件與合成重現證據。修補需有 source／native package／真實呼叫／更新前後裝置保留證據，再宣布。單一 canary 未成功不能宣稱沒有任何檔案存取風險。
+
+## 0.9 Decisions／模型查詢延伸
+
+新增 Decisions 仍使用同一 KEY、queue、RPM、deadline 與無工具 provider。state／題目／答案只在 RAM／stdin，生成 schema 先整體檢查，輸出用同一受限 validator；題目不納入 log。每次呼叫先保存已核對用量及 cache／reasoning metadata，再驗語意／下一題；模型缺失／不符或用量未知不得顯示成完整零成本。新 protocol／呼叫計數僅 additive metadata，不回填原有列。
+
+0.9 也在 Windows 共用啟動入口安裝同一獨占 listener adapter，涵蓋新版 source／ZIP；原生入口保留保護。Windows background 若埠占用則安靜回 exit 2，不跳出 Tk 對話框或搶占埠；Mac 分支不變。直接嵌入 Python 類別的開發者仍須自行選擇適當 server adapter，不將這些 entrypoint 保護宣稱成 stdlib 全域保證。
+
+模型發現僅以 stat metadata 識別登入世代，不讀取／輸出 auth.json；唯讀 Codex model/list 不建立推論 thread。refresh 最短 5 秒合併、一般快取 30 秒，避免重複持 KEY 探查啟動 CLI。這不是防已接管 OS 的隔離，也不代表 picker 目錄證明訂閱權限。新路徑只交付 Worker 範本，未獲部署授權時不得聲稱外部新路徑已修補／可用。

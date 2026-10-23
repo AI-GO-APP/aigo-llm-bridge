@@ -17,7 +17,7 @@ def source_repo(tmp_path,monkeypatch):
     root=tmp_path/'source';root.mkdir()
     for name in builder.REQUIRED | {'VERSION','README.md'}:
         path=root/name;path.parent.mkdir(parents=True,exist_ok=True)
-        path.write_text('0.8.1-mac.2\n' if name=='VERSION' else 'public fixture\n')
+        path.write_text('0.9.1-mac.1\n' if name=='VERSION' else 'public fixture\n')
     subprocess.run(['git','init','-q',str(root)],check=True)
     subprocess.run(['git','add','.'],cwd=root,check=True)
     subprocess.run(['git','-c','user.name=Fixture','-c','user.email=fixture@example.test',

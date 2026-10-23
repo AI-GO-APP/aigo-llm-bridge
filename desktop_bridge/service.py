@@ -17,7 +17,10 @@ from .schema_guard import validate_instances
 from . import __version__, providers
 from .contract import validate
 from .errors import BridgeError
-from .pricing import Catalog
+from .pricing import Catalog, combine_usage
+from .model_catalog import ModelCatalog
+from .decision_contract import DecisionSpec, strict_loads, validate as validate_decisions
+from .decisions import answer as decision_answer
 
 
 @dataclass
@@ -32,13 +35,18 @@ class Task:
     completed: float | None = None
     pricing_headers: dict = field(default_factory=dict)
     deadline: float | None = None
+    protocol: str = "chat"
+    usage: dict | None = None
+    calls_started: int = 0
+    calls_completed: int = 0
 
 
 class Runtime:
-    def __init__(self,store,runner=None,pricing=None):
+    def __init__(self,store,runner=None,pricing=None,model_catalog=None):
         self.store=store
         self.runner=runner or providers.infer
         self.pricing=pricing or Catalog(store.directory)
+        self.models=model_catalog or ModelCatalog(store)
         workers=store.get('inference_workers')
         if type(workers) is not int or not 1<=workers<=4:
             raise ValueError('inference_workers must be an integer from 1 to 4.')
@@ -55,8 +63,22 @@ class Runtime:
         if caller is None: raise BridgeError(401,"authentication","API key 無效或已撤銷。")
         return caller
 
+    def validate_request(self,body,caller,protocol):
+        validator=validate_decisions if protocol=="decisions" else validate
+        try: return validator(body,self.store,caller)
+        except BridgeError as error:
+            if error.category!="model_not_found": raise
+        # Discovered native IDs can be called without mutating the owner's model registry.
+        registered=self.store.get('models')
+        merged=registered+[m for m in self.models.routing_models(caller) if not any(r['id']==m['id'] for r in registered)]
+        store=self.store
+        class RoutingSettings:
+            def get(self,name): return merged if name=='models' else store.get(name)
+        return validator(body,RoutingSettings(),caller)
+
     def preflight(self,body,caller):
-        spec=validate(body,self.store,caller)
+        protocol='decisions' if isinstance(body,dict) and ('state' in body or 'questions' in body) else 'chat'
+        spec=self.validate_request(body,caller,protocol)
         if self.stopped or not self.store.get("accepting"):
             raise BridgeError(503,"device_paused","服務目前暫停接單。")
         with self.lock:
@@ -64,8 +86,8 @@ class Runtime:
                 raise BridgeError(429,"queue_full","工作佇列已滿。")
         return spec
 
-    def submit(self,body,caller,input_bytes,request_id=None,deadline=None):
-        spec=validate(body,self.store,caller)
+    def submit(self,body,caller,input_bytes,request_id=None,deadline=None,protocol="chat"):
+        spec=self.validate_request(body,caller,protocol)
         if self.stopped or not self.store.get("accepting"):
             raise BridgeError(503,"device_paused","本機目前暫停接單。")
         with self.lock:
@@ -73,7 +95,7 @@ class Runtime:
             if request_id:
                 try: request_id=str(uuid.UUID(request_id))
                 except (ValueError,TypeError): raise BridgeError(400,"invalid_request","請求識別碼無效。") from None
-                digest=hashlib.sha256((caller["id"]+json.dumps(body,sort_keys=True,separators=(",",":"))).encode()).hexdigest()
+                digest=hashlib.sha256((caller["id"]+protocol+json.dumps(body,sort_keys=protocol!="decisions",separators=(",",":"))).encode()).hexdigest()
                 with self.store.lock:
                     row=self.store.db.execute("select id,request_digest from requests where key_id=? and client_request_id=?",(caller["id"],request_id)).fetchone()
                 if row:
@@ -87,48 +109,77 @@ class Runtime:
             if not self.slots.acquire(blocking=False): raise BridgeError(429,"queue_full","工作佇列已滿，請稍後再試。")
             history.append(now)
             rid=uuid.uuid4().hex
-            task=Task(rid,caller["id"],time.time(),deadline=deadline)
+            task=Task(rid,caller["id"],time.time(),deadline=deadline,protocol=protocol)
             try:
                 self.store.insert_request({"id":rid,"key_id":caller["id"],"model":spec.model["id"],"provider":spec.model["provider"],
-                    "created_ts":task.created,"status":"queued","input_bytes":input_bytes},(request_id,digest) if request_id else None)
+                    "created_ts":task.created,"status":"queued","input_bytes":input_bytes,"protocol":protocol,
+                    "question_count":len(spec.questions) if isinstance(spec,DecisionSpec) else 0,
+                    "calls_started":0,"calls_completed":0,"billing_complete":1},(request_id,digest) if request_id else None)
                 self.tasks[rid]=task
                 self.pool.submit(self.execute,task,spec)
             except Exception:
                 self.tasks.pop(rid,None); self.slots.release(); raise
         return task
 
+    def check_execution(self,task,deadline):
+        if task.cancel.is_set() or self.stopped: raise BridgeError(499,"cancelled","請求已取消。")
+        if time.time()>=deadline: raise BridgeError(408,"timeout","請求期限已過。")
+        with self.store.lock:
+            key=self.store.db.execute("select revoked_ts from api_keys where id=?",(task.key_id,)).fetchone()
+        if key is None or key[0] is not None: raise BridgeError(401,"authentication","API key 已撤銷。")
+
+    def run_call(self,task,spec,quote,deadline,generation):
+        self.check_execution(task,deadline)
+        if generation!=self.models.generation(spec.model['provider'],self.store):
+            raise BridgeError(503,'provider_authentication','推論期間登入或 CLI 設定已變更；不切換來源繼續執行。')
+        store=self.store
+        class DeadlineSettings:
+            def get(self,name):
+                return max(.001,min(store.get(name),deadline-time.time())) if name=="timeout_s" else store.get(name)
+        task.calls_started+=1
+        self.store.update_request(task.id,calls_started=task.calls_started,billing_complete=0)
+        result=self.runner(spec,DeadlineSettings(),task.cancel)
+        text,usage,finish=result[:3]
+        if len(result)==4 and result[3]!=spec.model['native']:
+            # Never price a silently substituted model using the requested model's rates.
+            raise BridgeError(502,'model_mismatch','CLI 使用的模型與請求不同；此呼叫用量尚未完成核對。')
+        usage=quote.usage(usage)
+        task.usage=combine_usage(task.usage,usage)
+        task.calls_completed+=1
+        # Save known usage before validating content, cancellation, or later questions.
+        self.store.update_request(task.id,prompt_tokens=task.usage['prompt_tokens'],completion_tokens=task.usage['completion_tokens'],
+            cost_usd=task.usage['cost'],pricing_model=quote.model,pricing_fetched_ts=quote.fetched_at,
+            cached_tokens=task.usage.get('prompt_tokens_details',{}).get('cached_tokens'),
+            cache_write_tokens=task.usage.get('prompt_tokens_details',{}).get('cache_write_tokens'),
+            reasoning_tokens=task.usage.get('completion_tokens_details',{}).get('reasoning_tokens'),
+            calls_completed=task.calls_completed,billing_complete=1)
+        self.check_execution(task,deadline)
+        if not isinstance(text,str): raise BridgeError(502,"invalid_provider_response","模型未返回文字內容。")
+        return text,task.usage,finish
+
     def execute(self,task,spec):
         start=time.monotonic()
+        generation=None
         try:
-            if task.cancel.is_set() or self.stopped: raise BridgeError(499,"cancelled","請求已取消。")
-            # Recheck revocation after waiting in the queue.
-            with self.store.lock:
-                key=self.store.db.execute("select revoked_ts from api_keys where id=?",(task.key_id,)).fetchone()
-            if key is None or key[0] is not None: raise BridgeError(401,"authentication","API key 已撤銷。")
+            deadline=min(task.deadline or float('inf'),time.time()+self.store.get('timeout_s'))
+            self.check_execution(task,deadline)
             self.store.update_request(task.id,status="running",started_ts=time.time())
+            generation=self.models.generation(spec.model['provider'],self.store)
             quote=self.pricing.quote(spec.model)
-            settings=self.store
-            if task.deadline is not None:
-                remaining=task.deadline-time.time()
-                if remaining<=0:raise BridgeError(408,"timeout","請求期限已過。")
-                store=self.store
-                class DeadlineSettings:
-                    def get(self,name):
-                        return min(store.get(name),remaining) if name=="timeout_s" else store.get(name)
-                settings=DeadlineSettings()
-            text,usage,finish=self.runner(spec,settings,task.cancel)
-            # A semantically invalid answer can still have real provider usage.
-            # Keep only that billing metadata, so receipt settlement does not
-            # pretend a completed inference was free after validation fails.
-            usage=quote.usage(usage)
-            self.store.update_request(task.id,prompt_tokens=usage['prompt_tokens'],completion_tokens=usage['completion_tokens'],
-                cost_usd=usage['cost'],pricing_model=quote.model,pricing_fetched_ts=quote.fetched_at,
-                cached_tokens=usage.get('prompt_tokens_details',{}).get('cached_tokens'),
-                cache_write_tokens=usage.get('prompt_tokens_details',{}).get('cache_write_tokens'),
-                reasoning_tokens=usage.get('completion_tokens_details',{}).get('reasoning_tokens'))
-            if task.cancel.is_set(): raise BridgeError(499,"cancelled","請求已取消。")
-            if not isinstance(text,str): raise BridgeError(502,"invalid_provider_response","模型未返回文字內容。")
-            if spec.format in {"json_object","json_schema"}:
+            if isinstance(spec,DecisionSpec):
+                answers={}
+                for name,question in spec.questions.items():
+                    inference=spec.inference(question)
+                    text,usage,finish=self.run_call(task,inference,quote,deadline,generation)
+                    if finish!='stop': raise BridgeError(502,'invalid_structured_output','Decisions 推論未完整完成。')
+                    answers[name]=decision_answer(text,question,inference.schema,task.cancel)
+                task.result={'id':'gen-'+task.id,'model':spec.model['id'],'provider':spec.model['provider'],
+                    'answers':answers,'usage':{'input_tokens':usage['prompt_tokens'],
+                                              'output_tokens':usage['completion_tokens'],'cost':usage['cost']}}
+                text=json.dumps(answers,ensure_ascii=False)
+            else:
+                text,usage,finish=self.run_call(task,spec,quote,deadline,generation)
+            if not isinstance(spec,DecisionSpec) and spec.format in {"json_object","json_schema"}:
                 try:
                     value=json.loads(text)
                     if not isinstance(value,dict): raise ValueError()
@@ -137,14 +188,15 @@ class Runtime:
                     raise BridgeError(502,"invalid_structured_output","模型輸出未符合 JSON 格式或指定 schema。") from None
             prompt=usage['prompt_tokens'];completion=usage['completion_tokens']
             task.pricing_headers=quote.headers
-            if finish not in {"stop","length","content_filter"}: finish="stop"
-            message={"role":"assistant","content":text}
-            if spec.tool_proposals:
-                from .tool_contract import proposal_message
-                message,finish=proposal_message(json.loads(text),spec.tool_schemas)
-            task.result={"id":"gen-"+task.id,"object":"chat.completion","created":int(task.created),"model":spec.model["id"],
-                "system_fingerprint":None,"choices":[{"index":0,"message":message,"finish_reason":finish}],
-                "usage":usage}
+            if not isinstance(spec,DecisionSpec):
+                if finish not in {"stop","length","content_filter"}: finish="stop"
+                message={"role":"assistant","content":text}
+                if spec.tool_proposals:
+                    from .tool_contract import proposal_message
+                    message,finish=proposal_message(json.loads(text),spec.tool_schemas)
+                task.result={"id":"gen-"+task.id,"object":"chat.completion","created":int(task.created),"model":spec.model["id"],
+                    "system_fingerprint":None,"choices":[{"index":0,"message":message,"finish_reason":finish}],"usage":usage}
+            self.models.observe(spec.model,task.protocol,generation)
             self.store.update_request(task.id,status="completed",http_status=200,finished_ts=time.time(),
                 duration_ms=round((time.monotonic()-start)*1000),output_bytes=len(text.encode()),prompt_tokens=prompt,completion_tokens=completion,
                 cost_usd=usage['cost'],pricing_model=quote.model,pricing_fetched_ts=quote.fetched_at,
@@ -152,6 +204,7 @@ class Runtime:
                 cache_write_tokens=usage.get('prompt_tokens_details',{}).get('cache_write_tokens'),
                 reasoning_tokens=usage.get('completion_tokens_details',{}).get('reasoning_tokens'))
         except BridgeError as error:
+            if generation is not None: self.models.observe(spec.model,task.protocol,generation,error)
             task.error=error
             self.store.update_request(task.id,status="cancelled" if error.category=="cancelled" else "failed",http_status=error.status,
                 error_code=error.category,finished_ts=time.time(),duration_ms=round((time.monotonic()-start)*1000))
@@ -186,6 +239,12 @@ class Runtime:
                                       (caller['id'],request_id)).fetchone()
         if row is None:raise BridgeError(404,"not_found","找不到請求。")
         result=self.get_job(row['id'],caller)
+        terminal=row['status'] not in {'queued','running'}
+        if not terminal:
+            # Billing and state must use the same snapshot, even if the task just finished.
+            result['status']=row['status'];result.pop('result',None)
+        result['billing_status']={'complete':bool(row['billing_complete']) and terminal,
+                                  'calls_started':row['calls_started'],'calls_completed':row['calls_completed']}
         if row['cost_usd'] is not None:
             result['billing']={'generation_id':'gen-'+row['id'],'model':row['pricing_model'],
                                'usage':{'prompt_tokens':row['prompt_tokens'],'completion_tokens':row['completion_tokens'],
@@ -244,16 +303,15 @@ class ApiServer:
                     if not is_post and path.startswith('/bridge/v1/receipts/'):
                         return self.reply(200,rt.receipt(path.removeprefix('/bridge/v1/receipts/'),caller))
                     if not is_post and path in {"/api/v1/models","/v1/models"}:
-                        data=[{"id":m["id"],"name":m["id"],"object":"model","owned_by":m["provider"],
-                               "supported_parameters":["response_format","reasoning","reasoning_effort","tools","tool_choice","parallel_tool_calls"]}
-                              for m in rt.store.get("models") if m["provider"] in caller["providers"]]
-                        return self.reply(200,{"object":"list","data":data})
+                        return self.reply(200,rt.models.models(caller))
+                    if not is_post and path=="/bridge/v1/model-capabilities":
+                        return self.reply(200,rt.models.capabilities(caller))
                     if not is_post and path.startswith("/bridge/v1/jobs/"):
                         rid=path.removeprefix("/bridge/v1/jobs/")
                         if not len(rid)==32 or any(c not in "0123456789abcdef" for c in rid):
                             raise BridgeError(404,"not_found","找不到工作。")
                         return self.reply(200,rt.get_job(rid,caller))
-                    if not is_post or path not in {"/api/v1/chat/completions","/v1/chat/completions","/bridge/v1/jobs","/bridge/v1/preflight"}:
+                    if not is_post or path not in {"/api/v1/chat/completions","/v1/chat/completions","/api/alpha/decisions","/bridge/v1/jobs","/bridge/v1/preflight","/bridge/v1/models/refresh","/bridge/v1/models/probe"}:
                         raise BridgeError(404,"not_found","找不到端點。")
                     if self.headers.get("Transfer-Encoding"):
                         raise BridgeError(400,"invalid_request","請使用 Content-Length，P1 不接受 chunked request。")
@@ -265,8 +323,23 @@ class ApiServer:
                     self.connection.settimeout(20)
                     raw=self.rfile.read(length)
                     if len(raw)!=length: raise BridgeError(400,"invalid_request","Request body 不完整。")
-                    try: body=json.loads(raw)
-                    except (ValueError,UnicodeError): raise BridgeError(400,"invalid_request","Request body 不是合法 JSON。") from None
+                    try: body=strict_loads(raw)
+                    except (ValueError,UnicodeError,RecursionError): raise BridgeError(400,"invalid_request","Request body 不是合法 JSON。") from None
+                    if path=="/bridge/v1/models/refresh":
+                        if body!={}: raise BridgeError(400,"invalid_request","refresh body 必須是空 object。")
+                        return self.reply(200,rt.models.capabilities(caller,refresh=True))
+                    protocol='decisions' if path=='/api/alpha/decisions' else 'chat'
+                    if path=='/bridge/v1/jobs' and isinstance(body,dict) and ('state' in body or 'questions' in body):
+                        protocol='decisions'
+                    if path=='/bridge/v1/models/probe':
+                        if not isinstance(body,dict) or set(body)-{'model','protocol'} or not isinstance(body.get('model'),str):
+                            raise BridgeError(400,'invalid_request','probe 僅接受 model 與可選 protocol。')
+                        protocol=body.get('protocol','chat')
+                        if protocol not in ('chat','decisions'): raise BridgeError(400,'invalid_request','probe protocol 支援 chat 或 decisions。','protocol')
+                        model=body['model']
+                        body=({'model':model,'state':'A synthetic object is blue.',
+                               'questions':{'blue':{'type':'noul','instructions':'Is the object blue?'}}}
+                              if protocol=='decisions' else {'model':model,'messages':[{'role':'user','content':'Reply exactly PONG.'}]})
                     if path=="/bridge/v1/preflight":
                         spec=rt.preflight(body,caller)
                         return self.reply(200,{"ready":True,"model":spec.model["id"],"subscription_verified":False,"expires_in_s":5})
@@ -276,7 +349,7 @@ class ApiServer:
                             deadline=float(self.headers["X-Bridge-Deadline"])/1000
                             if not 0<deadline<1e14:raise ValueError()
                         except ValueError:raise BridgeError(400,"invalid_request","請求期限無效。") from None
-                    task=rt.submit(body,caller,length,self.headers.get("X-AIEA-Request-Id"),deadline)
+                    task=rt.submit(body,caller,length,self.headers.get("X-AIEA-Request-Id"),deadline,protocol)
                     raw=None; body=None
                     if path=="/bridge/v1/jobs":
                         return self.reply(202,{"id":task.id,"status":"queued","created":int(task.created)})

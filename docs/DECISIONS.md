@@ -42,11 +42,13 @@
 | D-23 Mac source 候選 2026-10-23 | Mac 採獨立 Cocoa／WKWebView viewer，共用六頁前端與 BYO 驗證 coordinator；session 只走 stdin，關窗不停止 LaunchAgent。 | Mac UI／剪貼簿／CSV／生命週期獨立驗收，不把 Windows 結果當 Mac 證據。 |
 | D-24 Mac source 候選 2026-10-23 | Mac 僅同意後改 AC idle sleep，先備份、讀回、可還原；來源更新使用已記錄 checkout 排空安裝、失敗回復。 | 保留鎖定、電池及個人登入；不借用 Windows 簽章 feed，不宣稱已有 Mac 公發更新渠道。 |
 | D-25 採用 2026-10-23 | Windows 原生 0.8.2 在 entry 安裝獨占 loopback server adapter，阻止其他本機程序用 SO_REUSEADDR 重綁 API／管理埠。 | 不替換標準函式庫全域 class、不更動 source／Mac entry；占用時拒絕啟動而非接管。更新需真 Setup→A→B 與雙埠負面測試，不能靠常數存在判定修補。 |
+| D-26 候選 2026-10-23 | 0.9 整合 Jev Decisions 及模型發現，保留原 body／順序與 Windows 安全限制；每題實際模型／usage 核對後計價並聚合，不以未知量當免費。 | 一般 LLM 的機率與 confidence 公式不代表 Jev 校準或原業務門檻準確；模型目錄不是 entitlement。公開新路徑需 owner 另授權更新同一 Worker，本次不部署 Cloud，不發布 Mac package。 |
+
 
 | ID／狀態 | 決定與理由 | 代價／何時重訪 |
 |---|---|---|
-| D-26 採用 2026-10-23 | **一台電腦只執行一個 Bridge runtime**，Claude／Codex 共用。Mac 0.8.1-mac.2 使用固定 loopback TCP bind 的 OS 原子所有權，跨 profile／API port／使用者，在 DB／relay 前拒絕第二套；同 profile 保留喚回管理台。 | 鎖地址被任何本機程式占用即拒絕；不自動切 profile、不終止原服務；舊版須先正常停止。只關管理視窗仍背景供應，停止須明確結束或排空 stop。Windows 實作及跨 session 原生驗收交由 issue #20，不用 Mac 證據代替。 |
+| D-27 採用 2026-10-23 | **一台電腦只執行一個 Bridge runtime**，Claude／Codex 共用。Mac 0.9.1-mac.1 使用固定 loopback TCP bind 的 OS 原子所有權，跨 profile／API port／使用者，在 DB／relay 前拒絕第二套；同 profile 保留喚回管理台。 | 鎖地址被任何本機程式占用即拒絕；不自動切 profile、不終止原服務；舊版須先正常停止。只關管理視窗仍背景供應，停止須明確結束或排空 stop。Windows 實作及跨 session 原生驗收交由 issue #20，不用 Mac 證據代替。 |
 
 | ID／狀態 | 決定與理由 | 代價／何時重訪 |
 |---|---|---|
-| D-27 採用 2026-10-23 | Mac 正式交付現行 BYO source ZIP 與專屬 macos-source-v… Release，Python 3.12+／WKWebView；以 tracked 公開檔 allowlist 建包，附 checksum／commit manifest／self-test，CI 從 ZIP 真安裝後發布。 | 不把 legacy desktop 包、Windows Velopack、未公證 .app／DMG 或更新 feed 混稱現有能力；Mac 日後升級沿用 profile、明確排空、下載新來源。發布後匿名回讀並驗 owner 更新及真 HTTPS。 |
+| D-28 採用 2026-10-23 | Mac 正式交付現行 BYO source ZIP 與專屬 macos-source-v… Release，Python 3.12+／WKWebView；以 tracked 公開檔 allowlist 建包，附 checksum／commit manifest／self-test，CI 從 ZIP 真安裝後發布。 | 不把 legacy desktop 包、Windows Velopack、未公證 .app／DMG 或更新 feed 混稱現有能力；Mac 日後升級沿用 profile、明確排空、下載新來源。發布後匿名回讀並驗 owner 更新及真 HTTPS。 |

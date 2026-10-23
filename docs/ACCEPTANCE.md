@@ -2,7 +2,9 @@
 
 Mac `0.8.1-mac.1` 的單元、原生 renderer、安裝更新與公開 HTTPS 證據另見 [Mac 同步 QA](qa/2026-10-23-macos-parity.md)；不發布 Mac release，不替代 Windows 安裝器測試。
 
-Windows 0.8.1 internal 安全修補已合併發布並升級原生安裝，真實 HTTPS 呼叫／資料保留通過；另一安裝流程接管 runtime，正式常駐重啟尚待確認，詳見 [0.8.1 收據](qa/2026-10-23-windows-081-security.md)。0.8.2 Windows listener 修補正隔離驗收，見 [0.8.2 收據](qa/2026-10-23-windows-082-security.md)。[0.8.0 發布](qa/2026-10-23-windows-080-release.md)、[原 onboarding QA](qa/2026-10-23-windows-onboarding.md) 及 [鎖定 QA](qa/2026-10-23-windows-locked.md) 保留各階段歷史。
+Windows 0.8.2 安全修補已合併發布並升級正式安裝，真實 HTTPS、受控重啟、原 URL／KEY／資料／成本核對及雙埠獨占驗收通過，見 [0.8.2 收據](qa/2026-10-23-windows-082-security.md)。0.9 Jev／模型查詢另在整合驗收，不能以既有 chat HTTPS 通過替代新端點驗收。[0.8.1 收據](qa/2026-10-23-windows-081-security.md)、[0.8.0 發布](qa/2026-10-23-windows-080-release.md)、[原 onboarding QA](qa/2026-10-23-windows-onboarding.md) 及 [鎖定 QA](qa/2026-10-23-windows-locked.md) 保留各階段歷史。
+
+0.9 交接整合進度、付費 I/O／封裝／正式／Cloud 邊界另見 [本輪 Jev QA](qa/2026-10-23-windows-090-jev.md)。
 
 本檔區分需求、測試與交付。source／單元測試、真實本機CLI、公開HTTPS、frozen安裝包、CI、正式已安裝、人工UI是不同證據，不能互相替代。沒有在本輪執行的測試不得標成新通過。
 
@@ -20,8 +22,8 @@ Windows 0.8.1 internal 安全修補已合併發布並升級原生安裝，真實
 | A-08 全頁視覺 | R-11：六頁＋modal＋Windows卡；淺深色、桌面／窄版，無整頁橫向溢出 | 實際render截圖＋DOM尺寸／keyboard／console；樣式文字存在不算視覺通過 |
 | A-09 真安裝更新 | R-12：Setup→A→B、簽章／hash、排空、等待viewer退出、重啟、KEY／URL／資料不變 | `tools/verify_installer_update.py`與Windows runner；公開HTTPS更新另驗，不能只看loopback |
 | A-10 文件可交接 | R-13：入口／七份產品文件／隨包文件／schema與API覆蓋／歷史區隔 | `tools/check_product_docs.py`、build_resources、人工語意對照；不以聊天摘要代替 |
-| A-11 全機單實例 | R-19：不同 profile／port／安裝目錄／OS 使用者不能多開；同 profile 喚回、拒絕不改 DB、正常／異常退出釋鎖；關窗與停止語意清楚 | 原子鎖及真 subprocess 競爭、隔離 headless HTTP、資料回讀；Mac [本輪 QA](qa/2026-10-23-macos-single-instance.md)，Windows issue #20 另驗 |
-| A-12 Mac Release | R-20：現行包可匿名下載、hash／來源吻合、真下載安裝及原裝置升級／HTTPS通過 | [Mac 發布驗收](qa/2026-10-23-macos-release.md)、Mac release workflow／download smoke／既有 KEY／設定前後回讀 |
+| A-11 全機單實例 | R-21：不同 profile／port／安裝目錄／OS 使用者不能多開；同 profile 喚回、拒絕不改 DB、正常／異常退出釋鎖；關窗與停止語意清楚 | 原子鎖及真 subprocess 競爭、隔離 headless HTTP、資料回讀；Mac [本輪 QA](qa/2026-10-23-macos-single-instance.md)，Windows issue #20 另驗 |
+| A-12 Mac Release | R-22：現行包可匿名下載、hash／來源吻合、真下載安裝及原裝置升級／HTTPS通過 | [Mac 發布驗收](qa/2026-10-23-macos-release.md)、Mac release workflow／download smoke／既有 KEY／設定前後回讀 |
 
 ## 既有證據：0.7.2
 

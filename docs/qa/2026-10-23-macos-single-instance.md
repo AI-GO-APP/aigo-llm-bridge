@@ -1,6 +1,6 @@
 # Mac 全機單實例修復驗收（2026-10-23）
 
-Mac source `0.8.1-mac.2`；對應 R-19／A-11／D-26。PR 以既有 Mac parity 分支為基底；未合併、未發布、未升級 owner 已安裝 Bridge，未部署 Worker。Windows 由 [issue #20](https://github.com/AI-GO-APP/aigo-llm-bridge/issues/20) 另修與驗收。
+Mac source `0.8.1-mac.2`；對應 R-21／A-11／D-27。PR 以既有 Mac parity 分支為基底；未合併、未發布、未升級 owner 已安裝 Bridge，未部署 Worker。Windows 由 [issue #20](https://github.com/AI-GO-APP/aigo-llm-bridge/issues/20) 另修與驗收。
 
 ## 實作範圍
 

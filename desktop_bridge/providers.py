@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 from pathlib import Path
 import queue
@@ -45,10 +46,10 @@ def executable(provider,settings):
     return str(path.resolve())
 
 
-def status(provider,settings):
+def status(provider,settings,timeout=20):
     try:
         cmd=[executable(provider,settings)]+(["auth","status"] if provider=="claude" else ["login","status"])
-        proc=subprocess.run(cmd,capture_output=True,env=environment(),timeout=20,
+        proc=subprocess.run(cmd,capture_output=True,env=environment(),timeout=timeout,
                             creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
         raw=(proc.stdout+proc.stderr).decode("utf-8","replace")
         if provider=="claude":
@@ -58,6 +59,91 @@ def status(provider,settings):
         return {"provider":provider,"ready":proc.returncode==0 and "ChatGPT" in raw,"method":"ChatGPT" if "ChatGPT" in raw else "其他／未登入"}
     except (OSError,ValueError,subprocess.SubprocessError,BridgeError):
         return {"provider":provider,"ready":False,"method":"CLI 不可用／未登入"}
+
+
+def auth_generation(provider, settings):
+    """Only stat metadata, never credential contents. Changes invalidate in-RAM evidence."""
+    home = Path(os.environ.get("CODEX_HOME") or Path.home()/".codex") if provider == "codex" else Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home()/".claude")
+    paths = [home/("auth.json" if provider == "codex" else ".credentials.json"),
+             home/("config.toml" if provider == "codex" else "settings.json")]
+    if provider == "claude":
+        paths.append(Path.home()/".claude.json")
+    try: paths.append(Path(executable(provider, settings)))
+    except BridgeError: pass
+    metadata = [provider, settings.get(provider+"_path")]
+    for path in paths:
+        try:
+            st = path.stat()
+            metadata.append((str(path), st.st_mtime_ns, st.st_size, st.st_ino))
+        except OSError: metadata.append((str(path), None))
+    return hashlib.sha256(json.dumps(metadata).encode()).hexdigest()
+
+
+def list_codex_models(settings):
+    """Read-only app-server handshake; no thread, turn, or model inference."""
+    with tempfile.TemporaryDirectory(prefix="aigo-models-") as cwd:
+        child = Child(codex_command(settings), cwd, environment())
+        messages = queue.Queue(maxsize=128)
+        overflow = threading.Event()
+        def reader():
+            try:
+                while True:
+                    line = child.proc.stdout.readline(1_000_001)
+                    if not line: break
+                    if len(line) > 1_000_000:
+                        overflow.set(); break
+                    try: message = json.loads(line)
+                    except ValueError: continue
+                    try: messages.put_nowait(message)
+                    except queue.Full: overflow.set(); break
+            finally:
+                try: messages.put_nowait({"_eof": True})
+                except queue.Full: pass
+        def drain():
+            while child.proc.stderr.read(65536): pass
+        threading.Thread(target=reader, daemon=True).start()
+        threading.Thread(target=drain, daemon=True).start()
+        deadline = time.monotonic()+8
+        next_id = 0
+        def request(method, params):
+            nonlocal next_id
+            next_id += 1
+            child.proc.stdin.write((json.dumps({"id": next_id, "method": method, "params": params})+"\n").encode())
+            child.proc.stdin.flush()
+            while time.monotonic() < deadline and not overflow.is_set():
+                try: msg = messages.get(timeout=.1)
+                except queue.Empty: continue
+                if msg.get("_eof") or ("method" in msg and "id" in msg): break
+                if msg.get("id") == next_id:
+                    if "error" in msg: break
+                    return msg["result"]
+            raise BridgeError(503, "model_discovery_unavailable", "CLI 模型目錄暫時不可用。")
+        try:
+            request("initialize", {"clientInfo": {"name": "aigo_model_discovery", "version": "1.0"}})
+            child.proc.stdin.write(b'{"method":"initialized","params":{}}\n'); child.proc.stdin.flush()
+            result, cursor, seen = [], None, set()
+            for _ in range(20):
+                page = request("model/list", {"limit": 100, "includeHidden": False, **({"cursor": cursor} if cursor else {})})
+                if not isinstance(page.get("data"), list): raise ValueError("Invalid model catalog")
+                for model in page["data"]:
+                    if isinstance(model, dict) and not model.get("hidden") and isinstance(model.get("model"), str):
+                        result.append(model["model"])
+                cursor = page.get("nextCursor")
+                if cursor is None: return sorted(set(result))
+                if not isinstance(cursor, str) or cursor in seen: break
+                seen.add(cursor)
+            raise ValueError("Invalid model pagination")
+        finally: child.close()
+
+
+def model_snapshot(provider, settings):
+    ready = status(provider, settings, timeout=5)["ready"]
+    if not ready: return {"ready": False, "models": None, "source": "provider_authentication"}
+    if provider == "claude":
+        # Claude subscription CLI has no reliable equivalent of an API-key model list.
+        return {"ready": True, "models": None, "source": "registration"}
+    try: return {"ready": True, "models": list_codex_models(settings), "source": "cli_catalog"}
+    except Exception: return {"ready": True, "models": None, "source": "discovery_unavailable"}
 
 
 def classify(text):
@@ -136,7 +222,14 @@ def call_claude(spec,settings,cancel,cwd):
             fenced=re.fullmatch(r'\s*```(?:json)?[ \t]*\r?\n(.*?)\r?\n```\s*',text,re.S)
             if fenced:text=fenced[1]
         usage=result.get("usage") or {}
-        return text,claude_usage(usage),"stop"
+        actual={e.get('model') for e in events if e.get('type')=='system' and e.get('subtype')=='init' and isinstance(e.get('model'),str)}
+        model_usage=result.get('modelUsage')
+        if isinstance(model_usage,dict): actual.update(model_usage)
+        if not actual:
+            raise BridgeError(502,'model_identity_unavailable','CLI 未回報實際模型，未以請求模型代算成本。')
+        if actual!={spec.model['native']}:
+            raise BridgeError(502,'model_mismatch','CLI 使用的模型與請求不同，未以請求模型代算成本。')
+        return text,claude_usage(usage),"stop",spec.model['native']
     finally: child.close()
 
 
@@ -257,7 +350,7 @@ def call_codex(spec,settings,cancel,cwd):
                 break
         if not final or final.get("status")!="completed":
             raise classify(str((final or {}).get("error",{})))
-        return "".join(chunks),codex_usage(usage),"stop"
+        return "".join(chunks),codex_usage(usage),"stop",start['model']
     except (BrokenPipeError,OSError):
         raise BridgeError(502,"provider_unavailable","CLI 通道中斷。") from None
     finally: child.close()

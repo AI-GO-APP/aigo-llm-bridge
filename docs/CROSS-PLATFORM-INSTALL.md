@@ -4,7 +4,7 @@
 
 ## 前置條件
 
-Mac `0.8.1-mac.2` 的 WKWebView、五步精靈及來源更新見 [Mac 操作契約](MACOS-SETUP.md)。關閉視窗仍在背景接單；安裝不自動更改電源或啟動 OAuth。
+Mac `0.9.1-mac.1` 的 WKWebView、五步精靈及來源更新見 [Mac 操作契約](MACOS-SETUP.md)。關閉視窗仍在背景接單；安裝不自動更改電源或啟動 OAuth。
 
 - Python 3.12+（含 venv/pip）、Node.js 24.22.1+（或 22.23.4+）、網路，以及安裝者自己的 Cloudflare 帳戶。
 - 安裝 Wrangler：Windows `npm.cmd install -g wrangler@4.152.0`；macOS `npm install -g wrangler@4.152.0`。若沒有全域安裝權限，可在 repo 的 cloudflare 目錄安裝相同版本，helper 會找本機 node_modules。
@@ -63,6 +63,8 @@ $created.integration.prompt | Set-Clipboard
 ```
 
 要取得不含 key 的串接說明：`handoff --data-dir ... --providers codex`。`status` 回報 URL／配對狀態，`key-list` 僅回傳前綴及 ID；不提供舊明文 key 的查回功能。模型由 GET models 決定，需與本機訂閱權限、CLI 模型及 OpenRouter 牌價相符。
+
+模型與 Jev 使用端另依 [模型查詢與 Decisions](JEV-COMPATIBILITY.md)驗證，交付的 handoff 已包含兩種格式。新路徑需更新 Worker、Relay 與 Bridge；若本次不部署，記錄外部驗收待完成。
 
 最後必須完成 [第三方串接驗收](THIRD-PARTY-INTEGRATION.md)。安裝、Cloudflare 部署與真實訂閱推論各是獨立檢查；登入或 Keychain 不可用時明確回報未完成。
 

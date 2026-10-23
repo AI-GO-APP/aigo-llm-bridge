@@ -28,6 +28,12 @@
 
 jobs 的 result body 同樣包含 cost；其 GET 回應目前不附上述成本 headers。不增加非標準 body 欄位，也不捏造 OpenRouter 的 `cost_details.upstream_inference_cost`。
 
+## Decisions 聚合與不完整用量
+
+Decisions 每題獨立執行，先按各次實際模型、token 明細、階梯與 request 費率計價再加總。回應使用 input_tokens／output_tokens／cost。每次推論用量在答案驗證前保存，後續題目或輸出驗證失敗仍保留已知消耗。
+
+收據新增 billing_status.complete、calls_started、calls_completed；未回報用量或模型身分不符時標示不完整，不捏造零元。明確指定的模型不自動換成小模型，不套用 Jev 牌價。詳見 [Decisions 指南](JEV-COMPATIBILITY.md)。
+
 ## 紀錄、更新與 Cloud 結算
 
 SQLite metadata 新增 `cost_usd`、`pricing_model`、`pricing_fetched_ts`，啟動時自動遷移既有資料表，保留裝置身分及 key hash。這些欄位可隨既有 log 匯出及刪除；仍不保存 request／response 內容。

@@ -1,6 +1,6 @@
-# Mac 0.8.1-mac.2 發布驗收
+# Mac 0.9.1-mac.1 發布驗收
 
-範圍：R-19／R-20、A-11／A-12、D-26／D-27；Mac 全機單實例、現行 BYO source Release、雙平台 README／Agent 引導、公開下載安裝與 owner 更新。Windows 原生修復由 issue #20 另行負責，不改 Windows release-target／policy 或使用者 Worker。
+範圍：R-21／R-22、A-11／A-12、D-27／D-28；Mac 全機單實例、現行 BYO source Release、雙平台 README／Agent 引導、公開下載安裝與 owner 更新。Windows 原生修復由 issue #20 另行負責，不改 Windows release-target／policy 或使用者 Worker。
 
 ## 修正來源
 
@@ -18,3 +18,5 @@
 
 - clean commit `5649afa` 的現行 ZIP 已在本機從解壓的 Install.command 真安裝到獨立目錄；安裝 manifest 保留原 Release SHA，真 HTTP 新版、固定全機鎖、第二 profile 無 DB、正常停止後 API 關閉全通過。
 - 原生畫面檢視找出 Mac 更新卡仍稱沒有公開包，已改為 Release source ZIP／手動下載說明；重跑完整 48 畫面及原生操作全通過。
+
+- 發布前主線新增已合併 #23（core 0.9.0、模型目錄／Decisions）；完整保留新功能與 Windows 安全碼後重整合。Mac 最終版改為 0.9.1-mac.1，R-21／R-22、D-27／D-28 避免覆蓋先合併的 ID，重新跑 Mac／共用／原生驗收。
