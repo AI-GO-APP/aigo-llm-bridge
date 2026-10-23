@@ -37,7 +37,7 @@ Mac 公開 Decisions／模型探索上線及本機／Worker／真實推論證據
 
 ## 維護約定
 
-Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [最新 Mac Release 收據](qa/2026-10-23-macos-release.md)（[先前 parity QA](qa/2026-10-23-macos-parity.md) 為歷史證據） 分別定義契約與獨立證據，不以 Windows 結果代替。
+Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [最新 Mac Release／公開 API 收據](qa/2026-10-23-macos-public-api.md)（[先前 Release](qa/2026-10-23-macos-release.md)、[parity QA](qa/2026-10-23-macos-parity.md) 為歷史證據）分別定義契約與獨立證據，不以 Windows 結果代替。
 
 修改功能時，同一 PR 更新需求／API、資料字典、決策或設計文件中受影響的部分，並在 ACCEPTANCE 指向具體證據。新功能不能只留在聊天。文件的日期是維護日期，不是驗收通過證明。
 
