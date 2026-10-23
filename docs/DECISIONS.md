@@ -41,3 +41,4 @@
 
 | D-23 Mac source 候選 2026-10-23 | Mac 採獨立 Cocoa／WKWebView viewer，共用六頁前端與 BYO 驗證 coordinator；session 只走 stdin，關窗不停止 LaunchAgent。 | Mac UI／剪貼簿／CSV／生命週期獨立驗收，不把 Windows 結果當 Mac 證據。 |
 | D-24 Mac source 候選 2026-10-23 | Mac 僅同意後改 AC idle sleep，先備份、讀回、可還原；來源更新使用已記錄 checkout 排空安裝、失敗回復。 | 保留鎖定、電池及個人登入；不借用 Windows 簽章 feed，不宣稱已有 Mac 公發更新渠道。 |
+| D-25 採用 2026-10-23 | Windows 原生 0.8.2 在 entry 安裝獨占 loopback server adapter，阻止其他本機程序用 SO_REUSEADDR 重綁 API／管理埠。 | 不替換標準函式庫全域 class、不更動 source／Mac entry；占用時拒絕啟動而非接管。更新需真 Setup→A→B 與雙埠負面測試，不能靠常數存在判定修補。 |

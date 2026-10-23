@@ -106,6 +106,16 @@ def main():
             req=urllib.request.Request('http://127.0.0.1:'+str(port)+'/api/v1/models',headers={'Authorization':'Bearer '+key})
             with opener.open(req,timeout=5) as response:return json.load(response)
         checks['a_original_key_authenticates']=bool(wait(models)['data'])
+        def exclusive_listener(port):
+            with socket.socket() as intruder:
+                intruder.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+                try:intruder.bind(('127.0.0.1',port))
+                except OSError as error:return error.winerror in (10013,10048)
+                return False
+        from desktop_bridge.windows_console import owner as management_owner
+        from urllib.parse import urlsplit
+        checks['api_port_hijack_blocked']=exclusive_listener(port)
+        checks['management_port_hijack_blocked']=exclusive_listener(urlsplit(management_owner(data,{'pack_id':package_id})['origin']).port)
         schema_request=urllib.request.Request('http://127.0.0.1:'+str(port)+'/bridge/v1/preflight',
             data=json.dumps({'messages':[{'role':'user','content':'synthetic schema preflight'}],
                 'response_format':{'type':'json_schema','json_schema':{'name':'probe','schema':{'type':'object'}}}}).encode(),
@@ -190,6 +200,8 @@ def main():
             checks['open_console_exits_for_update']=(view.wait(timeout=30)==0 and
                 json.loads((data/'windows-console.json').read_text())['mode']=='closed')
         checks['b_same_key_authenticates']=bool(wait(models)['data'])
+        checks['updated_api_port_hijack_blocked']=exclusive_listener(port)
+        checks['updated_management_port_hijack_blocked']=exclusive_listener(urlsplit(management_owner(data,{'pack_id':package_id})['origin']).port)
         store=Store(data,startup=False)
         checks['same_device']=store.get('device_id')==device
         checks['same_url']=store.get('public_url')=='https://isolated-device.example.invalid'
