@@ -11,6 +11,8 @@ def main():
     from desktop_bridge.windows_onboarding import record_install
     velopack.App().set_auto_apply_on_startup(False).on_after_install_fast_callback(record_install).run()
     from desktop_bridge.windows_release import config, profile
+    from desktop_bridge.windows_http import install as protect_listeners
+    protect_listeners()
     cfg = config()
     from pathlib import Path
     from desktop_bridge import byo

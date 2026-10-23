@@ -1,12 +1,14 @@
 # 現行 Windows 安全邊界與更新
 
-適用 Windows 0.8.1 安全候選、共用核心 0.6.7。發布／安裝驗收狀態見 [ACCEPTANCE](ACCEPTANCE.md)。這不是完整 OpenRouter 等價或整台電腦零痕跡保證。
+適用 Windows 0.8.1 安全修補與 0.8.2 Windows listener 候選。0.8.1 包含核心 0.6.7；0.8.2 沿用整合後 main 的核心識別 0.8.1-mac.1，不另發布 Mac。發布／安裝驗收狀態見 [ACCEPTANCE](ACCEPTANCE.md)。這不是完整 OpenRouter 等價或整台電腦零痕跡保證。
 
 ## 流量與權限
 
 第三方以 HTTPS、長效 client KEY 呼叫安裝者自己的 Worker。Worker／Cloudflare 終結 TLS，因此會接觸原文與 client KEY；DEVICE_KEY 可冒充裝置，必須與一般 client KEY 分開保護。本機只監聽 loopback，Relay 主動向外 poll，不能轉送管理端點。client KEY 不取得本機管理 token，也不能讀其他 KEY 的工作結果。
 
 Relay 一律拒絕 redirect，包括同來源，避免憑證被帶到其他主機或 HTTP；poll 回應最多 6.1 MB（涵蓋 3 MB request 的字串跳脫），ack 最多 1 KB。超限或格式錯誤只顯示固定連線狀態，不記錄 payload／headers／例外原文。
+
+Windows 0.8.2 原生入口另將 API／管理 listener 設為 `SO_EXCLUSIVEADDRUSE`，關閉 `SO_REUSEADDR`，避免另一個本機程序重綁同一 loopback 位址／埠而接收不確定的流量。這需要攻擊者已能執行本機程序，並非外網未授權入侵的證據。來源／Mac 入口不套用 Windows socket 選項；Windows 修補不代表其他安裝格式已更新。既有埠遭占用時新服務必須失敗，不搶占既有服務；獨占綁定不防同一 OS 使用者已被接管或服務啟動前的埠搶占。依據 [Microsoft Winsock 說明](https://learn.microsoft.com/en-us/windows/win32/winsock/using-so-reuseaddr-and-so-exclusiveaddruse)。
 
 ## 內容不落地與 CLI
 
