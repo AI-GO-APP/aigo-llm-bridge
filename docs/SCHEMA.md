@@ -1,5 +1,7 @@
 # 資料字典與持久化邊界
 
+管理台 `public_endpoint` 不增加 SQLite 欄位：`origin`、`local_version`、`worker_version`、`online`、`checked_at`、`stale`、`state`、`routes`、`tests` 僅在 RAM。路由有 `http_status`／state；推論驗證有 model、protocol、success、checked_at、http_status、cost_usd。route evidence 五分鐘失效；改網址或程序重啟清除，推論證據顯示原驗證時間而不代表持續可用。沒有原始答案、Key 或部署憑證。
+
 Windows 0.9.2 的全機 runtime 鎖是 RAM／OS socket reservation，不新增資料表、設定、PID 檔、裝置憑證或共享管理 token。拒啟動在 Store 前完成，不將既有 running request 改成 interrupted；正常接手仍沿用同一 SQLite／DPAPI／URL／KEY。[全機所有權](ARCHITECTURE.md)、[驗收](qa/2026-10-23-windows-machine-runtime.md)。
 
 非可分發 LocalProbe 的 release metadata 可含 `probe_machine_port`，僅 `local_probe=true` 時讀取供隔離驗收；正式包不提供換鎖通道，也不把它存為使用者設定。

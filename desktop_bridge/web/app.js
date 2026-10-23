@@ -129,6 +129,7 @@ $("keys-list").addEventListener("click", e => {
 });
 function guide() { navigate("integration"); }
 function renderIntegration() {
+  renderPublicEndpoint();
   $("integration-endpoint").value = state.endpoint;
   $("integration-transport").textContent = $("transport-state").textContent;
   const models = state.settings.models;
@@ -140,11 +141,27 @@ function renderIntegration() {
   renderTestModels();
   renderExample();
 }
+function renderPublicEndpoint() {
+  const info = state.public_endpoint || {}, labels = {local_only:"尚未設定公開入口", unchecked:"公開路由尚未檢查或證據已過期", needs_update:"公開 Worker 待更新：部分新路徑回 404", routes_reachable:"新路徑可達認證閘門；推論結果請另行驗證", unreachable:"路由檢查未完成，請檢查連線"};
+  $("public-summary").textContent = labels[info.state] || labels.unchecked;
+  $("public-versions").textContent = `本機支援：${state.version} · Worker：${info.worker_version || "未知"} · 裝置：${info.online === true ? "在線" : info.online === false ? "離線" : "未知"} · 路由檢查：${date(info.checked_at)}${info.stale ? "（已過期）" : ""}`;
+  $("check-public").disabled = !state.settings.public_url || checkingPublic;
+  updateHTML("public-tests", (info.tests || []).map(t => `<p>${esc(t.model)} · ${esc(t.protocol)} · ${t.success ? "推論驗證通過" : "推論驗證未通過"} · ${date(t.checked_at)}${t.cost_usd == null ? "" : ` · USD ${esc(t.cost_usd)}`}</p>`).join("") || '<p class="muted">尚無公開推論驗證。請選擇下方測試協定並使用你的 Key 驗證。</p>');
+}
+let checkingPublic = false;
+$("check-public").addEventListener("click", e => run(e.currentTarget, async () => {
+  checkingPublic = true;
+  try { await api('/manage/check-public', {}, false, 40000); await refresh(); }
+  finally { checkingPublic = false; if (state) renderPublicEndpoint(); }
+}));
 function renderExample() {
   if (!state) return;
   const missing = !$("example-model").value && ["chat", "decisions", "probe"].includes($("example-operation").value);
-  $("copy-example").disabled = missing;
-  $("example-code").textContent = missing ? "請先登錄模型。" : BridgeExamples.build(state.endpoint, $("example-model").value, $("example-format").value, $("example-operation").value);
+  const operation = $("example-operation").value, info = state.public_endpoint || {};
+  const unavailable = info.state === 'needs_update' && ['decisions','capabilities','refresh','probe'].includes(operation) && info.routes?.[operation]?.state === 'unsupported';
+  $("copy-example").disabled = missing || unavailable;
+  const warning = info.state === 'routes_reachable' ? '# 公開路由可達；仍須驗證此模型與 Key 的真實回應。\n' : '# 尚無有效的公開路由證據；此範例不代表外網已啟用。\n';
+  $("example-code").textContent = missing ? "請先登錄模型。" : unavailable ? "公開 Worker 尚未提供此路徑。請先更新原 Worker，再重新檢查公開路由。" : warning + BridgeExamples.build(state.endpoint, $("example-model").value, $("example-format").value, operation);
   $("example-model").disabled = !["chat", "decisions", "probe"].includes($("example-operation").value);
 }
 for (const id of ["example-model", "example-format", "example-operation"]) $(id).addEventListener("change", renderExample);
@@ -176,6 +193,7 @@ $("connection-test-form").addEventListener("submit", async e => {
   let key = $("test-api-key").value.trim();
   if (!key) return toast("請先輸入 API 金鑰。");
   const endpoint = state.endpoint;
+  const protocol = $("test-protocol").value;
   const models = Object.fromEntries(["claude", "codex"].map(p => [p, $(`test-model-${p}`).value]));
   const rows = {};
   testingConnection = true;
@@ -191,7 +209,7 @@ $("connection-test-form").addEventListener("submit", async e => {
       if (!models[provider]) { rows[provider] = testResultRow(provider, "", "略過", "請先到模型管理登錄此來源的模型。"); draw(); continue; }
       rows[provider] = testResultRow(provider, models[provider], "測試中", "正在等待模型回應…"); draw();
       try {
-        const result = await api("/manage/test-connection", {key, provider, model:models[provider], endpoint}, false, 75000);
+        const result = await api("/manage/test-connection", {key, provider, model:models[provider], endpoint, protocol}, false, 75000);
         rows[provider] = testResultRow(provider, result.model, result.success ? "成功" : "失敗", result.message, result);
       } catch (error) {
         rows[provider] = testResultRow(provider, models[provider], "失敗", error.name === "TimeoutError" ? "管理台等待逾時；測試可能仍在執行，請先查看請求紀錄。" : "測試未完成，請確認管理台連線與目前設定後重試。");

@@ -1,5 +1,7 @@
 # 現行 BYO 架構
 
+`public_endpoint.py` 為管理台提供明確觸發的公開路由檢查：無 Authorization 的 health GET 及新路徑的 GET／空 object POST，最多每路徑五秒，拒絕 redirect，不傳裝置憑證或 client key。401 只代表認證閘門可達；404 為待更新，其他結果未知。檢查不進 inference queue。`management.py` 分別維護路由證據與明確 Chat／Decisions 測試的 metadata；`handoff.py` 帶入狀態，不再把本機版本當成已部署證據。
+
 Mac `macos_management.py` 使用共用管理 server 與 Windows onboarding coordinator 的平台方法；`macos_onboarding.py` 提供 Keychain／Terminal／source profile 適配，`macos_power.py` 僅管理 AC sleep。`macos_console.py` 是獨立 Cocoa／WKWebView viewer，憑證經 stdin，關窗不停止服務。來源更新由 `tools/mac_service.py` 排空、安裝與失敗回復；不使用 Windows 更新 feed。契約見 [Mac 設定](MACOS-SETUP.md)。
 
 適用 `desktop_bridge/`＋`cloudflare/`＋Windows 安裝器。舊 `hosted/` 架構見 [歷史文件](01-architecture.md)，不作新版契約。

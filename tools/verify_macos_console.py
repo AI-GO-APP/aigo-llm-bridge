@@ -108,6 +108,10 @@ def main():
         runtime = Runtime(store)
         api = ApiServer(runtime, port=0); api.start()
         manager = MacManagementServer(store, runtime, api, preview=True)
+        store.set('public_url', 'https://synthetic-owner.example')
+        manager.public_endpoint.origin = store.get('public_url')
+        manager.public_endpoint.result = {'checked_at': time.time(), 'worker_version': '0.3.4-relay', 'online': True,
+            'routes': {n: {'state': 'unsupported', 'http_status': 404} for n in ('decisions', 'capabilities', 'refresh', 'probe')}}
         manager.start()
         store.insert_request({'id': 'synthetic-render', 'model': store.get('models')[1]['id'], 'provider': 'codex',
             'status': 'completed', 'http_status': 200, 'created_ts': time.time(), 'finished_ts': time.time(),
@@ -122,6 +126,13 @@ def main():
                 wait_js(window, 'document.querySelector("#macos-onboarding").open')
                 snapshot(window, output / 'macos-onboarding-light.png')
                 window.run_js('document.querySelector("#ob-defer").click()')
+                window.run_js('navigate("integration"); document.querySelector("#example-operation").value="decisions"; renderExample()')
+                results['old_worker_warning'] = window.run_js('document.querySelector("#public-summary").textContent.includes("待更新") && document.querySelector("#copy-example").disabled')
+                manager.public_endpoint.result = {'checked_at': time.time(), 'worker_version': '0.9.0-relay', 'online': True,
+                    'routes': {n: {'state': 'reachable', 'http_status': 401} for n in ('decisions', 'capabilities', 'refresh', 'probe')}}
+                window.run_js('refresh()')
+                wait_js(window, 'state.public_endpoint.state === "routes_reachable"')
+                results['route_is_not_inference'] = window.run_js('document.querySelector("#public-summary").textContent.includes("推論結果請另行驗證") && !document.querySelector("#copy-example").disabled && document.querySelector("#test-protocol").options.length === 2')
                 for theme in ('light', 'dark'):
                     # Force theme media rules for deterministic renderer evidence.
                     window.run_js('''(() => {
@@ -148,10 +159,23 @@ def main():
                             name = f'macos-{page}-{theme}-{width}.png'
                             snapshot(window, output / name)
                             results['screens'].append(name)
+                        for feature, selector in (('public-status', '.public-endpoint-card'), ('protocol-test', '.connection-test-card')):
+                            window.run_js('navigate("integration"); document.querySelector(' + json.dumps(selector) + ').scrollIntoView({block:"center"})')
+                            name = f'macos-{feature}-{theme}-{width}.png'
+                            snapshot(window, output / name)
+                            results['screens'].append(name)
                         window.run_js('navigate("settings"); document.querySelector(".macos-update-card").scrollIntoView({block:"center"})')
                         name = f'macos-platform-card-{theme}-{width}.png'
                         snapshot(window, output / name)
                         results['screens'].append(name)
+                        # Render the unchanged Windows extension with synthetic metadata only.
+                        if not window.run_js('!!document.querySelector(".windows-update-card")'):
+                            window.run_js((ROOT / 'packaging/windows/console_extension.js').read_text())
+                        window.run_js('state.windows_release={version:"synthetic",core_version:state.version}; document.querySelector(".windows-update-card").scrollIntoView({block:"center"})')
+                        name = f'windows-adapter-{theme}-{width}.png'
+                        snapshot(window, output / name)
+                        results['screens'].append(name)
+                        window.run_js('delete state.windows_release')
                         for panel in range(5):
                             window.run_js('document.querySelector("#macos-onboarding").showModal(); document.querySelector(\'[data-ob-step="' + str(panel) + '"]\').click()')
                             name = f'macos-onboarding-{panel + 1}-{theme}-{width}.png'
@@ -183,7 +207,7 @@ def main():
                 window.run_js('location.href="https://example.invalid/"')
                 time.sleep(.3)
                 results['navigation_bound'] = macos_console.local_page(window.get_current_url(), manager.origin)
-                results['success'] = all(results.get(k) for k in ('native_clipboard', 'cancelled_export', 'csv_export', 'real_save_panel_cancel', 'real_save_panel_save', 'key_cleared_on_close', 'navigation_bound'))
+                results['success'] = all(results.get(k) for k in ('old_worker_warning', 'route_is_not_inference', 'native_clipboard', 'cancelled_export', 'csv_export', 'real_save_panel_cancel', 'real_save_panel_save', 'key_cleared_on_close', 'navigation_bound'))
             except Exception as error:
                 results['error_type'] = type(error).__name__
                 # This probe contains synthetic content only; keep diagnostic stage local.

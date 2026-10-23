@@ -1,5 +1,7 @@
 # 驗收與交付矩陣
 
+R-23／D-29 的 Mac 公開 Worker 部署、全鏈合成推論與管理台證據修補見 [公開 API 上線收據](qa/2026-10-23-macos-public-api.md)。套件發布、已安裝來源與公開 Worker 驗證須分別記錄；不得以 401 路由探查或 health.online 代替真推論。
+
 Windows **0.9.2 已合併、發布並升級正式安裝**：改名、全機 runtime 唯一、native＋source、真標準使用者／TS session、明確停止後公開推論失敗、重啟後原 URL／KEY／資料與成本保留，見 [最終 Windows 收據](qa/2026-10-23-windows-machine-runtime.md)。Mac／Cloud 未在此輪部署。
 
 Mac **0.9.1-mac.1 已合併、發布 source Release、公開下載安裝並完成 owner 更新／真 HTTPS 驗證**；最終 SHA、附件 hash、CI 與資料保留證據見 [Mac 發布收據](qa/2026-10-23-macos-release.md)。

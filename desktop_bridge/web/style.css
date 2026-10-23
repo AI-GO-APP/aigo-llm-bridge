@@ -250,7 +250,8 @@ dialog::backdrop { background: rgba(5, 5, 6, .55); backdrop-filter: blur(3px); }
 .dirty-note { color: var(--warning); font-size: 12px; margin-top: 8px; }
 .preview-notice { font-size: 12px; padding: 10px 14px; margin-bottom: 22px; background: var(--accent-bg); border: 1px dashed var(--accent); border-radius: 7px; color: var(--ink-2); }
 .mobile-shutdown { display: none; }
-.integration-endpoint, .integration-models, .integration-example, .connection-test-card { margin-bottom: 22px; }
+.integration-endpoint, .integration-models, .integration-example, .connection-test-card, .public-endpoint-card { margin-bottom: 22px; }
+.public-endpoint-body { padding: 0 22px 16px; display: grid; gap: 12px; overflow-wrap: anywhere; }
 .integration-endpoint .endpoint-row { margin-bottom: 16px; }
 .integration-auth { padding: 0 22px 20px; }
 .integration-auth > code { display: block; font: 12px var(--mono); margin-bottom: 10px; overflow-wrap: anywhere; }
@@ -264,7 +265,7 @@ dialog::backdrop { background: rgba(5, 5, 6, .55); backdrop-filter: blur(3px); }
 .example-code { margin: 0 22px 22px; padding: 20px; white-space: pre; overflow: auto; max-height: 600px; }
 .test-key-row { display: flex; align-items: end; gap: 16px; padding: 0 22px 18px; }
 .test-key-row label { flex: 1; min-width: 0; }
-.test-model-options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 22px 16px; }
+.test-model-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 0 22px 16px; }
 .test-model-options label { min-width: 0; }
 .test-privacy, .test-run-note { padding: 0 22px 16px; font-size: 12px; overflow-wrap: anywhere; }
 .test-results { display: grid; grid-template-columns: 1fr 1fr; }
@@ -330,7 +331,7 @@ dialog::backdrop { background: rgba(5, 5, 6, .55); backdrop-filter: blur(3px); }
   .filters label { flex: 1; }
   .filters select { min-width: 100px; }
   .settings-card { padding: 20px; }
-  .integration-example .card-heading { flex-wrap: wrap; }
+  .integration-example .card-heading, .public-endpoint-card .card-heading { flex-wrap: wrap; }
   .mobile-shutdown { display: block; margin-top: 22px; }
   .modal-actions > button { flex: 1 1 auto; white-space: normal; }
 }

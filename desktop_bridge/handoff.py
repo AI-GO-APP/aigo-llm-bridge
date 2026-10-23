@@ -2,7 +2,7 @@
 import json
 
 
-def integration(store, model=None, providers=('claude','codex'), key=None):
+def integration(store, model=None, providers=('claude','codex'), key=None, public_status=None):
     origin=store.get('public_url')
     if not origin:raise ValueError('請先完成自有 Cloudflare 部署。')
     models=[m for m in store.get('models') if m['provider'] in providers]
@@ -18,7 +18,17 @@ def integration(store, model=None, providers=('claude','codex'), key=None):
     config={'base_url':base,'api_key_env':'LLM_BRIDGE_KEY','model':selected['id'],
             'stream':False,'timeout_seconds':100,'max_retries':0}
     credential=('LLM_BRIDGE_KEY='+key if key else 'LLM_BRIDGE_KEY 由擁有者另行提供；放入執行環境的 secret 設定。')
+    status = public_status or {'state': 'unchecked', 'tests': []}
+    status_text = {'needs_update': '公開 Worker 缺少新路徑：請先原地更新同一 Worker；Decisions／模型探索尚不可交付。',
+                   'routes_reachable': '公開新路徑已可達認證閘門；仍需使用你的 key 完成真實推論驗收。',
+                   'unreachable': '公開路由檢查未完成：請檢查網路、Worker 與裝置連線。'}.get(status.get('state'),
+                   '公開 Worker 尚未檢查或證據已過期；以下是本機支援的路徑，不能當成外網已驗證。')
+    evidence = [v for v in status.get('tests', []) if v.get('model') == selected['id']]
+    evidence_text = json.dumps(evidence, ensure_ascii=False) if evidence else '尚無此模型的公開推論驗收紀錄。'
     prompt=f'''請將此專案的主要文字 LLM provider 接到我的裝置 Bridge，先檢查現有程式再修改設定與呼叫端。
+公開狀態：{status_text}
+Worker 版本：{status.get('worker_version') or '未知'}；路由檢查時間（Unix）：{status.get('checked_at') or '尚未檢查'}。
+此模型的推論驗證 metadata：{evidence_text}（僅當次程序 RAM 紀錄；時間後續可能失效）。
 Base URL: {base}
 Models GET: {base}/models
 Model capabilities GET: {capabilities}
@@ -48,4 +58,5 @@ AI EA Cloud 整合另見 docs/AI-EA-CLOUD-BEST-PRACTICE.md；該 Cloud 直接以
     return {'config':config,'request':payload,'prompt':prompt,'contains_key':bool(key),
             'model_capabilities_url':capabilities,'models_refresh_url':origin+'/bridge/v1/models/refresh',
             'models_probe_url':origin+'/bridge/v1/models/probe',
+            'public_status': status,
             'decisions':{'url':decisions_url,'request':decision_payload,'response_path':'answers','mode':'emulated'}}

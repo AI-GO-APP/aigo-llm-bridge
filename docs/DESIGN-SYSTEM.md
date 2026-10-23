@@ -1,5 +1,7 @@
 # 前端設計規範
 
+串接頁的公開入口狀態卡沿用現有 card／button／muted／test-privacy tokens，分列本機支援、Worker 版本、裝置在線、路由檢查時間及各模型／協定的推論證據。unchecked／過期、404 待更新、route reachable、推論通過分開呈現；檢查按鈕不推論，Chat／Decisions 測試由明確協定選項觸發。舊 Worker 的 unsupported 範例不可複製；未知狀態範例與 handoff 明示待驗。窄版沿用單欄與現有表單捲動，不新增頁面或平台依賴。
+
 設計版本：Local Token Buffet Bridge。使用深藍導覽／表頭、靛藍操作、暖灰淺底／深空深底、多層表面與 10／14px 圓角；設計 tokens 與互動原則由本專案獨立維護。
 
 實作正本：[style.css](../desktop_bridge/web/style.css)、[index.html](../desktop_bridge/web/index.html)。保留 LLM Bridge 產品識別；不把它包裝成合約系統。Windows／browser 共用同一份 DOM／CSS，平台檔只適配原生功能。

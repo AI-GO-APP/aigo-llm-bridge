@@ -49,6 +49,12 @@
 
 ## [Unreleased]
 
+## [0.9.3-mac.1] - 2026-10-23
+
+- 管理台區分本機版本、公開 Worker 版本／路由、真實 Chat／Decisions 驗證及時間；一般路由檢查不傳 Key、不推論、不部署。
+- 舊 Worker 的新路徑 404 顯示更新需求；串接說明附實際證據及未驗狀態，避免把本機功能當成外網已啟用。
+- Mac source 更新保留 profile、固定入口與 owner Key；公開 API 上線驗收與安裝包發布分別記錄。
+
 ## [0.9.2] - 2026-10-23
 
 - Adopt independent Local Token Buffet Bridge branding in product UI, documentation, repository description and links; preserve existing device and update identities.

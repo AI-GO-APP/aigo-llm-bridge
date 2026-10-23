@@ -1,5 +1,7 @@
 # 給其他電腦的 AI IDE / Web IDE
 
+管理台「公開入口狀態」分開顯示本機版本、Worker 路由及真實推論證據。先按「檢查公開路由」（不傳 Key、不推論）；若新路徑 404，在原帳戶更新同一 Worker。route reachable 仍須用你的服務 Key 分別測試 Chat／Decisions；驗證時間、模型及成本僅留本次程序 RAM。複製的訊息帶入已知狀態，CLI 無證據時明示未驗；不得將本機支援清單當成公開路由已部署。
+
 完成自己的 BYO 部署後，在本機管理台建立長效 API key，按「複製給 AI IDE（含金鑰）」；只在該 key 的一次性視窗提供。關閉後無法查回明文。日後可在「串接指南」複製不含 key 的標準說明，再分別設定呼叫端的 secret。CLI 對應為 `key-create --providers codex --label 'My service' --handoff`；只輸出一次，不能另存為 repo 檔案。要重新取得非秘密說明用 `handoff --providers codex`。
 
 標準訊息會帶入真實的 Base URL、GET models、POST chat/completions、模型、環境變數名稱、最小 JSON、timeout／重試設定、usage.cost 語意與不支援的參數。帶入的網址來自此安裝的裝置設定，不含發布方帳戶或歷史測試 URL。

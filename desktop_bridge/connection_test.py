@@ -1,5 +1,6 @@
 """One synthetic inference through the configured client endpoint. RAM only."""
 import json
+import math
 import ssl
 import time
 import urllib.error
@@ -13,7 +14,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None  # Never forward a client credential to a redirected destination.
 
 
-def probe(endpoint, model, key):
+def probe(endpoint, model, key, protocol='chat'):
     started = time.monotonic()
     status = None
     success = False
@@ -21,8 +22,13 @@ def probe(endpoint, model, key):
     opener = urllib.request.build_opener(
         urllib.request.ProxyHandler({}), NoRedirect(),
         urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=certifi.where())))
-    request = urllib.request.Request(endpoint + '/chat/completions',
-        data=json.dumps({'model': model, 'messages': [{'role': 'user', 'content': 'Reply exactly PONG.'}], 'stream': False}).encode(),
+    decisions = protocol == 'decisions'
+    path = endpoint.removesuffix('/api/v1').removesuffix('/v1') + '/api/alpha/decisions' if decisions else endpoint + '/chat/completions'
+    body = ({'model': model, 'state': 'A synthetic object is blue.', 'questions': {'blue': {'type': 'noul', 'instructions': 'Is the object blue?'}}}
+            if decisions else {'model': model, 'messages': [{'role': 'user', 'content': 'Reply exactly PONG.'}], 'stream': False})
+    cost = None
+    request = urllib.request.Request(path,
+        data=json.dumps(body).encode(),
         headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json',
                  'User-Agent': 'local-token-buffet-bridge-connection-test/1.0'})
     try:
@@ -34,12 +40,22 @@ def probe(endpoint, model, key):
                 raw = response.read(65537)
                 try:
                     value = json.loads(raw) if len(raw) <= 65536 else {}
-                    success = value['choices'][0]['message']['content'].strip() == 'PONG'
+                    if decisions:
+                        answer = value['answers']['blue']['noul']
+                        cost = value['usage']['cost']
+                        success = (type(answer) in (int, float) and 0 <= answer <= 1 and value['model'] == model
+                                   and type(cost) in (int, float) and math.isfinite(cost) and cost >= 0)
+                    else:
+                        success = value['choices'][0]['message']['content'].strip() == 'PONG'
+                        cost = value.get('usage', {}).get('cost')
+                        success = (success and value.get('model') == model and type(cost) in (int, float)
+                                   and math.isfinite(cost) and cost >= 0)
                 except (ValueError, TypeError, KeyError, IndexError, AttributeError): pass
                 code = 'ok' if success else 'unexpected_response'
                 message = '已取得模型測試回應。' if success else '已連線，但未取得預期的模型測試回應。'
             else:
                 code, message = {
+                    404: ('worker_update_required', '公開入口沒有此路徑；請在原帳戶更新同一 Worker，再檢查路由。'),
                     401: ('unauthorized', '金鑰無效或尚未同步；新金鑰請稍後再試。'),
                     403: ('forbidden', '來源權限不足或入口拒絕請求，請檢查金鑰權限與入口設定。'),
                     429: ('rate_limited', '已達請求上限，請稍後再試。'),
@@ -53,4 +69,5 @@ def probe(endpoint, model, key):
             code, message = 'timeout', '等待回應超過 60 秒；工作可能仍在執行，請先查看請求紀錄。'
     except (OSError, ValueError): pass
     return {'success': success, 'http_status': status, 'elapsed_ms': round((time.monotonic()-started)*1000),
-            'code': code, 'message': message}
+            'code': code, 'message': message,
+            'cost_usd': cost if type(cost) in (int, float) and math.isfinite(cost) and cost >= 0 else None}

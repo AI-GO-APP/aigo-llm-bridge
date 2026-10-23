@@ -54,6 +54,37 @@ def test_local_boundary_and_static_assets(console):
     assert request(manager, "/../store.py")[0] == 404
 
 
+def test_public_checks_are_explicit_and_do_not_infer(console, monkeypatch):
+    m,_=console;m.store.set('public_url','https://owner.example')
+    calls=[]
+    def check(origin):
+        calls.append(origin)
+        return {'checked_at':1,'worker_version':'0.3.4-relay','online':True,
+                'routes':{'decisions':{'state':'unsupported','http_status':404}}}
+    monkeypatch.setattr('desktop_bridge.public_endpoint.inspect',check)
+    monkeypatch.setattr('desktop_bridge.management.probe',lambda *_: (_ for _ in ()).throw(AssertionError('inference')))
+    assert request(m)[0]==200 and not calls
+    assert request(m,'/manage/check-public',{}, {'Authorization':''})[0]==401 and not calls
+    assert request(m,'/manage/check-public',{})[0]==200 and calls==['https://owner.example']
+    assert not m.store.logs()
+
+
+def test_explicit_decisions_test_records_public_metadata_only(console,monkeypatch):
+    m,_=console;m.store.set('public_url','https://owner.example')
+    _,key=m.store.create_key('synthetic',['codex'])
+    seen=[]
+    def run(endpoint,model,token,protocol):
+        seen.append(protocol)
+        assert token==key
+        return {'success':True,'http_status':200,'cost_usd':.01,'elapsed_ms':1,'code':'ok','message':'ok'}
+    monkeypatch.setattr('desktop_bridge.management.probe',run)
+    code,v,_=request(m,'/manage/test-connection',{'provider':'codex','model':'openai/gpt-6-astra','key':key,'endpoint':'https://owner.example/api/v1','protocol':'decisions'})
+    assert code==200 and v['success'] and seen==['decisions']
+    evidence=request(m)[1]['public_endpoint']['tests']
+    assert evidence[0]['protocol']=='decisions' and evidence[0]['success']
+    assert key not in json.dumps(request(m)[1])
+
+
 def test_key_lifecycle_and_no_secret_readback(console):
     m, _ = console
     code, created, _ = request(m, "/manage/keys/create", {"label":"UI test", "providers":["claude"], "rpm":12})
