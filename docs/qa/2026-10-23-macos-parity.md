@@ -4,7 +4,7 @@
 
 ## 來源及範圍
 
-- Windows 0.7.3 主線 `d3f2707` 及 0.8.0 候選 `22c843c`。0.8.0 分支尚未合併，不稱為已發布。
+- 初始來源為 Windows 0.7.3 主線 `d3f2707` 及 0.8.0 候選 `22c843c`；PR #17 最終整合已發布 Windows 0.8.0 的主線 `32eeb80`，保留其發布收據，改以 main 為合併目標。
 - 原 Mac 安裝 `0.6.6-mac.2`；同步六頁設計、首次設定、BYO／KEY／HTTPS 交付、WKWebView、AC sleep 與來源更新。
 - 沿用原 Mac profile，不操作遠端 Windows、其他 Cloud 專案、個人 CLI 登入或鎖定設定。
 - 電源寫入、授權取消及還原使用 fake adapter；本機只讀現有設定。真 OAuth／新 Worker 部署不因升級重做。
@@ -30,6 +30,13 @@
 ![Mac 設定與來源更新卡](assets/macos-0.8.0-platform-dark.png)
 
 ![Mac 首次設定與電源同意](assets/macos-0.8.0-onboarding-light.png)
+
+## 最終主線整合複驗
+
+- PR #17 改以已發布 Windows 0.8.0 的 main 為目標；衝突處保留 Windows 發布紀錄與 Mac 共用 coordinator hooks，Windows package target／signed policy 未改。
+- 整合後本機 Python 回歸仍為 241 passed、4 skipped；relay 7 及 Windows adapter 2 通過，版本／文件／機敏掃描通過。沙箱限制 loopback bind 的失敗已在取得權限後重跑通過。
+- 已安裝 runtime 與最終來源的 Python／JS／CSS／HTML 逐檔相同；LaunchAgent 與 health 通過。再次鎖定狀態下 HTTPS models 200／七模型，合成 chat 200／6.102 秒／0.008452 USD；請求前後鎖定，既有 endpoint、全部 KEY rows、模型與四路容量相同，臨時驗收 KEY 已撤銷。
+- 前一來源 `f5d8487` 的 [Windows 真安裝及更新回歸](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39893545138) 完成：核心、真 Setup→A→B 與拋棄 runner 的原生 AC 套用／還原均通過。主線整合後仍須等待新來源的全部 CI 成功才合併。
 
 ## 已知邊界與操作紀錄
 
