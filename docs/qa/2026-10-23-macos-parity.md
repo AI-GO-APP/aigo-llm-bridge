@@ -1,6 +1,6 @@
-# Mac 0.8.0 source 同步驗收
+# Mac 0.8.1 source 同步驗收
 
-狀態：本機 source 適配、原生 renderer 及現有 Mac 安裝更新／外部 HTTPS 通過。來源 `4445670`；未發布 Mac release，未驗項不得當成通過。
+狀態：本機 source 適配、原生 renderer 及現有 Mac 安裝更新／外部 HTTPS 通過。初輪來源 `4445670`；最終安全整合來源 `d50ab50`，Mac source `0.8.1-mac.1`；未發布 Mac release，未驗項不得當成通過。
 
 ## 來源及範圍
 
@@ -37,6 +37,13 @@
 - 整合後本機 Python 回歸仍為 241 passed、4 skipped；relay 7 及 Windows adapter 2 通過，版本／文件／機敏掃描通過。沙箱限制 loopback bind 的失敗已在取得權限後重跑通過。
 - 已安裝 runtime 與最終來源的 Python／JS／CSS／HTML 逐檔相同；LaunchAgent 與 health 通過。再次鎖定狀態下 HTTPS models 200／七模型，合成 chat 200／6.102 秒／0.008452 USD；請求前後鎖定，既有 endpoint、全部 KEY rows、模型與四路容量相同，臨時驗收 KEY 已撤銷。
 - 前一來源 `f5d8487` 的 [Windows 真安裝及更新回歸](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39893545138) 完成：核心、真 Setup→A→B 與拋棄 runner 的原生 AC 套用／還原均通過。主線整合後仍須等待新來源的全部 CI 成功才合併。
+
+## 0.8.1 安全主線整合
+
+- 驗收期間 main 新增 `fda2435`（PR #18）：保留整批 Windows 0.8.1／core 0.6.7 修補及 Windows package target，Mac 候選提升為 `0.8.1-mac.1`；解決版本、文件及 D 編號衝突。Mac onboarding prompt 同步 Node／Wrangler 安全基線，Mac workflow actions 固定 commit。
+- 整合後本機 251 passed、4 skipped；Node relay／Windows adapter 共 10 passed，版本／產品文件／機敏掃描通過。
+- 真實 source 升級 `0.8.0-mac.1` → `0.8.1-mac.1`：同一臨時 KEY 升級前後 models 200；device／URL／帳戶／Worker／全部既有 KEY rows／七模型／四路容量一致。鎖定前後 chat 200、6.365 秒、usage.cost=0.008450 USD；request ID 去重、JSON schema 200、工具提案 200、unsupported_parameter 400 及 handoff 皆通過，臨時 KEY 撤銷。
+- Mac 共用安全程式包含 Relay redirect 拒絕／有界讀取、provider environment allowlist、stdin caller data 與 schema 子程序預算。Windows Job Object 的記憶體限制不能當成 Mac 保證，見 MACOS-SETUP；既有 Worker 未自動部署。
 
 ## 已知邊界與操作紀錄
 
