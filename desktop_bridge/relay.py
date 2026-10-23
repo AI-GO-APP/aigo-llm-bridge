@@ -10,6 +10,20 @@ import random
 from concurrent.futures import ThreadPoolExecutor
 
 COST_HEADERS=('X-Bridge-Cost-Source','X-Bridge-Pricing-Model','X-Bridge-Pricing-Fetched-At')
+MAX_CLOUD_BODY=6_100_000  # A 3 MB request JSON string can double during relay encoding.
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self,*_args,**_kwargs):
+        return None
+
+
+def read_cloud(response,limit=MAX_CLOUD_BODY):
+    raw=response.read(limit+1)
+    if len(raw)>limit:raise ValueError('Relay response too large')
+    value=json.loads(raw)
+    if not isinstance(value,dict):raise ValueError('Invalid relay response')
+    return value
 
 from . import secret
 
@@ -20,7 +34,7 @@ class Relay:
         self.agent_session=uuid.uuid4().hex
         self.stop_event=threading.Event(); self.thread=None; self.state="未連線"
         self.pool=ThreadPoolExecutor(max_workers=9,thread_name_prefix="relay-forward")
-        self.cloud_opener=urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=certifi.where())))
+        self.cloud_opener=urllib.request.build_opener(NoRedirect(),urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=certifi.where())))
         self.cloud_opener.addheaders=[("User-Agent","aigo-llm-bridge/0.2.0")]
     def start(self):
         if self.thread and self.thread.is_alive(): self.stop_event.clear(); return
@@ -43,7 +57,7 @@ class Relay:
                 def cloud(path,body):
                     raw=json.dumps(body,separators=(",",":")).encode()
                     req=urllib.request.Request(base+path,data=raw,headers={"Authorization":"Bearer "+device_key,"Content-Type":"application/json"})
-                    with self.cloud_opener.open(req,timeout=30) as res: return json.loads(res.read())
+                    with self.cloud_opener.open(req,timeout=30) as res: return read_cloud(res)
                 item=cloud("/agent/poll",{"key_digests":digests,"agent_session":self.agent_session})
                 self.state="已連線"; backoff=1
                 work=item.get("request")
@@ -78,7 +92,7 @@ class Relay:
                     result={"id":result["id"],"status":502,"body":'{"error":{"code":502,"message":"Response too large"}}'}
                 req=urllib.request.Request(base+"/agent/result",data=json.dumps(result,separators=(",",":")).encode(),
                     headers={"Authorization":"Bearer "+device_key,"Content-Type":"application/json"})
-                with self.cloud_opener.open(req,timeout=30) as response: response.read(1000)
+                with self.cloud_opener.open(req,timeout=30) as response: read_cloud(response,1000)
                 result=None
             except Exception:
                 self.state="回傳中斷／等待下一筆請求"

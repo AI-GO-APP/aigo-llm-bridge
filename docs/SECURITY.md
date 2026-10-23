@@ -1,0 +1,39 @@
+# 現行 Windows 安全邊界與更新
+
+適用 Windows 0.8.1 安全候選、共用核心 0.6.7。發布／安裝驗收狀態見 [ACCEPTANCE](ACCEPTANCE.md)。這不是完整 OpenRouter 等價或整台電腦零痕跡保證。
+
+## 流量與權限
+
+第三方以 HTTPS、長效 client KEY 呼叫安裝者自己的 Worker。Worker／Cloudflare 終結 TLS，因此會接觸原文與 client KEY；DEVICE_KEY 可冒充裝置，必須與一般 client KEY 分開保護。本機只監聽 loopback，Relay 主動向外 poll，不能轉送管理端點。client KEY 不取得本機管理 token，也不能讀其他 KEY 的工作結果。
+
+Relay 一律拒絕 redirect，包括同來源，避免憑證被帶到其他主機或 HTTP；poll 回應最多 6.1 MB（涵蓋 3 MB request 的字串跳脫），ack 最多 1 KB。超限或格式錯誤只顯示固定連線狀態，不記錄 payload／headers／例外原文。
+
+## 內容不落地與 CLI
+
+Bridge 只持久保存 allowlist metadata、牌價、設定與 OS 保護憑證。請求／結果經 RAM、stdin/stdout pipe 與 loopback；不建立 prompt／schema 暫存檔，不把動態內容放在 argv。Claude 的 caller system／developer 指令與 response schema 以 stdin 包裝後處理，使用固定服務 system prompt；不是原生 API system role 或 CLI `--json-schema` 的完全等價映射。Structured output 仍由 Bridge 驗證，不符合回 502，已發生的 token／成本仍留回執。
+
+Codex 使用 ephemeral thread、拒絕非允許工具事件；Claude 使用 restricted、空 tools／MCP、停 session persistence。共用 provider environment 採 OS／訂閱目錄／proxy 必要項 allowlist，不傳一般雲端秘密。Windows Job Object 只管理自有程序，不是阻擋所有本機檔案讀取的 OS sandbox；CLI 版本變更仍需負面測試。不操作其他正在使用的 CLI session 或全域登入。
+
+Bridge 不聲稱控制供應商／Cloudflare 內部保留、Windows pagefile／dump／EDR、瀏覽器／clipboard 歷史。KEY label、自訂模型名稱也屬管理資料，不應放入敏感訊息。Windows DPAPI 不保護同一 OS 使用者已被接管的情況。
+
+## Schema 運算預算
+
+Windows validator Job Object 另限制單程序 commit memory 256 MiB；工具提案一樣受時間／並行／輸入預算限制。Claude 若只回一個完整 JSON code fence，可去除外框後再嚴格驗證；不擷取混雜說明、不修補 JSON、不自動重送付費推論。
+
+response_format 與工具參數 schema 先檢查 aggregate ≤256 KiB、≤8192 nodes、深度≤24，不接受 `$ref`／`$dynamicRef`（含本地引用）。超限／引用回 400 unsupported_parameter；無效定義回 400 invalid_request。Schema 檢查與輸出驗證放在獨立自有程序，單次最多 3 秒、最多同時 4 個；過載回 429，輸出驗證失敗或超時回 502。程序 stdin 承載內容、stdout 只有固定結果，無原文檔或 traceback。
+
+Worker 範本把正在讀 body 的工作一併計入總上限 9，body 讀取 deadline 15 秒。**Windows 更新不會自動部署 Worker**；既有 BYO 安裝者須另行授權更新原 Worker，沿用帳戶／名稱／DEVICE_KEY／URL／client KEY。來源測試通過不代表雲端部署已修補。
+
+## 依賴與供應鏈
+
+Windows builder 最低 Python 3.14.9／OpenSSL 3.5.9／certifi 2026.10.19；實際值與 CA SHA256 寫入 self-test。此 CA 修補對應 [certifi 維護者公告](https://github.com/certifi/python-certifi/security/advisories/GHSA-6q48-6c7w-9gw2)。版本基線是當期最低要求，仍需持續 CVE 查詢。
+
+Windows 全依賴及 announce signer 子集使用 published artifact SHA256 鎖檔，安裝時 `--require-hashes`；更新鎖檔工具 `packaging/windows/refresh_lock.py` 不執行下載套件程式。Wrangler 4.152.0 與 transitive dependencies 固定於 `cloudflare/package-lock.json`；用 `npm ci --ignore-scripts --prefix cloudflare`，或由安裝者更新經驗證的全域 CLI。Node 安全基線：22.23.4+、24.22.1+、26.12.1+；helper 不默默修改全球 Node／Wrangler。
+
+`tools/audit_dependencies.py` 只送套件名稱／版本到 OSV，查鎖定 Python、Wrangler 子樹及 Velopack；失聯、不完整結果或命中都不放行。Windows build/publish 與每日 security workflow 執行，不能把 OSV 無命中當作 native CLI、Windows、WebView2、workerd 或未知漏洞的完整 SBOM 驗證。Windows／共用 CI 第三方 actions 固定 commit SHA；Mac workflow 不在本次變更範圍。
+
+既有安裝以原 Ed25519 公鑰驗更新 policy、target／sequence／有效期與套件 hash；不換 signer。初次未簽 Authenticode 的安裝包仍需可信下載來源，更新 hash 不取代初次信任。環境 signer、repository／environment 權限與帳戶 MFA／review protection 由擁有者管理，本次不擅改組織授權。
+
+## 回報與修補驗收
+
+不要把憑證、正式 I/O 或未修漏洞的詳細 exploit 發到公開 issue。先私下整理受影響版本、觸發條件與合成重現證據。修補需有 source／native package／真實呼叫／更新前後裝置保留證據，再宣布。單一 canary 未成功不能宣稱沒有任何檔案存取風險。

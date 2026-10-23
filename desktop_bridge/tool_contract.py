@@ -2,7 +2,7 @@
 import json
 import re
 import uuid
-from jsonschema import Draft202012Validator, SchemaError, ValidationError
+from .schema_guard import check_schemas,validate_instances
 from .errors import BridgeError
 
 
@@ -27,11 +27,10 @@ def proposal_request(body):
             raise BridgeError(400,'invalid_request','函式名稱或定義無效。','tools')
         schema=f.get('parameters',{'type':'object','properties':{}})
         if not isinstance(schema,dict):raise BridgeError(400,'invalid_request','函式 schema 必須是物件。','tools')
-        try:Draft202012Validator.check_schema(schema)
-        except SchemaError:raise BridgeError(400,'invalid_request','函式 schema 無效。','tools') from None
         if schema.get('type')!='object' or re.search(r'"\$(?:ref|dynamicRef)"',json.dumps(schema)):
             raise BridgeError(400,'unsupported_parameter','函式 schema 暫不支援引用。','tools')
         definitions[f['name']]=schema
+    check_schemas(list(definitions.values()),'tools')
     if selected is not None and selected not in definitions:raise BridgeError(400,'invalid_request','指定函式不存在。','tool_choice')
     parallel=body.get('parallel_tool_calls',True)
     if not isinstance(parallel,bool):raise BridgeError(400,'invalid_request','parallel_tool_calls 必須是 boolean。','parallel_tool_calls')
@@ -69,12 +68,15 @@ def proposal_request(body):
 def proposal_message(value,definitions):
     calls=value['calls']
     message={'role':'assistant','content':value['content']}
+    pairs=[]
     for call in calls:
         try:
             args=json.loads(call['arguments'])
             if not isinstance(args,dict) or call['name'] not in definitions:raise ValueError()
-            Draft202012Validator(definitions[call['name']]).validate(args)
-        except (ValueError,TypeError,KeyError,ValidationError):
+            pairs.append([definitions[call['name']],args])
+        except (ValueError,TypeError,KeyError):
             raise BridgeError(502,'invalid_tool_proposal','工具提案參數不符合 schema。') from None
+    if pairs and not validate_instances(pairs):
+        raise BridgeError(502,'invalid_tool_proposal','工具提案參數不符合 schema 或超過安全驗證預算。')
     if calls:message['tool_calls']=[{'id':'call_'+uuid.uuid4().hex,'type':'function','function':{'name':c['name'],'arguments':c['arguments']}} for c in calls]
     return message,'tool_calls' if calls else 'stop'

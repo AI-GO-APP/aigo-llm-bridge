@@ -12,7 +12,7 @@ import threading
 import time
 import uuid
 
-from jsonschema import Draft202012Validator, ValidationError
+from .schema_guard import validate_instances
 
 from . import __version__, providers
 from .contract import validate
@@ -132,8 +132,8 @@ class Runtime:
                 try:
                     value=json.loads(text)
                     if not isinstance(value,dict): raise ValueError()
-                    if spec.schema: Draft202012Validator(spec.schema).validate(value)
-                except (ValueError,ValidationError):
+                    if spec.schema and not validate_instances([[spec.schema,value]],task.cancel):raise ValueError()
+                except ValueError:
                     raise BridgeError(502,"invalid_structured_output","模型輸出未符合 JSON 格式或指定 schema。") from None
             prompt=usage['prompt_tokens'];completion=usage['completion_tokens']
             task.pricing_headers=quote.headers

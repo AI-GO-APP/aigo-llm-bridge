@@ -220,7 +220,7 @@ class Onboarding:
         return {'prompt': f'''請協助完成這台 Windows LLM Bridge 的 BYO Cloudflare 設定。你是 AI IDE 協作者，不要呼叫 Claude/Codex 的推論 CLI 當作設定 agent。
 先讀 {resources / 'docs/ONBOARDING.md'} 及 {resources / 'skills/byo-cloudflare/SKILL.md'}；有 repo 時另讀 docs/README.md。
 以原設定檔為準，不使用文件歷史網址／其他人的帳戶。不要更改本機 LLM 登入、正式 Windows 電源設定、現有 endpoint、device_id 或 client KEY，不碰 Mac 或其他 Cloud 專案。
-檢查 Node.js 22+、Wrangler 4.95.0、wrangler whoami --json。缺少時引導本人安裝與 wrangler login OAuth；不要要求 token、auth.json、DPAPI 檔或 Global API key。
+檢查 Node.js 24.22.1+（或 22.23.4+）、Wrangler 4.152.0、wrangler whoami --json。缺少時引導本人安裝與 wrangler login OAuth；不要要求 token、auth.json、DPAPI 檔或 Global API key。
 使用者必須明確選定自有 account：{account}。已綁定帳戶必須相同；不能因權限不足改用別的帳戶。
 先規劃：{base} byo plan --account-id <明確選定的 account ID>{arg}
 展示 Worker 名稱與帳戶後，依本次本人部署授權執行：{base} byo deploy --account-id <同一 account ID>{arg}
