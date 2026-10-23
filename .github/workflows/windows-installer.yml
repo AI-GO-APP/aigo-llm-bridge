@@ -12,6 +12,33 @@ concurrency:
   group: windows-installer-ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  machine-ownership:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.14.9'
+      - name: Locked test runtime
+        shell: pwsh
+        run: |
+          python -m venv .desktop-build/venv
+          .desktop-build/venv/Scripts/python -m pip install --require-hashes -r packaging/windows/requirements-lock.txt
+      - name: Real standard-user and TS-session ownership on disposable runner
+        shell: pwsh
+        run: .desktop-build/venv/Scripts/python tools/verify_windows_machine.py parent --output "$env:RUNNER_TEMP/bridge-machine-ownership"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: windows-machine-ownership
+          path: |
+            ${{ runner.temp }}/bridge-machine-ownership/acceptance.json
+            ${{ runner.temp }}/bridge-machine-ownership/*-failure.json
+            ${{ runner.temp }}/bridge-machine-ownership/**/worker-failure.json
+          if-no-files-found: warn
   isolated-update:
     runs-on: windows-2025
     timeout-minutes: 30

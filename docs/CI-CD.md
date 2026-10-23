@@ -1,5 +1,7 @@
 # CI/CD 與平台責任
 
+Windows installer regression 與 publish 均執行 `tools/verify_windows_machine.py parent` 的實際跨使用者／Terminal Services session 閘門。只在可拋棄 Actions runner 建立暫時標準帳號及 SYSTEM 測試 broker，驗證後移除；不在使用者工作站執行、不隨產品安裝、不使用真訂閱或部署 Worker。密碼不落檔或 argv，child 不繼承 CI credentials；artifact 只上傳 acceptance／經篩選的失敗類別，不包含 token handle 指令或設定檔。
+
 所有平台共用 `python tools/lint_branding.py`，檢查產品文字及 repo 連結；Windows 原生 renderer 另外檢查實際頁面標題、側欄與頁面文字。識別與既有安裝相容性契約見 [BRANDING](BRANDING.md)。
 
 本文件參照 AI EA 的分平台、來源／包／宣布／安裝證據分層，描述 **Bridge 自己的實作**。不複製 AI EA Cloud 的授權、Supabase、發布 RPC 或跨平台 UUID 協定；本專案沒有中央 Supabase，BYO Worker 也不是軟體更新站。

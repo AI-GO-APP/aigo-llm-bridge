@@ -72,7 +72,17 @@ Windows 0.8.1 的安全邊界、依賴與 Schema／CLI 傳輸限制見 [SECURITY
 
 Mac source 0.9.1-mac.1 在共用啟動入口的 profile 鎖之後、Store／Runtime／API／relay 之前，以 `macos_instance.MachineInstance` 獨占綁定 `127.0.0.1:8919`。固定鎖地址不隨 data-dir、安裝位置、API port 或 OS 使用者改變；只 bind、不 listen、不傳送資料、不提供管理能力，不使用 reuse socket options。OS 在正常／異常程序退出時釋放；fd 不傳給子程序。相同 profile 的重開仍只喚回原視窗。不同 profile 或其他程式占用鎖地址時拒絕啟動，不嘗試辨識／停止占用者。
 
-前景拒絕回 exit 2 並寫固定 stderr 訊息；`--background` 因忙碌拒絕回 exit 0，避免 LaunchAgent 的失敗重啟迴圈，須在原服務正常結束後明確重新啟動。其他鎖錯誤回 exit 2，不能退回無鎖執行。全機鎖不包含 profile 路徑／KEY／token；Windows 原生入口待 issue #20 實作。舊版不持有此鎖，升級前須正常停止舊版，不能宣稱可限制任意歷史 binary。
+前景拒絕回 exit 2 並寫固定 stderr 訊息；`--background` 因忙碌拒絕回 exit 0，避免 LaunchAgent 的失敗重啟迴圈，須在原服務正常結束後明確重新啟動。其他鎖錯誤回 exit 2，不能退回無鎖執行。全機鎖不包含 profile 路徑／KEY／token。舊版不持有此鎖，升級前須正常停止舊版，不能宣稱可限制任意歷史 binary。
+
+## Windows 全機單實例
+
+Windows 0.9.2 在同一共用入口、Store／Runtime／HTTP／relay 前取得 `windows_instance.MachineInstance`。使用固定 `127.0.0.1:8919` 的 Winsock `SO_EXCLUSIVEADDRUSE` reservation，只 bind、不 listen、不傳送資料；不同 Windows 使用者及 Terminal Services session 共用核心網路位址。一般權限即可使用，不使用全域 event 的 ACL、不新增常駐系統服務或要求 UAC。正常／異常退出由 OS 釋放，不依賴 PID 檔或掃描其他程序。
+
+同 profile 的原有 session event 仍負責喚回視窗；viewer 不占用另一把 runtime 鎖。不同使用者不分享管理 token 或 DPAPI。忙碌拒絕為 exit 3，包含 background／headless；`ensure_service` 遇到此碼立刻回報，不能每 200ms 重啟被拒程序。native CLI start、GUI／console、source launcher、捷徑與登入自啟最後都走共用入口。其他鎖故障 exit 2，不能退回無鎖模式。
+
+更新先排空、備份、正常停止 service／viewer、等待退出，再啟動新版；全機鎖保留到所有元件停止。關窗 X 只關 viewer，API 與全機所有權仍在；明確結束才停止供應。停止不刪除 Worker URL；在線狀態可能滯後，不能當作實際推論成功證據。
+
+只有非可分發 local_probe 建包可指定隔離 reservation，供同機測試 A→B；正式包沒有環境變數或 CLI 換鎖通道。CI 在可拋棄 runner 建立標準使用者與 SYSTEM 測試 broker，實際跨 TS session 驗證；broker 不隨產品安裝，不接觸 owner 工作站。規格來源：[Microsoft Winsock](https://learn.microsoft.com/en-us/windows/win32/winsock/so-exclusiveaddruse)、[CreateProcessAsUser](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessasuserw)。狀態見 [Windows 收據](qa/2026-10-23-windows-machine-runtime.md)。
 
 Mac 發布由 `packaging/macos/build.py` 以 tracked 公開來源 allowlist 建現行 BYO ZIP（不使用 legacy desktop builder），`macos-source-release.yml` 重跑 native／source／ZIP 真安裝後，以 main commit／hash 發布。source-release.json 讓無 .git 的下載包仍保留來源 SHA；詳細見 [Mac Release](MACOS-RELEASE.md)。
 

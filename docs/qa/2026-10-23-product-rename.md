@@ -12,4 +12,6 @@
 
 沿用原 profile／DPAPI／Keychain／pack ID／channel／執行檔相容名稱／自動啟動項。沒有重建裝置、endpoint、Worker 或 client KEY，也未修改供應商登入。技術 namespace 與 GitHub owner namespace 的處理見 [BRANDING](../BRANDING.md)。
 
-此修改的 Windows 安裝目標為 0.9.1、共用來源版本為 0.9.2。Windows native CI、公開發行及正式更新收據在完成後補充；此文件目前不宣稱它們已通過。不發布或操作 Mac 服務，不部署安裝者 Cloudflare。
+改名 [PR27](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/27) 已合併，來源 `1de50fad55e66f0dcc8d85a5ad930e1d10db01c6`、共用版本 0.9.2；全部 checks 通過，Windows native 54／54、拋棄 runner 電源 8／8。[publish 39906228365](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39906228365) 成功，Windows 0.9.1 已公開。匿名下載、asset size／hash、包內品牌／文件／runtime、舊客戶端更新發現及原簽章共 22 項通過；policy sequence 9、minimum 0.7.0、公鑰 fingerprint `9682eb28e5ab9020`。
+
+使用者追加 issue #20 後，正式 Windows 暫留 0.9.0，等待整合 Windows 0.9.2 後一次受控更新；不能把公開 0.9.1 說成正式機已安裝。後續結果見 [全機單實例收據](2026-10-23-windows-machine-runtime.md)。未發布或操作 Mac 服務，未部署安裝者 Cloudflare。
