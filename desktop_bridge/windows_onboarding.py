@@ -69,14 +69,14 @@ def verify(store, key, model, public_url=None):
     request = urllib.request.Request(endpoint + '/chat/completions', data=json.dumps({
         'model': model, 'messages': [{'role': 'user', 'content': 'Reply exactly PONG.'}], 'stream': False}).encode(),
         headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json',
-                 'User-Agent': 'aigo-llm-bridge-onboarding/1.0'})
+                 'User-Agent': 'local-token-buffet-bridge-onboarding/1.0'})
     started = time.monotonic()
     try:
         sync_deadline = time.monotonic() + 35
         while True:
             try:
                 with opener.open(urllib.request.Request(endpoint + '/models', headers={
-                        'Authorization': 'Bearer ' + key, 'User-Agent': 'aigo-llm-bridge-onboarding/1.0'}), timeout=25) as response:
+                        'Authorization': 'Bearer ' + key, 'User-Agent': 'local-token-buffet-bridge-onboarding/1.0'}), timeout=25) as response:
                     catalog = json.loads(response.read(65537))
                     if response.status != 200 or not any(m.get('id') == model for m in catalog.get('data', [])):
                         return {'success': False, 'http_status': response.status, 'code': 'models_unavailable'}

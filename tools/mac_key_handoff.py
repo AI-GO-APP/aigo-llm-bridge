@@ -56,7 +56,7 @@ def deliver(root, label, rpm):
               '\nKey ID: '+kid+'\n\n'+key+'\n\n請複製到可信的服務端 secret。KEY 保留有效；不要貼回聊天或一般報告。')
         script=('activate\nset serviceKey to '+literal(key)+'\n'+
                 'set handoffText to '+literal(text)+'\n'+
-                'set resultDialog to display dialog handoffText with title "AIGO Mac Bridge — Secret handoff" buttons {"關閉", "複製 KEY", "複製串接訊息"} default button "複製 KEY"\n'+
+                'set resultDialog to display dialog handoffText with title "Local Token Buffet Bridge — Secret handoff" buttons {"關閉", "複製 KEY", "複製串接訊息"} default button "複製 KEY"\n'+
                 'if button returned of resultDialog is "複製 KEY" then\nset the clipboard to serviceKey\n'+
                 'else if button returned of resultDialog is "複製串接訊息" then\nset the clipboard to '+literal(info['prompt'])+'\nend if\n')
         result=subprocess.run(['/usr/bin/osascript','-'],input=script.encode(),capture_output=True)

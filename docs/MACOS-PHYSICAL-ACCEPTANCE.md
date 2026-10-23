@@ -8,7 +8,7 @@
 
 ## 來源、環境與安裝
 
-- Repo：`AI-GO-APP/aigo-llm-bridge`。開始時重新 fetch，main／v0.6.5 均為 `0354fbb9feb821f496db8ed5586c775db8446564`；保留原 `feat/macos-installer`，工作區原先乾淨。
+- Repo：`AI-GO-APP/local-token-buffet-bridge`。開始時重新 fetch，main／v0.6.5 均為 `0354fbb9feb821f496db8ed5586c775db8446564`；保留原 `feat/macos-installer`，工作區原先乾淨。
 - 本輪分支：`codex/mac-physical-acceptance`；實作 commit：`3cfe69f42ed8352d2cce1cadababd79e6e1d8da4`。最後安裝來源以 `source-install.json.source_commit` 為準，包含本輪文件 commit。
 - macOS 26.2（25C56）、arm64；Python 3.12.0、Node 22.14.0；Codex CLI 0.163.0-alpha.11，沿用既有 ChatGPT 訂閱登入。
 - 正式執行的程式位於 `~/Library/Application Support/AIGO LLM Bridge/versions/`，不是 checkout。專用 Python 為同根的 `runtime/bin/python`，資料是 `data/`，穩定入口是 `Bridge.command`／`Bridge.pyw`。app 的完整路徑每次從 `source-install.json` 讀取。

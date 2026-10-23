@@ -35,7 +35,7 @@ class Relay:
         self.stop_event=threading.Event(); self.thread=None; self.state="未連線"
         self.pool=ThreadPoolExecutor(max_workers=9,thread_name_prefix="relay-forward")
         self.cloud_opener=urllib.request.build_opener(NoRedirect(),urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=certifi.where())))
-        self.cloud_opener.addheaders=[("User-Agent","aigo-llm-bridge/0.2.0")]
+        self.cloud_opener.addheaders=[("User-Agent","local-token-buffet-bridge/0.2.0")]
     def start(self):
         if self.thread and self.thread.is_alive(): self.stop_event.clear(); return
         if not self.store.get("public_url"):

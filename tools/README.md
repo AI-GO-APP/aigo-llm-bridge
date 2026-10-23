@@ -4,24 +4,9 @@
 
 現行 BYO 的產品入口為 [產品文件](../docs/README.md)。Mac 使用 `install.py` 及 `mac_service.py` 來源安裝／排空／更新／rollback；`verify_macos_console.py --output <隔離目錄>` 執行合成原生 UI 驗證，`verify_macos_upgrade.py --apply` **會更新既有 Mac 服務並用少量訂閱額度做真 HTTPS 合成測試**。後者沿用原 profile，臨時 key 在 RAM，結束撤銷；不部署 Worker、不改電源。見 [Mac 指南](../docs/MACOS-SETUP.md)。下列 Hosted 工具屬歷史產品線。
 
-## 部署到 AI GO(會動到租戶上的正式資源)
+## 歷史工具
 
-| 工具 | 做什麼 | 動到什麼 | 先看再做 |
-|---|---|---|---|
-| [`provision_tables.py`](provision_tables.py) | 建立或補齊 Bridge 的五張自建表 | 租戶資料中心(表是**租戶級**,實體名建立後不能改) | 不帶 `--apply` 只列計畫 |
-| [`deploy_hosted.py`](deploy_hosted.py) | 把目錄打包部署成 Hosted App;第一次建立,之後是新的一次部署 | Hosted App(slug 全平台共用,刪過的 slug 不能再用) | 會列出打包清單並確認有 Dockerfile |
-| [`hosted_env.py`](hosted_env.py) | 設 Hosted App 的環境變數:先讀現況,只合併你給的 key | Hosted App 執行期設定 | `--show` 只列出現有的 key,不寫入 |
-| [`aigo_api.py`](aigo_api.py) | 上面三支共用的平台連線層,不直接執行 | — | — |
-
-**平台憑證**(擇一):
-
-- 環境變數 `AIGO_BASE_URL=https://<your-tenant>.ai-go.app` 與 `AIGO_TOKEN`
-- 已設定好的 [aigo-builder](https://github.com/AI-GO-APP/aigo-app-builder-skill) 工作區:沿用它的登入與 token 快取;
-  工作區目錄用 `AIGO_WORKSPACE` 指定(預設目前目錄),aigo-builder 腳本位置用 `AIGO_SKILL_SCRIPTS` 指定
-  (預設 `~/.claude/skills/aigo-builder/scripts`)
-
-`AIGO_BASE_URL` 一定是租戶空間網址;打 apex `https://ai-go.app` 會回一個跟「密碼錯誤」一模一樣的 401。
-三支工具的輸出都**不印金鑰值**;金鑰放哪裡見 [docs/11](../docs/11-security.md)。完整部署流程見 [docs/03](../docs/03-deploy-bridge.md)。
+租戶平台部署工具不屬於現行產品安裝流程，也不應由安裝 agent 執行；原始碼只供歷史維護。現行安裝使用 `install.py`、`byo_setup.py` 與 [BYO 指南](../docs/BYO-QUICKSTART.md)。
 
 ## 本機開發與端到端
 

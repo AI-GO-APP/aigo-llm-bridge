@@ -24,7 +24,7 @@ class App:
         self.root,self.store,self.runtime,self.api=root,store,runtime,api
         self.tunnel=Tunnel(); self.auth={}; self.closed=False
         self.relay=relay; self.last_cleanup=0
-        root.title("AI GO LLM Bridge — 本機管理")
+        root.title("Local Token Buffet Bridge — 本機管理")
         root.geometry("1120x760"); root.minsize(960,650)
         root.configure(bg="#f3f5f9")
         style=ttk.Style(root); style.theme_use("clam")
@@ -34,7 +34,7 @@ class App:
         style.configure("Treeview.Heading",background="#e7ecf5",font=("Microsoft JhengHei UI",10,"bold"),padding=7)
         style.map("Treeview",background=[("selected","#dce8ff")],foreground=[("selected","#102955")])
         head=tk.Frame(root,bg="#14213c",height=88); head.pack(fill="x")
-        tk.Label(head,text="LLM Bridge",font=("Segoe UI",23,"bold"),fg="white",bg="#14213c").pack(side="left",padx=26,pady=18)
+        tk.Label(head,text="Local Token Buffet Bridge",font=("Segoe UI",23,"bold"),fg="white",bg="#14213c").pack(side="left",padx=26,pady=18)
         tk.Label(head,text="本機訂閱 · HTTPS API · 長效金鑰",fg="#bbc9e5",bg="#14213c",font=("Microsoft JhengHei UI",11)).pack(side="left",padx=10)
         self.badge=tk.Label(head,text="● 服務執行中",fg="#82e8bc",bg="#14213c",font=("Microsoft JhengHei UI",11,"bold"))
         self.badge.pack(side="right",padx=26)

@@ -225,7 +225,7 @@ def run(directory, browser=False, probe=False, hidden=False):
         webview.settings['REMOTE_DEBUGGING_PORT']=None
         webview.settings['OPEN_DEVTOOLS_IN_DEBUG']=False
         api=NativeApi(value)
-        window=webview.create_window('LLM Bridge — Windows', session_url(value),js_api=api,
+        window=webview.create_window('Local Token Buffet Bridge — Windows', session_url(value),js_api=api,
             width=1200,height=820,min_size=(820,600),text_select=True,hidden=(probe or hidden))
         api._window=window
         def before_show():

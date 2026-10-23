@@ -24,7 +24,7 @@ def probe(endpoint, model, key):
     request = urllib.request.Request(endpoint + '/chat/completions',
         data=json.dumps({'model': model, 'messages': [{'role': 'user', 'content': 'Reply exactly PONG.'}], 'stream': False}).encode(),
         headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json',
-                 'User-Agent': 'aigo-llm-bridge-connection-test/1.0'})
+                 'User-Agent': 'local-token-buffet-bridge-connection-test/1.0'})
     try:
         try: response = opener.open(request, timeout=60)
         except urllib.error.HTTPError as error: response = error

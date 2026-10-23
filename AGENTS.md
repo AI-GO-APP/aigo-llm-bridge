@@ -1,12 +1,14 @@
 # AI agent instructions
 
+產品名稱固定為 **Local Token Buffet Bridge**，repo 為 `local-token-buffet-bridge`；先讀 [識別與相容性](docs/BRANDING.md)。維護時執行 `python tools/lint_branding.py`，不得為改名重建 profile、KEY、Worker 或更新簽章身分。
+
 Windows 新安裝需依 [ONBOARDING](docs/ONBOARDING.md) 完成本人訂閱 CLI／Cloudflare OAuth、自有帳戶、一鍵或 AI IDE BYO、明確插電權限、真 HTTPS 與長效 KEY 交付；已完成者日常啟動不重跑。不得為驗收偷偷改 owner 工作站電源／鎖定，使用 fake adapter 或可拋棄 runner；UAC 只在本人明確點選後執行。CI/CD、release／policy 續期與失敗回復正本見 [CI-CD](docs/CI-CD.md)、[RELEASE](docs/RELEASE.md)。不依賴 AI EA Cloud／Supabase，不介入 Mac／其他 Cloud 專案。
 
 先讀 [產品文件入口](docs/README.md)。需求、架構、資料字典、API、設計規範、決策與驗收都是 repo 正本；修改功能須在同一 PR 更新受影響文件。舊編號 01–13 及 README-LEGACY 僅供歷史產品線，不可套用到現行 BYO。新增取捨記 D 編號，不依賴聊天或 LLM 本機記憶。執行 `python tools/check_product_docs.py`；前端改動須依 DESIGN-SYSTEM 與 ACCEPTANCE 驗證六頁、深淺色、窄版及 Windows 適配卡。
 
 0.4 起提供 repo 安裝器與第三方串接訊息：先讀 [安裝流程](docs/CROSS-PLATFORM-INSTALL.md)。Windows 原生 ZIP 與 source 安裝目錄分離。macOS 安裝、實機驗收與發布由獨立維護者處理，狀態見其驗收文件；Windows 工作不得發布 macOS release。首次安裝最終需交付 endpoint、一次性長效 key 及 [第三方 AI IDE 標準說明](docs/THIRD-PARTY-INTEGRATION.md)，不能只撤銷測試 key 後留下無法呼叫的安裝。
 
-本專案提供 Windows 原生安裝器與 macOS BYO source Release，**只採 BYO Cloudflare**。每位安裝者在自己選定的 Cloudflare 帳戶部署、管理、付費及更新專屬 Worker；發布方只提供原始碼與安裝包，不代管入口、帳戶、裝置憑證或訂閱。這不是 AI GO 平台上的 Custom／Hosted App，安裝時不需存取 AI GO 租戶。
+本專案提供 Windows 原生安裝器與 macOS BYO source Release，**只採 BYO Cloudflare**。每位安裝者在自己選定的 Cloudflare 帳戶部署、管理、付費及更新專屬 Worker；發布方只提供原始碼與安裝包，不代管入口、帳戶、裝置憑證或訂閱。這是獨立產品，安裝時不需存取任何外部租戶平台。
 
 0.9 整合即時模型能力查詢、固定合成 probe 與 Jev 相容 Decisions；安裝及第三方串接前讀 [模型與 Jev 指南](docs/JEV-COMPATIBILITY.md)。GET／refresh 不推論，probe 會消耗用量。模型目錄不等於訂閱權限；Jev 格式相容不等於機率校準相同。新路徑需同步 Worker、Relay、Bridge，仍依本次授權決定是否部署；Windows 更新不自動部署 Worker。
 

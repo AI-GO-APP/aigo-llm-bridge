@@ -1,1 +1,1 @@
-{"name":"aigo-llm-bridge-relay","private":true,"type":"module","scripts":{"test":"node --test test/*.test.js"},"devDependencies":{"wrangler":"4.152.0"}}
+{"name":"local-token-buffet-bridge-relay","private":true,"type":"module","scripts":{"test":"node --test test/*.test.js"},"devDependencies":{"wrangler":"4.152.0"}}

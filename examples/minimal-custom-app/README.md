@@ -8,7 +8,7 @@
 | 對話 | 瀏覽器直連串流;模型、effort、thinking 逐次指定;顯示實際由誰回答、有沒有用到備援;另有「從伺服器端送出」 | `streamChat`、`bridge_chat` action |
 | 連接我的電腦 | 改優先順序、產生綁定碼、列出與撤銷自己的電腦 | `bridge_computers` action |
 
-這個範例在 AI GO 平台上實際發布並驗證過(結果見 docs/01 §5):前一版以瀏覽器操作逐項驗證;加入優先順序的這一版以 action 與瀏覽器用的 session token 走真實路徑驗證,畫面點擊留待下一次瀏覽器驗證。
+這個範例在 歷史租戶平台 平台上實際發布並驗證過(結果見 docs/01 §5):前一版以瀏覽器操作逐項驗證;加入優先順序的這一版以 action 與瀏覽器用的 session token 走真實路徑驗證,畫面點擊留待下一次瀏覽器驗證。
 
 ## 檔案
 
@@ -41,7 +41,7 @@
    `_template.json` 宣告了用不到的外部服務,不刪發布會被擋。
 3. **放入這個資料夾的檔案**(覆蓋同名檔)。
 4. **外部服務**:Builder「外部服務」新增 slug **`llm-bridge`**,base_url = Bridge 網址
-   (`https://<your-bridge>.deploy.ai-go.app`),逾時 30000 毫秒,並授權給這個 app。
+   (`https://bridge.example.invalid`),逾時 30000 毫秒,並授權給這個 app。
    slug 若要取別的名字,四支 action 裡區塊的 `"llm-bridge"` 字串都要一起改(發布閘門只認字面字串)。
 5. **secrets**:`BRIDGE_KEY` = 那把 source 金鑰的值;`BRIDGE_PUBLIC_URL` = Bridge 網址。
 6. **編譯、發布**。剛發布後第一次呼叫 action 可能回 503(冷啟動),稍等再試。

@@ -1,12 +1,12 @@
 # Windows 0.8.0 發布收據
 
-本輪依使用者「Windows 已經完成，請合併發布 release」指示，合併 [PR #15](https://github.com/AI-GO-APP/aigo-llm-bridge/pull/15) 並發布 [Windows 0.8.0 internal](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/windows-installer-internal-v0.8.0)。**未升級或重啟 owner 正式 Windows 0.7.3，未執行 Mac release／Cloud 部署**。無 Authenticode 公發憑證，保持既有 internal prerelease 渠道；更新使用原 Ed25519 公鑰。
+本輪依使用者「Windows 已經完成，請合併發布 release」指示，合併 [PR #15](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/15) 並發布 [Windows 0.8.0 internal](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/windows-installer-internal-v0.8.0)。**未升級或重啟 owner 正式 Windows 0.7.3，未執行 Mac release／Cloud 部署**。無 Authenticode 公發憑證，保持既有 internal prerelease 渠道；更新使用原 Ed25519 公鑰。
 
 ## 來源與閘門
 
 - package commit：`0041259cb2595c41438a44490e6d9457a4547f60`；Windows 0.8.0、core `0.6.6-mac.2`、clean、redistributable=true、local_probe=false。
-- 最終來源 PR CI：一般／Windows ZIP 通過；[原生驗收](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39886876865) 第一輪 WebView probe exit 2，前七項通過後退出，現有 artifact 未包含細分 stage，未判定根因；同一提交只重跑失敗 job 後通過。保留第一輪失敗，不將它改寫成成功。
-- [正式 package／publish workflow](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39887994161) 在 main 再執行回歸、原生 Setup A→B 及 AC-only power gate，成功後才 announce。
+- 最終來源 PR CI：一般／Windows ZIP 通過；[原生驗收](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39886876865) 第一輪 WebView probe exit 2，前七項通過後退出，現有 artifact 未包含細分 stage，未判定根因；同一提交只重跑失敗 job 後通過。保留第一輪失敗，不將它改寫成成功。
+- [正式 package／publish workflow](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39887994161) 在 main 再執行回歸、原生 Setup A→B 及 AC-only power gate，成功後才 announce。
 - 回歸 179 passed／2 skipped，原生電源 8/8、Setup A→B 48/48。後兩者使用拋棄 runner 與合成 profile；不代表正式機已升級或本人首次 OAuth 已完成。
 - 真鎖定期間兩筆 Codex POST／PONG／cost 通過；完整解鎖後第四階段未完成，原因與原始 success=false 保留於 [鎖定 QA](2026-10-23-windows-locked.md)。首次新 OAuth／自有 Worker 乾淨部署仍另列未驗，使用者發布授權不是補做技術證據。
 

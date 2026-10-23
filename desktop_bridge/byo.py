@@ -136,7 +136,7 @@ class Cloudflare:
         deadline=time.monotonic()+180
         while time.monotonic()<deadline:
             request=urllib.request.Request(url+'/agent/poll',data=payload,headers={
-                'Authorization':'Bearer '+token,'Content-Type':'application/json','User-Agent':'aigo-llm-bridge-client/1.0'})
+                'Authorization':'Bearer '+token,'Content-Type':'application/json','User-Agent':'local-token-buffet-bridge-client/1.0'})
             try:
                 with opener.open(request,timeout=25) as response:
                     value=json.loads(response.read(10000))

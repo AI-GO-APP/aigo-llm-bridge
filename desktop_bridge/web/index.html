@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark"><title>LLM Bridge · 管理台</title>
+  <meta name="color-scheme" content="light dark"><title>Local Token Buffet Bridge · 管理台</title>
   <link rel="stylesheet" href="/style.css"><script src="/platform.js" defer></script><script src="/integration.js" defer></script><script src="/app.js" defer></script>
 </head>
 <body>
@@ -19,7 +19,7 @@
 </defs></svg>
 <div class="app-shell">
   <aside class="sidebar">
-    <a class="brand" href="#overview" aria-label="LLM Bridge 首頁"><span class="brand-mark">b<span>•</span></span><span>LLM Bridge<small>AI GO / LOCAL CONSOLE</small></span></a>
+    <a class="brand" href="#overview" aria-label="Local Token Buffet Bridge 首頁"><span class="brand-mark">b<span>•</span></span><span class="brand-name">Local Token <br>Buffet Bridge<small>LOCAL CONSOLE</small></span></a>
     <div class="workspace"><span class="device-icon">⌘</span><div>本機工作空間<small>Personal workspace</small></div><span class="tiny-dot"></span></div>
     <div class="nav-caption">工作空間</div>
     <nav aria-label="主要導覽">
@@ -30,7 +30,7 @@
       <button data-page="models" class="nav-item"><svg><use href="#i-box"/></svg>模型管理</button>
       <button data-page="settings" class="nav-item"><svg><use href="#i-settings"/></svg>連線與設定</button>
     </nav>
-    <div class="sidebar-bottom"><div class="local-note"><svg><use href="#i-shield"/></svg><div>在你的電腦上執行<small>關閉此頁，服務仍持續運作。</small></div></div><button id="shutdown" class="quiet">結束 Bridge <span>↗</span></button><div class="sidebar-version"><span>AI GO</span><span id="version">—</span></div></div>
+    <div class="sidebar-bottom"><div class="local-note"><svg><use href="#i-shield"/></svg><div>在你的電腦上執行<small>關閉此頁，服務仍持續運作。</small></div></div><button id="shutdown" class="quiet">結束 Bridge <span>↗</span></button><div class="sidebar-version"><span>Local Token Buffet</span><span id="version">—</span></div></div>
   </aside>
   <div class="main-shell">
     <header class="topbar"><div class="breadcrumb">工作空間 <span>/</span> <strong id="crumb">總覽</strong></div><div class="topbar-right"><span id="sync-label" class="sync-label">連線中</span><span id="service-badge" class="badge neutral"><i></i>正在連線</span></div></header>
@@ -66,7 +66,7 @@
       <section id="page-logs" class="page" hidden><div class="page-heading"><div><div class="eyebrow">OBSERVABILITY</div><h1>請求紀錄</h1><p>從請求到完成，掌握每一次推論的狀態。</p></div><button id="export" class="secondary">↓ 匯出 CSV</button></div><article class="card"><div class="filters"><label>狀態<select id="log-status"><option value="">全部狀態</option><option value="queued">排隊中</option><option value="running">執行中</option><option value="completed">已完成</option><option value="failed">失敗</option><option value="rejected">已拒絕</option><option value="cancelled">已取消</option><option value="interrupted">已中斷</option></select></label><label>來源<select id="log-provider"><option value="">全部來源</option><option value="claude">Claude</option><option value="codex">Codex</option></select></label><button id="clear-logs" class="text-button danger">清除已結束紀錄</button></div><div id="all-logs" class="table-wrap"></div><div class="table-note">畫面最多顯示最新 500 筆；匯出最多 10,000 筆。僅保留中繼資料，不包含訊息、附件或回應原文。</div></article></section>
       <section id="page-models" class="page" hidden><div class="page-heading"><div><div class="eyebrow">MODEL REGISTRY</div><h1>模型管理</h1><p>將呼叫端的模型名稱，對應到本機 CLI 使用的模型。</p></div><button id="save-models" class="primary">儲存模型</button></div><div class="info-strip">省略 model 時使用已保存的預設模型；新安裝預設選擇 Codex。儲存清單會保留既有預設，移除該模型時優先改用 Codex。登錄不代表訂閱已取得使用權。</div><article class="card"><div class="card-heading"><h2>模型對應</h2><button id="add-model" class="secondary compact">＋ 新增模型</button></div><div id="model-editor"></div></article></section>
       <section id="page-settings" class="page" hidden><div class="page-heading"><div><div class="eyebrow">CONFIGURATION</div><h1>連線與設定</h1><p>設定公開入口與本機執行方式。</p></div><button type="submit" form="settings-form" class="primary">儲存設定</button></div><form id="settings-form"><article class="card settings-card"><div class="section-description"><h2>公開連線</h2><p>讓自己的服務透過固定 HTTPS 網址連入。</p></div><div class="settings-fields"><label>固定公開網址<input name="public_url" type="url" placeholder="https://your-bridge.workers.dev"><small>只填網址來源，不含 /api/v1。設定網址後仍須完成雲端配對或 Tunnel 連線。</small></label><label class="check-label"><input name="relay_enabled" type="checkbox">啟用 Cloudflare workers.dev 轉接</label><div class="inline-actions"><button type="button" id="pair-relay" class="secondary compact">設定裝置配對 key</button><span id="relay-detail" class="muted"></span></div><details><summary>進階：Named Tunnel</summary><label>名稱或 UUID<input name="tunnel_name" placeholder="已建立的 Cloudflare Tunnel"></label><div class="inline-actions"><button type="button" id="start-tunnel" class="secondary compact">啟動已儲存的 Tunnel</button><button type="button" id="stop-tunnel" class="secondary compact">停止</button><span id="tunnel-detail" class="muted"></span></div></details></div></article><article class="card settings-card"><div class="section-description"><h2>執行偏好</h2><p>管理本機服務、工作時限與資料保留。</p></div><div class="settings-fields"><div class="field-grid"><label>本機 API 連接埠<input name="port" type="number" min="1024" max="65535" required><small>修改後重啟 Bridge 生效</small></label><label>紀錄保存天數<input name="retention_days" type="number" min="1" max="365" required></label><label>工作時限（秒）<input name="timeout_s" type="number" min="10" max="1800" required></label></div><label class="check-label"><input name="startup" type="checkbox">登入 Windows 後在背景自動啟動</label></div></article><article class="card settings-card"><div class="section-description"><h2>CLI 執行檔</h2><p>留空時自動偵測本機安裝位置。</p></div><div class="settings-fields"><label>Claude<input name="claude_path" placeholder="自動偵測原生執行檔"></label><label>Codex<input name="codex_path" placeholder="自動偵測原生執行檔"></label></div></article></form></section>
-      <footer class="main-footer"><span>LLM Bridge <span class="footer-slash">/</span> Your models. Your workspace.</span><span>僅本機可存取管理台</span></footer>
+      <footer class="main-footer"><span>Local Token Buffet Bridge <span class="footer-slash">/</span> Your models. Your workspace.</span><span>僅本機可存取管理台</span></footer>
     </main>
   </div>
 </div>

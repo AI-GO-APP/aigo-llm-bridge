@@ -21,7 +21,7 @@ S2–S4 共用同一個 Hosted App(`hosted-echo/`),它**不呼叫任何 LLM**,�
 |---|---|---|
 | S1 | ✅ | haiku 首段文字 1.6 秒、sonnet 2.1 秒(thinking 關閉時) |
 | S1b | ✅ | thinking 不該預設關閉:haiku 關掉快一倍但格式遵守變差;模型、effort、thinking 交給每次請求指定;別名解析因帳號而異 |
-| S2 | 🟡 標頭層確認可行 | SSE 不被緩衝、CSP 允許 `*.ai-go.app`、CORS 預檢通過;瀏覽器實際操作待補 |
+| S2 | 🟡 標頭層確認可行 | SSE 不被緩衝、CSP 允許 `*.example.invalid`、CORS 預檢通過;瀏覽器實際操作待補 |
 | S3 | ✅ | **只適用 Custom App 經 egress 的呼叫**:30 秒硬牆,撞牆有兩種失敗形狀 |
 | S4 | ✅ | 冷啟動模式下閒置 15 分鐘仍保留實例;有 worker 在線時長輪詢讓 Bridge 保持溫熱 |
 | S5 | ✅ | Hosted App 單一請求上限 300 秒(串流、非串流都一樣);沒有更短的閒置逾時 |

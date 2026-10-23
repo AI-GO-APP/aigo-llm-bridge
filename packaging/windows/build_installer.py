@@ -80,7 +80,7 @@ def main(argv=None):
     subprocess.run(vpk + ['--skip-updates', '--yes', 'pack', '--packId', cfg['pack_id'],
         '--packVersion', cfg['version'], '--packDir', str(app), '--mainExe', 'AIGO-LLM-Bridge.exe',
         '--channel', cfg['framework_channel'], '--runtime', 'win-x64', '--packTitle',
-        ('LLM Bridge Probe ' + cfg['pack_id'].split('.')[-1]) if cfg['local_probe'] else 'LLM Bridge Internal',
+        ('LLM Bridge Probe ' + cfg['pack_id'].split('.')[-1]) if cfg['local_probe'] else 'Local Token Buffet Bridge',
         '--outputDir', str(out / 'Releases')], cwd=ROOT, check=True)
     files = [{'name': p.name, 'size': p.stat().st_size, 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()}
              for p in sorted((out / 'Releases').iterdir()) if p.is_file()]

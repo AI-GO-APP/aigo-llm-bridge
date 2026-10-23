@@ -151,7 +151,7 @@ node --test cloudflare/test/relay.test.js
 python tools/lint_terms.py --require
 ```
 
-此 repo 是本機 Bridge 加 BYO Worker，不適用 AI GO Custom/Hosted App 發布流程。外部驗收需在使用者指定的自有帳戶與裝置 profile 上進行；本次設計工作不包含部署、登入切換、正式 registry 切換或發布安裝包。
+此 repo 是本機 Bridge 加 BYO Worker，不適用歷史租戶平台發布流程。外部驗收需在使用者指定的自有帳戶與裝置 profile 上進行；本次設計工作不包含部署、登入切換、正式 registry 切換或發布安裝包。
 
 ## 設計階段基線驗證
 

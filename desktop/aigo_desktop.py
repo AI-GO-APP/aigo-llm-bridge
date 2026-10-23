@@ -192,7 +192,7 @@ def connection_page(port):
 <title>LLM Bridge · 本機連線</title>
 <style>body{margin:0;background:#f4f5f7;color:#202735;font:16px/1.7 system-ui,sans-serif}main{max-width:720px;margin:60px auto;padding:32px;background:white;border:1px solid #dde1e7;border-radius:16px}h1{line-height:1.3}code,pre{background:#f1f3f6;border-radius:6px;padding:4px 8px;overflow-wrap:anywhere}pre{white-space:pre-wrap;padding:16px}label{display:block;margin-top:20px;font-weight:600}input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #a9b2bf;border-radius:8px;font:inherit}button{padding:10px 18px;margin:12px 8px 0 0;border:0;border-radius:8px;background:#215ad6;color:white;font:inherit;cursor:pointer}#result{min-height:2em}small{color:#566174}@media(max-width:780px){main{margin:16px;padding:22px}}</style>
 </head><body><main>
-<small>AI GO · 個人本機端點</small><h1>LLM Bridge 連線設定</h1>
+<small>Local Token Buffet Bridge · 個人本機端點</small><h1>LLM Bridge 連線設定</h1>
 <p>服務已啟動。這裡是連線說明頁；在呼叫工具中填入下列設定，即可使用這台電腦的訂閱。</p>
 <label>Base URL</label><code id="base">http://127.0.0.1:PORT/v1</code> <button id="copy" type="button">複製網址</button>
 <label>Model</label><p><code>claude</code> 或 <code>codex</code></p>

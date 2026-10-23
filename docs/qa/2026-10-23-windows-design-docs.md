@@ -33,7 +33,7 @@ Mac新UI未驗收，瀏覽器／WebView共享前端不代表Mac原生殼驗收�
 
 ## 已發布與正式已安裝
 
-[PR #14](https://github.com/AI-GO-APP/aigo-llm-bridge/pull/14)已合併，程式來源 `d3f27071dac72350635ff4a938afa9cfd751624c`。以下CI均成功：[一般CI](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39875835997)、[Windows舊ZIP與文件](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39875835908)、[原生runner](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39875835920)、[正式package／announce](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39876542892)。[Windows 0.7.3 Release](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/windows-installer-internal-v0.7.3)已公開。沿用原更新公鑰，policy sequence=4、minimum_version=0.7.0；仍無Authenticode。
+[PR #14](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/14)已合併，程式來源 `d3f27071dac72350635ff4a938afa9cfd751624c`。以下CI均成功：[一般CI](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39875835997)、[Windows舊ZIP與文件](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39875835908)、[原生runner](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39875835920)、[正式package／announce](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39876542892)。[Windows 0.7.3 Release](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/windows-installer-internal-v0.7.3)已公開。沿用原更新公鑰，policy sequence=4、minimum_version=0.7.0；仍無Authenticode。
 
 | 產物 | 大小／SHA256 |
 |---|---|

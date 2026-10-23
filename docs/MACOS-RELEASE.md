@@ -4,7 +4,7 @@ Mac 現行渠道為 `macos-source-v<Mac VERSION>` 的 GitHub Release。它交付
 
 ## 從公開 Release 安裝
 
-1. 在 [Releases](https://github.com/AI-GO-APP/aigo-llm-bridge/releases) 選 `macos-source-v…`，下載 `aigo-llm-bridge-macos-source-<version>.zip`、其 `.sha256` 及 `macos-source-manifest.json`。不要選歷史 desktop-macos 包。
+1. 在 [Releases](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases) 選 `macos-source-v…`，下載 `aigo-llm-bridge-macos-source-<version>.zip`、其 `.sha256` 及 `macos-source-manifest.json`。不要選歷史 desktop-macos 包。
 2. 在下載目錄執行 `shasum -a 256 -c <下載的zip>.sha256`；必須 OK。manifest 的 version／commit／sha256 對應該 Release 來源。
 3. 解壓，在 `aigo-llm-bridge` 目錄開 Terminal，執行 `sh Install.command`（或 `python3 tools/install.py`）。可明確指定 `--install-root`，不需要 sudo。不繞過作業系統安全提示；若 Finder 無法直接執行，使用上述可檢查的 Terminal 指令。
 4. 開啟安裝目錄 `Bridge.command`，依 [Mac 五步設定](MACOS-SETUP.md) 完成本人 CLI、Cloudflare、自有 Worker、電源同意與真 HTTPS／KEY 交付。只有已完成者日常啟動才略過。完整資料位置與 CLI 見 [source 安裝](CROSS-PLATFORM-INSTALL.md)。

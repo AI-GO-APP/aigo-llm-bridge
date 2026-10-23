@@ -39,7 +39,7 @@ def catalog_model(model):
 
 def fetch_catalog():
     opener=urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=certifi.where())))
-    request=urllib.request.Request(CATALOG_URL,headers={'User-Agent':'aigo-llm-bridge-pricing/1.0','Accept':'application/json'})
+    request=urllib.request.Request(CATALOG_URL,headers={'User-Agent':'local-token-buffet-bridge-pricing/1.0','Accept':'application/json'})
     with opener.open(request,timeout=12) as response:
         raw=response.read(20_000_001)
     if len(raw)>20_000_000:raise ValueError('Catalog too large')

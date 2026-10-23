@@ -29,7 +29,7 @@
 
 依使用者最新指示，候選只調整插電自動 sleep／hibernate／unattended_sleep；移除 HKCU 鎖定寫入、背景鎖定 guard、禁止鎖定同意及手動鎖定檢查門檻。螢幕、鎖定、實體按鍵、DC 保留。先一般權限，電源 ACL 不足時才由本人選用 UAC。規格見 [ONBOARDING](../ONBOARDING.md)、需求 R-16、決策 D-21。
 
-修訂來源 `926ab517f7535062e153a617be722c33ef69be9c`、[PR #15](https://github.com/AI-GO-APP/aigo-llm-bridge/pull/15)：本機完整 Python **179 passed／2 skipped**、onboarding 30 案、relay 7、platform 2，docs／terms／secrets 通過。[一般 CI](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39884587415)、[Windows ZIP](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39884587710)、[Windows installer](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39884587369) 全通過。已下載並回讀 artifact：**8/8 AC-only 原生電源**（含套用中及還原後鎖定登錄不變、螢幕及實體按鍵 AC/DC 不變）與 **48/48 Setup A→B**。這些永久電源寫入只在可拋棄 runner，不在 owner 工作站。
+修訂來源 `926ab517f7535062e153a617be722c33ef69be9c`、[PR #15](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/15)：本機完整 Python **179 passed／2 skipped**、onboarding 30 案、relay 7、platform 2，docs／terms／secrets 通過。[一般 CI](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39884587415)、[Windows ZIP](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39884587710)、[Windows installer](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39884587369) 全通過。已下載並回讀 artifact：**8/8 AC-only 原生電源**（含套用中及還原後鎖定登錄不變、螢幕及實體按鍵 AC/DC 不變）與 **48/48 Setup A→B**。這些永久電源寫入只在可拋棄 runner，不在 owner 工作站。
 
 正式 Windows 尚未升級；不發布舊版含鎖定調整的候選。完整解鎖後呼叫仍需補驗。首次 OAuth／自有 Worker 部署的安裝者驗收仍是獨立缺口，不能用目前既有 Codex 登入替代。
 

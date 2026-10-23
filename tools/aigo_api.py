@@ -1,4 +1,4 @@
-"""AI GO 平台 API 的最小連線層(部署工具共用)。
+"""歷史租戶平台 API 的最小連線層(部署工具共用)。
 
 憑證來源,依序:
   1. 環境變數 AIGO_BASE_URL + AIGO_TOKEN(已取得的 access token)

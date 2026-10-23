@@ -1,6 +1,6 @@
 # 前端設計規範
 
-設計版本：Windows 0.7.3。參考 **AI GO 合約請款管理系統**的深藍導覽／表頭、靛藍操作、暖灰淺底／深空深底、多層表面與 10／14px 圓角。這是視覺語言與互動原則的採用，不依賴 AI GO SDK、不複製其業務流程或租戶資訊。
+設計版本：Local Token Buffet Bridge。使用深藍導覽／表頭、靛藍操作、暖灰淺底／深空深底、多層表面與 10／14px 圓角；設計 tokens 與互動原則由本專案獨立維護。
 
 實作正本：[style.css](../desktop_bridge/web/style.css)、[index.html](../desktop_bridge/web/index.html)。保留 LLM Bridge 產品識別；不把它包裝成合約系統。Windows／browser 共用同一份 DOM／CSS，平台檔只適配原生功能。
 

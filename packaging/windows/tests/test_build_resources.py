@@ -21,7 +21,7 @@ def test_installer_does_not_absorb_other_platform_code_or_private_reports(tmp_pa
     stage = tmp_path / 'stage'
     resources.stage_documents(root, stage, 'a' * 40)
     text = (stage / 'documents/guide.md').read_text()
-    assert 'https://github.com/AI-GO-APP/aigo-llm-bridge/blob/' + 'a' * 40 + '/other.md#section' in text
+    assert 'https://github.com/AI-GO-APP/local-token-buffet-bridge/blob/' + 'a' * 40 + '/other.md#section' in text
     assert '[local](local.md)' in text and '[example](missing.md)' in text
     assert not (stage / 'documents/other.md').exists()
     (root / 'private.md').write_text('Owner-only evidence')

@@ -19,4 +19,4 @@ CLI 必須是原生執行檔；不透過會重新解析文字的 `.cmd` wrapper�
 安裝目錄 ACL 限目前使用者；不需要系統管理員。
 
 本平台只依賴 `desktop/` 共用核心，不匯入 macOS 平台；建置入口 `py -3 packaging/windows/build.py`。
-完整說明見 [個人端點](https://github.com/AI-GO-APP/aigo-llm-bridge/blob/main/docs/13-desktop.md)。
+完整說明見 [個人端點](https://github.com/AI-GO-APP/local-token-buffet-bridge/blob/main/docs/13-desktop.md)。

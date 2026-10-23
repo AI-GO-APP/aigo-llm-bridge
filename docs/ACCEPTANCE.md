@@ -2,6 +2,8 @@
 
 Mac **0.9.1-mac.1 已合併、發布 source Release、公開下載安裝並完成 owner 更新／真 HTTPS 驗證**；最終 SHA、附件 hash、CI 與資料保留證據見 [Mac 發布收據](qa/2026-10-23-macos-release.md)。
 
+產品改名的 repo／UI／文件、隔離畫面及舊更新來源連續性見 [改名 QA](qa/2026-10-23-product-rename.md)。Windows 新版安裝與發布以該收據的完成狀態為準。
+
 Mac `0.8.1-mac.1` 的單元、原生 renderer、安裝更新與公開 HTTPS 證據另見 [Mac 同步 QA](qa/2026-10-23-macos-parity.md)；不發布 Mac release，不替代 Windows 安裝器測試。
 
 Windows 0.9.0 已整合安全修補及 Jev／模型查詢，合併發布並升級正式安裝，真實本機三型、HTTPS chat、受控重啟、原 URL／KEY／資料／成本及雙埠獨占驗收通過。新公開 Jev／discovery 路徑尚未部署、實測 404，不能以既有 chat HTTPS 通過替代新端點驗收。[0.8.2 收據](qa/2026-10-23-windows-082-security.md)、[0.8.1 收據](qa/2026-10-23-windows-081-security.md)、[0.8.0 發布](qa/2026-10-23-windows-080-release.md)、[原 onboarding QA](qa/2026-10-23-windows-onboarding.md) 及 [鎖定 QA](qa/2026-10-23-windows-locked.md) 保留各階段歷史。
@@ -30,8 +32,8 @@ Windows 0.9.0 已整合安全修補及 Jev／模型查詢，合併發布並升�
 ## 既有證據：0.7.2
 
 - [2026-10-22 安裝器](qa/2026-10-22-windows-velopack-acceptance.md)、[2026-10-23 WebView與更新補正](qa/2026-10-23-windows-webview-acceptance.md)。
-- 已發布 [Windows 0.7.2](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/windows-installer-internal-v0.7.2)，來源 a686833；142 Python passed／2 skipped，Node relay 9；隔離真Setup→A→B修正後兩輪39項通過；正式公開HTTPS更新13項通過，原URL／KEY／metadata及成本保留。
-- Windows runner [原生驗收](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39818040291)及[公開政策再驗](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39820696732)。安裝包未具Authenticode。
+- 已發布 [Windows 0.7.2](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/windows-installer-internal-v0.7.2)，來源 a686833；142 Python passed／2 skipped，Node relay 9；隔離真Setup→A→B修正後兩輪39項通過；正式公開HTTPS更新13項通過，原URL／KEY／metadata及成本保留。
+- Windows runner [原生驗收](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39818040291)及[公開政策再驗](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39820696732)。安裝包未具Authenticode。
 - 後續實際桌面在隔離profile完成Save、中文檔名、Cancel、KEY預設表單及按X後背景HTTP200；CSV精確欄位、17／9 tokens、0.012345 USD回讀。瀏覽器備援CLI回0且出現Bridge視窗標題；瀏覽器畫面確認因Computer Use無法可靠判URL而停止，**不能稱該項畫面已通過**。詳細本輪紀錄見原報告補充段。
 
 ## 0.7.3 本輪
