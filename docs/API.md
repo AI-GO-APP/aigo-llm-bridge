@@ -91,6 +91,6 @@ Windows 0.8.0 候選另加 `state.windows_onboarding` 及 POST `/manage/windows-
 | deploy | 明確 account_id 與 consent=true；重新驗帳戶後部署原 profile／Worker。 |
 | create-key | 可選 label；回 id、一次 token、integration（含KEY的標準訊息）；預設來源全開，僅 hash 持久化。 |
 | verify | key、model；背景真 HTTPS GET models＋單次合成 POST；RAM key不落盤；要求 PONG／有限非負數值 cost。 |
-| finish | key_saved=true、handoff_copied=true；後端檢查當次 RAM proof、同 key_id／URL、KEY 未撤銷、來源登入、電源讀回與手動檢查確認，才存 completed_at。 |
+| finish | key_saved=true、handoff_copied=true、model；後端檢查當次 RAM proof、同 key_id／URL／交付模型與 native/provider 對應、KEY 未撤銷、來源登入、電源讀回與手動檢查確認，才存 completed_at。改交付模型／native 對應後必須重新 verify。 |
 
 非同步接受回 `{ok:true,status:running}`，忙碌回 `{ok:false,code:busy}`；結果從 state 讀 job/status/action/code。狀態錯誤只回 operation_failed／permission_required，不回 CLI 原始錯誤、token 或模型內容。重新啟動後未完成者需貼回已保存 KEY 再明確 verify，不自動重播推論。詳細流程及環境限制見 [ONBOARDING](ONBOARDING.md)。

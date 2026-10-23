@@ -12,7 +12,7 @@
 6. 選「一鍵部署並綁定」，或把「AI IDE 協作 prompt」貼給自己的 AI IDE。完成後重新檢查，確認固定 workers.dev endpoint、裝置已配對與 Relay 在線。
 7. 建立長效 KEY（預設 Claude／Codex 模型全開），保存到自己的服務端 secret，複製含 endpoint、KEY、model 與相容限制的第三方串接訊息。不要保存到公開 repo 或前端 bundle。
 8. 選擇自己訂閱可用的模型，明確發出一次合成 HTTPS 測試。先 GET models，再 POST chat/completions；需回 PONG 且 `usage.cost` 是有限、非負數值。使用少量訂閱額度，未知結果不自動重試。失敗時留在精靈排錯，不能宣稱完成。
-9. 勾選已保存 KEY／交接訊息，按完成。完整 KEY 只在 RAM／剪貼簿，關閉精靈便清空；中途重啟需貼回已保存的 KEY 再測一次，不自動建立或撤銷 KEY。
+9. 勾選已保存 KEY／交接訊息，按完成。交付模型及 native/provider 對應必須與本次真 HTTPS 測試相同，修改後需重新測試。完整 KEY 只在 RAM／剪貼簿，關閉精靈便清空；中途重啟需貼回已保存的 KEY 再測一次，不自動建立或撤銷 KEY。
 
 目前精靈會顯示 CLI 安裝命令並啟動已安裝 CLI 的官方登入；**不自動安裝 Node/npm 或取得供應商密碼**。需新安裝 CLI 的人可自行依命令安裝，也可交給 AI IDE 完成。登入瀏覽器頁面仍由本人同意授權，一鍵 Worker 部署不代表能略過 OAuth。
 

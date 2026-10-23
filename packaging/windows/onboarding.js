@@ -76,7 +76,7 @@
   bind('ob-verify', () => action('verify', {key:el('ob-key').value, model:el('ob-model').value}));
   bind('ob-finish', async () => {
     if (!copiedHandoff) throw new Error('請先複製完整串接訊息。');
-    await action('finish', {key_saved:el('ob-key-saved').checked, handoff_copied:el('ob-handoff-saved').checked});
+    await action('finish', {key_saved:el('ob-key-saved').checked, handoff_copied:el('ob-handoff-saved').checked, model:el('ob-model').value});
     closeAfterComplete = true; wizard.close(); toast('安裝設定完成；下次啟動直接進主畫面。');
   });
   el('ob-key').addEventListener('input', () => { handoff = ''; copiedHandoff = false; });

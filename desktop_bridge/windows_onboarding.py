@@ -320,18 +320,18 @@ class Onboarding:
                     if result['success']:
                         value['key_id'] = identity['id']  # Reinstall can reuse an already-saved valid key.
                     self.save(value)
-                    self.proof = (identity['id'], self.store.get('public_url')) if result['success'] else None
+                    self.proof = (identity['id'], self.store.get('public_url'), json.dumps(selected, sort_keys=True)) if result['success'] else None
             return self.task('verify', probe)
         if action == 'finish':
             with self.lock:
                 value = self.load()
                 identity = next((k for k in self.store.keys() if k['id'] == value.get('key_id') and not k['revoked_ts']), None)
+                model = next((m for m in self.store.get('models') if m['id'] == data.get('model')), None)
                 if (data.get('key_saved') is not True or data.get('handoff_copied') is not True or not identity
-                    or self.proof != (identity['id'], self.store.get('public_url'))
+                    or not model or self.proof != (identity['id'], self.store.get('public_url'), json.dumps(model, sort_keys=True))
                     or not value.get('lock_checks_acknowledged') or not self.power.inspect()['verified']):
                     raise ValueError('Complete power, HTTPS verification and key handoff first.')
                 # Login is read-only and checked freshly; quota is established by the actual POST.
-                model = next(m for m in self.store.get('models') if m['id'] == value['verification']['model'])
                 if not providers.status(model['provider'], self.store)['ready']:
                     raise ValueError('Selected subscription is not ready.')
                 value['completed_at'] = time.time()

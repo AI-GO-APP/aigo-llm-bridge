@@ -203,7 +203,7 @@ def test_full_workflow_persists_metadata_only_and_bypasses_daily_wizard(wizard, 
     wizard.action('verify', {'key': created['token'], 'model': wizard.store.get('models')[1]['id']})
     wait_job(wizard)
     assert wizard.load()['verification']['success']
-    wizard.action('finish', {'key_saved': True, 'handoff_copied': True})
+    wizard.action('finish', {'key_saved': True, 'handoff_copied': True, 'model': wizard.store.get('models')[1]['id']})
     assert not wizard.state()['required']
     assert not onboarding.Onboarding(wizard.owner, wizard.power).state()['required']
     for path in wizard.store.directory.glob('*.json'):
@@ -254,7 +254,7 @@ def test_reinstall_can_deliver_same_existing_key_after_real_verification(wizard,
     value = wizard.load(); value['lock_checks_acknowledged'] = True; wizard.save(value)
     wizard.action('verify', {'key': key, 'model': wizard.store.get('models')[1]['id']})
     wait_job(wizard)
-    wizard.action('finish', {'key_saved': True, 'handoff_copied': True})
+    wizard.action('finish', {'key_saved': True, 'handoff_copied': True, 'model': wizard.store.get('models')[1]['id']})
     assert not wizard.state()['required']
     assert wizard.load()['key_id'] == kid and len(wizard.store.keys()) == 1
 
@@ -307,3 +307,23 @@ def test_cli_can_reopen_completed_setup_once_without_resetting_install(wizard):
     assert wizard.state()['open_requested'] and not wizard.state()['required']
     wizard.action('opened', {})
     assert not wizard.state()['open_requested'] and wizard.load()['completed_at'] == 123
+
+
+def test_delivered_model_and_native_mapping_must_match_actual_verification(wizard, monkeypatch):
+    monkeypatch.setattr(onboarding.providers, 'status', lambda *_: {'ready': True})
+    monkeypatch.setattr(onboarding, 'verify', lambda *_: {'success': True, 'cost_usd': 0, 'code': 'ok'})
+    wizard.store.set('public_url', 'https://same.example.invalid')
+    _, key = wizard.store.create_key('original-saved-key')
+    wizard.power.apply(consent=True)
+    value = wizard.load(); value['lock_checks_acknowledged'] = True; wizard.save(value)
+    models = wizard.store.get('models')
+    wizard.action('verify', {'key': key, 'model': models[1]['id']}); wait_job(wizard)
+    with pytest.raises(ValueError):
+        wizard.action('finish', {'key_saved': True, 'handoff_copied': True, 'model': models[0]['id']})
+    models[1]['native'] = 'new-native-model'
+    wizard.store.set('models', models)
+    with pytest.raises(ValueError):
+        wizard.action('finish', {'key_saved': True, 'handoff_copied': True, 'model': models[1]['id']})
+    wizard.action('verify', {'key': key, 'model': models[1]['id']}); wait_job(wizard)
+    wizard.action('finish', {'key_saved': True, 'handoff_copied': True, 'model': models[1]['id']})
+    assert not wizard.state()['required']
