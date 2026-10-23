@@ -29,9 +29,11 @@ def test_relative_links_resolve():
 
 
 def test_every_doc_is_listed_in_readme():
+    # The product index is the entry point; legacy docs are intentionally separate.
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    unlisted = [p.name for p in sorted((ROOT / "docs").glob("*.md")) if f"docs/{p.name}" not in readme]
-    assert not unlisted, f"README 的文件表缺少:{unlisted}"
+    assert "docs/README.md" in readme
+    from tools.check_product_docs import check
+    assert not check()
 
 
 def test_release_assets_exist():

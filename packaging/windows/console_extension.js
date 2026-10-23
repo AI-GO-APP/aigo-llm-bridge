@@ -3,8 +3,8 @@
   const target = document.querySelector('#settings-form');
   if (target) {
     const section = document.createElement('article');
-    section.className = 'card settings-card';
-    section.innerHTML = '<h2>Windows 安裝與更新</h2><p id="windows-release-status">正在讀取版本…</p><div class="row-actions"><button type="button" class="secondary compact" id="windows-setup">開啟 CLI 設定引導</button><button type="button" class="secondary compact" id="windows-check">檢查更新</button><button type="button" class="primary compact" id="windows-apply">排空工作並更新</button></div><p>安裝包未具公發簽章。更新會保留此裝置的網址、KEY 與資料，不會部署 Worker 或變更訂閱登入。</p>';
+    section.className = 'card settings-card windows-update-card';
+    section.innerHTML = '<div class="section-description"><h2>Windows 安裝與更新</h2><p>此裝置的安裝版本與專屬更新渠道。</p></div><div class="settings-fields"><p id="windows-release-status">正在讀取版本…</p><div class="row-actions"><button type="button" class="secondary compact" id="windows-setup">開啟 CLI 設定引導</button><button type="button" class="secondary compact" id="windows-check">檢查更新</button><button type="button" class="primary compact" id="windows-apply">排空工作並更新</button></div><p>安裝包未具公發簽章。更新會保留此裝置的網址、KEY 與資料，不會部署 Worker 或變更訂閱登入。</p></div>';
     target.append(section);
     const notice = document.createElement('div');
     notice.className = 'preview-notice';

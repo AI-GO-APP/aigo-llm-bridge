@@ -43,14 +43,14 @@ function statusBadge(status) { return badge(statuses[status] || status, status =
 function empty(title, text, action = "") { return `<div class="empty"><span class="empty-icon"><svg><use href="#i-pulse"/></svg></span><h3>${esc(title)}</h3><p>${esc(text)}</p>${action}</div>`; }
 function logTable(rows, full = false) {
   if (!rows.length) return empty(full ? "沒有符合條件的請求" : "準備好迎接第一個請求", full ? "試著切換篩選條件，或在服務發出請求後回來查看。" : "建立 API 金鑰，將你的服務連接到 Bridge。", full ? "" : '<button class="secondary compact" id="empty-connect">開始接入 →</button>');
-  return `<table><thead><tr><th>模型 / 來源</th><th>狀態</th><th>耗時</th>${full ? "<th>HTTP</th><th>輸入 / 輸出 tokens</th><th>錯誤分類</th>" : ""}<th>時間</th></tr></thead><tbody>${rows.map(row => `<tr><td class="model">${esc(row.model || "未指定模型")}</td><td>${statusBadge(row.status)}</td><td>${row.duration_ms == null ? "—" : `${(row.duration_ms / 1000).toFixed(2)} s`}</td>${full ? `<td>${esc(row.http_status ?? "—")}</td><td>${esc(row.prompt_tokens ?? 0)} / ${esc(row.completion_tokens ?? 0)}</td><td>${esc(row.error_code || "—")}</td>` : ""}<td>${date(row.created_ts)}</td></tr>`).join("")}</tbody></table>`;
+  return `<table><thead><tr><th>模型 / 來源</th><th>狀態</th><th>耗時</th>${full ? "<th>HTTP</th><th>輸入 / 輸出 tokens</th><th>牌價估值 USD</th><th>錯誤分類</th>" : ""}<th>時間</th></tr></thead><tbody>${rows.map(row => `<tr><td class="model">${esc(row.model || "未指定模型")}</td><td>${statusBadge(row.status)}</td><td>${row.duration_ms == null ? "—" : `${(row.duration_ms / 1000).toFixed(2)} s`}</td>${full ? `<td>${esc(row.http_status ?? "—")}</td><td>${esc(row.prompt_tokens ?? 0)} / ${esc(row.completion_tokens ?? 0)}</td><td class="numeric">${row.cost_usd == null ? "—" : esc(Number(row.cost_usd).toFixed(6))}</td><td>${esc(row.error_code || "—")}</td>` : ""}<td>${date(row.created_ts)}</td></tr>`).join("")}</tbody></table>`;
 }
 const htmlCache = new Map();
 function updateHTML(id, html) { if (htmlCache.get(id) !== html) { $(id).innerHTML = html; htmlCache.set(id, html); } }
 function render() {
   $("preview-notice").hidden = !state.preview;
   const c = state.counts, keys = state.keys.filter(k => !k.revoked_ts), active = (c.queued || 0) + (c.running || 0);
-  $("version").textContent = `v${state.version}`;
+  $("version").textContent = state.windows_release ? `Windows ${state.windows_release.version}` : `核心 ${state.version}`;
   $("service-badge").className = `badge ${state.accepting ? "" : "warning"}`;
   $("service-badge").innerHTML = `<i></i>${state.accepting ? "接受請求中" : "已暫停接單"}`;
   $("metric-keys").textContent = keys.length; $("nav-key-count").textContent = keys.length;
@@ -225,7 +225,7 @@ $("model-editor").addEventListener("click", e => { const button = e.target.close
 $("save-models").addEventListener("click", e => run(e.currentTarget, async () => { if (!state) throw new Error("請等待管理台連線。"); const models = [...document.querySelectorAll(".model-row")].map(row => Object.fromEntries([...row.querySelectorAll("[data-model]")].map(input => [input.dataset.model, input.value.trim()]))); if (!models.length || models.some(m => !m.id || !m.native)) throw new Error("請至少登錄一個模型，並填妥模型名稱與原生 ID。"); await api("/manage/settings", {...state.settings, startup:state.startup, models}); toast("模型對應已儲存"); await refresh(); }));
 $("pair-relay").addEventListener("click", () => { modal("裝置配對", '<form id="pair-form" class="modal-form"><p>輸入雲端 Worker 的 DEVICE_KEY。配對 key 會以 Windows DPAPI 或 macOS Keychain 保存。</p><label>裝置配對 key<input name="key" type="password" autocomplete="off" required></label><p id="modal-error" class="inline-error" role="alert"></p><button type="submit" class="primary">儲存配對 key</button></form>'); $("pair-form").addEventListener("submit", e => { e.preventDefault(); modalRun(e.target.querySelector("button"), async () => { await api("/manage/pair", {key:e.target.elements.key.value}); closeModal(); toast("配對 key 已保存，請啟用轉接並儲存設定。"); }); }); });
 for (const action of ["start","stop"]) $(`${action}-tunnel`).addEventListener("click", e => run(e.currentTarget, async () => { await api(`/manage/tunnel/${action}`, {}); await refresh(); }));
-function shutdown() { confirmation("結束 Bridge", "本機服務將停止，執行中的工作會取消，外部服務也將無法呼叫。若只想關閉管理台，直接關閉瀏覽器分頁即可。", "結束 Bridge", async () => { await api("/manage/shutdown", {}); stopped = true; closeModal(); $("connection-error").hidden = false; $("connection-error").textContent = "Bridge 正在結束。可關閉此頁；下次請從 Bridge 捷徑啟動。"; $("service-badge").className = "badge neutral"; $("service-badge").textContent = "服務正在停止"; }); }
+function shutdown() { confirmation("結束 Bridge", "本機服務將停止，執行中的工作會取消，外部服務也將無法呼叫。若只想關閉管理台，直接關閉視窗或瀏覽器分頁即可。", "結束 Bridge", async () => { await api("/manage/shutdown", {}); stopped = true; closeModal(); $("connection-error").hidden = false; $("connection-error").textContent = "Bridge 正在結束。可關閉此頁；下次請從 Bridge 捷徑啟動。"; $("service-badge").className = "badge neutral"; $("service-badge").textContent = "服務正在停止"; }); }
 $("shutdown").addEventListener("click", shutdown);
 $("page-settings").insertAdjacentHTML("beforeend", '<button class="secondary danger mobile-shutdown" id="mobile-shutdown">結束 Bridge</button>');
 $("mobile-shutdown").addEventListener("click", shutdown);

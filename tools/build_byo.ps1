@@ -20,15 +20,21 @@ Get-ChildItem -LiteralPath dist/byo/AIGO-LLM-Bridge -Force | Copy-Item -Destinat
 $setupRoot = Join-Path $appRoot 'BYO-Setup'
 New-Item -ItemType Directory -Path $setupRoot -Force | Out-Null
 Get-ChildItem -LiteralPath dist/byo-setup/AIGO-Bridge-Setup -Force | Copy-Item -Destination $setupRoot -Recurse -Force
-Copy-Item -LiteralPath AGENTS.md,CLAUDE.md -Destination $appRoot -Force
-foreach ($folder in @('docs','skills/byo-cloudflare','cloudflare/src')) { New-Item -ItemType Directory -Path (Join-Path $appRoot $folder) -Force | Out-Null }
-Copy-Item -LiteralPath docs/BYO-QUICKSTART.md,docs/DEVICE-IDENTITY.md,docs/AI-AGENT-SETUP.md,docs/P1-Windows-guide.md,docs/OPENROUTER-PRICING.md,docs/THIRD-PARTY-INTEGRATION.md,docs/AI-EA-CLOUD-BEST-PRACTICE.md,docs/CROSS-PLATFORM-INSTALL.md -Destination (Join-Path $appRoot 'docs') -Force
-Copy-Item -LiteralPath skills/byo-cloudflare/SKILL.md -Destination (Join-Path $appRoot 'skills/byo-cloudflare') -Force
+# Reuse the native installer's curated, tracked and commit-pinned documentation.
+$documentStage = Join-Path $projectRoot '.desktop-build/byo-document-stage'
+python packaging/windows/build_resources.py --stage $documentStage
+if ($LASTEXITCODE -ne 0) { throw 'Cannot stage tracked package documentation.' }
+Get-ChildItem -LiteralPath (Join-Path $documentStage 'documents') -Force | Copy-Item -Destination $appRoot -Recurse -Force
+New-Item -ItemType Directory -Path (Join-Path $appRoot 'cloudflare/src') -Force | Out-Null
 Copy-Item -LiteralPath cloudflare/src/worker.js -Destination (Join-Path $appRoot 'cloudflare/src') -Force
 Copy-Item -LiteralPath cloudflare/wrangler.jsonc -Destination (Join-Path $appRoot 'cloudflare') -Force
-Copy-Item -LiteralPath docs/AI-AGENT-SETUP.md -Destination (Join-Path $packageRoot 'AGENT-SETUP.md') -Force
-$userGuide = Get-Content -LiteralPath docs/BYO-QUICKSTART.md -Raw
-$userGuide.Replace('(DEVICE-IDENTITY.md)', '(app/docs/DEVICE-IDENTITY.md)').Replace('(P1-Windows-guide.md)', '(app/docs/P1-Windows-guide.md)').Replace('(CROSS-PLATFORM-INSTALL.md)', '(app/docs/CROSS-PLATFORM-INSTALL.md)').Replace('(THIRD-PARTY-INTEGRATION.md)', '(app/docs/THIRD-PARTY-INTEGRATION.md)') | Set-Content -LiteralPath (Join-Path $packageRoot 'USER-GUIDE.md') -Encoding utf8
+# Root entrypoints link to the maintained guides instead of copying their relative links.
+'# Agent setup (legacy ZIP)
+
+Read [the agent prompt](app/docs/AI-AGENT-SETUP.md) and [app/AGENTS.md](app/AGENTS.md). This archive uses Install.ps1 and BYO-Setup, not the newer Velopack layout.' | Set-Content -LiteralPath (Join-Path $packageRoot 'AGENT-SETUP.md') -Encoding utf8
+'# User guide (legacy ZIP)
+
+Read [BYO setup](app/docs/BYO-QUICKSTART.md) and [the product index](app/docs/README.md). Use the legacy ZIP section for this archive; the newer Setup installer is a separate product path.' | Set-Content -LiteralPath (Join-Path $packageRoot 'USER-GUIDE.md') -Encoding utf8
 'This package uses installer-owned BYO Cloudflare. Read app/AGENTS.md and app/skills/byo-cloudflare/SKILL.md. Work from app/; the native setup CLI is BYO-Setup/AIGO-Bridge-Setup.exe. There is no publisher-managed endpoint.' | Set-Content -LiteralPath (Join-Path $packageRoot 'AGENTS.md') -Encoding utf8
 'Read AGENTS.md and app/AGENTS.md before setup. Use installer-owned BYO Cloudflare.' | Set-Content -LiteralPath (Join-Path $packageRoot 'CLAUDE.md') -Encoding utf8
 Compress-Archive -LiteralPath $packageRoot -DestinationPath dist/AIGO-LLM-Bridge-BYO-Windows.zip -Force

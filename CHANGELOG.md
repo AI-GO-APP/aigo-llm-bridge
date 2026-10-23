@@ -1,5 +1,11 @@
 # Changelog
 
+## Windows installer 0.7.3
+
+- Adopt the contract/billing console visual system across all six Bridge pages, light/dark themes and Windows settings.
+- Add the product documentation index, requirements, architecture, full SQLite dictionary, API compatibility, design system, decisions and acceptance matrix; bundle them with Windows and check drift in CI.
+- Preserve device URL, key scope, metadata and provider logins; no Cloud deployment or Mac release.
+
 格式參考 [Keep a Changelog](https://keepachangelog.com/),版本號遵循 [SemVer](https://semver.org/)。
 0.x 期間 API 可能變動,每次變動都會寫在這裡。
 

@@ -7,6 +7,8 @@ from urllib.parse import quote, unquote, urlsplit
 
 DOCUMENTS = ('AGENTS.md', 'CLAUDE.md', 'skills/byo-cloudflare/SKILL.md', *(
     'docs/' + name for name in (
+        'README.md', 'REQUIREMENTS.md', 'ARCHITECTURE.md', 'SCHEMA.md', 'API.md',
+        'DESIGN-SYSTEM.md', 'DECISIONS.md', 'ACCEPTANCE.md',
         'BYO-QUICKSTART.md', 'DEVICE-IDENTITY.md', 'AI-AGENT-SETUP.md', 'P1-Windows-guide.md',
         'OPENROUTER-PRICING.md', 'THIRD-PARTY-INTEGRATION.md', 'AI-EA-CLOUD-BEST-PRACTICE.md',
         'CROSS-PLATFORM-INSTALL.md', 'WINDOWS-INSTALL-UPDATE.md',
@@ -46,3 +48,13 @@ def stage_documents(root, stage, commit):
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(''.join(parts), encoding='utf-8')
     (stage / 'documents.json').write_text(json.dumps(DOCUMENTS), encoding='utf-8')
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='Stage installer guides with commit-pinned external links.')
+    parser.add_argument('--stage', required=True)
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parents[2]
+    commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+    stage_documents(root, args.stage, commit)
