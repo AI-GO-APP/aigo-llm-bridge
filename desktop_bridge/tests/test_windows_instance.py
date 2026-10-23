@@ -108,10 +108,11 @@ def test_failed_startup_releases_machine_and_initialized_services(tmp_path, addr
 
 
 WRAPPER = '''
-import json,sys,threading
+import json,sys,threading,webbrowser
 from desktop_bridge import windows_instance,management,__main__ as app
 windows_instance.MACHINE_ADDRESS=('127.0.0.1',int(sys.argv.pop(1)))
 management.ManagementServer.refresh_auth=lambda self:None
+webbrowser.open=lambda _url:print('activated',flush=True)
 original=management.ManagementServer.start
 def ready(manager):
     original(manager)
@@ -137,6 +138,7 @@ def test_real_profiles_normal_exit_kill_and_restart(tmp_path, address, ending):
         duplicate = subprocess.run(command + ['--background', '--data-dir', str(one), '--port', '0'],
             capture_output=True, text=True, cwd=ROOT, timeout=15, creationflags=subprocess.CREATE_NO_WINDOW)
         assert duplicate.returncode == 0
+        assert line(child) == 'activated'
         rejected = subprocess.run(command + ['--background', '--data-dir', str(two), '--port', '0'],
             capture_output=True, text=True, cwd=ROOT, timeout=15, creationflags=subprocess.CREATE_NO_WINDOW)
         assert rejected.returncode == guard.BUSY_EXIT and not two.exists()
