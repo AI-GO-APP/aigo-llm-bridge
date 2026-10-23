@@ -15,6 +15,8 @@ Mac 現行渠道為 `macos-source-v<Mac VERSION>` 的 GitHub Release。它交付
 3. 解壓，在 `aigo-llm-bridge` 目錄開 Terminal，執行 `sh Install.command`（或 `python3 tools/install.py`）。可明確指定 `--install-root`，不需要 sudo。不繞過作業系統安全提示；若 Finder 無法直接執行，使用上述可檢查的 Terminal 指令。
 4. 開啟安裝目錄 `Bridge.command`，依 [Mac 五步設定](MACOS-SETUP.md) 完成本人 CLI、Cloudflare、自有 Worker、電源同意與真 HTTPS／KEY 交付。只有已完成者日常啟動才略過。完整資料位置與 CLI 見 [source 安裝](CROSS-PLATFORM-INSTALL.md)。
 
+`source-install.json` 的 `source_commit` 取自 ZIP 內 `source-release.json`；解壓位置即使位於其他 git repo 內也不會誤記外層 commit（0.9.6-mac.1 起）。
+
 ZIP 不含使用者資料或憑證，也不附 Python runtime。安裝器建立專用 venv、安裝依賴、複製來源與文件；`source-install.json` 記錄版號、原 Release commit、data-dir 及來源位置。解壓來源保留在自己選定的位置，供日後明確來源更新；資料始終在安裝 profile，不在下載 ZIP。
 
 ## 更新既有 Mac

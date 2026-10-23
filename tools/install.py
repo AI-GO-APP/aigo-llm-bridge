@@ -14,6 +14,23 @@ import venv
 SOURCE = Path(__file__).resolve().parent.parent
 
 
+def provenance(source, version):
+    """Release receipt first; Git only when the source itself is the repository root."""
+    # An extracted Release ZIP may sit inside an unrelated repository; its HEAD is not our source.
+    receipt=Path(source)/'source-release.json'
+    if receipt.is_file():
+        release_source=json.loads(receipt.read_text(encoding='utf-8'))
+        if (release_source.get('format')!='macos-byo-source' or release_source.get('version')!=version or
+            not re.fullmatch('[0-9a-f]{40}',str(release_source.get('commit','')))):
+            raise ValueError('Mac release source metadata does not match the installer.')
+        return release_source['commit']
+    try:
+        top,head=subprocess.check_output(['git','-C',str(source),'rev-parse','--show-toplevel','HEAD'],
+                                         stderr=subprocess.DEVNULL,text=True).splitlines()
+    except (OSError,subprocess.SubprocessError,ValueError):return None
+    return head if Path(top).resolve()==Path(source).resolve() else None
+
+
 def install(root, data_dir=None, *, dependencies=True):
     if sys.version_info < (3,12):raise ValueError('Python 3.12+ is required.')
     root=Path(root).absolute();manifest=root/'source-install.json'
@@ -34,6 +51,7 @@ def install(root, data_dir=None, *, dependencies=True):
         if result.returncode:raise ValueError('Dependency installation failed. Check Python/network and retry; no provider login was changed.')
     version={}
     exec((SOURCE/'desktop_bridge/__init__.py').read_text(encoding='utf-8'),version)
+    source_commit=provenance(SOURCE,version['__version__'])
     release=root/'versions'/(version['__version__']+'-'+uuid.uuid4().hex[:12])
     release.mkdir(parents=True)
     for folder in ('desktop_bridge','cloudflare/src','skills/byo-cloudflare','docs'):
@@ -49,18 +67,6 @@ def install(root, data_dir=None, *, dependencies=True):
     launcher.write_text("import json, pathlib, runpy, sys\np=pathlib.Path(__file__).parent\nm=json.loads((p/'source-install.json').read_text(encoding='utf-8'))\nsys.path.insert(0,m['app'])\nsys.argv=[sys.argv[0],'--data-dir',m['data_dir'],*sys.argv[1:]]\nrunpy.run_module('desktop_bridge',run_name='__main__')\n",encoding='utf-8')
     data.mkdir(parents=True,exist_ok=True)
     if os.name!='nt':root.chmod(0o700);data.chmod(0o700)
-    try:
-        source_commit=subprocess.check_output(['git','-C',str(SOURCE),'rev-parse','HEAD'],stderr=subprocess.DEVNULL,text=True).strip()
-    except (OSError,subprocess.SubprocessError):
-        source_commit=None
-        receipt=SOURCE/'source-release.json'
-        if receipt.is_file():
-            release_source=json.loads(receipt.read_text(encoding='utf-8'))
-            if (release_source.get('format')!='macos-byo-source' or
-                release_source.get('version')!=version['__version__'] or
-                not re.fullmatch('[0-9a-f]{40}',str(release_source.get('commit','')))):
-                raise ValueError('Mac release source metadata does not match the installer.')
-            source_commit=release_source['commit']
     value={'source_commit':source_commit,'source_checkout':str(SOURCE),'version':version['__version__'],'python':str(python),'app':str(release),'data_dir':str(data),'launcher':str(launcher),'install_root':str(root)}
     if previous:
         backup=root/'source-install.previous.json'
