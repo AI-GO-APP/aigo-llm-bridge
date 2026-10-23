@@ -1,10 +1,10 @@
 # 從 repo 安裝：Windows / macOS
 
-本流程供進階使用者與其 AI agent 使用。Windows 新安裝優先使用不需 Python 的 [Velopack Setup](WINDOWS-INSTALL-UPDATE.md)，舊原生 ZIP 為另一條安裝路徑；macOS 目前提供原始碼安裝器，尚未提供原生 .app／DMG。macOS 是否已實機驗收須以最新驗收報告為準，不能用 Windows 測試或 CI 設定取代。
+本流程供進階使用者與其 AI agent 使用。Windows 新安裝優先使用不需 Python 的 [Velopack Setup](WINDOWS-INSTALL-UPDATE.md)，舊原生 ZIP 為另一條安裝路徑；macOS 提供 [Mac Release source ZIP](MACOS-RELEASE.md)，下載後驗 SHA256、解壓、執行 Install.command 或下方 Python 指令；尚未提供公證 .app／DMG。macOS 是否已實機驗收須以最新驗收報告為準，不能用 Windows 測試或 CI 設定取代。
 
 ## 前置條件
 
-Mac `0.8.1-mac.1` 的 WKWebView、五步精靈及來源更新見 [Mac 操作契約](MACOS-SETUP.md)。關閉視窗仍在背景接單；安裝不自動更改電源或啟動 OAuth。
+Mac `0.9.1-mac.1` 的 WKWebView、五步精靈及來源更新見 [Mac 操作契約](MACOS-SETUP.md)。關閉視窗仍在背景接單；安裝不自動更改電源或啟動 OAuth。
 
 - Python 3.12+（含 venv/pip）、Node.js 24.22.1+（或 22.23.4+）、網路，以及安裝者自己的 Cloudflare 帳戶。
 - 安裝 Wrangler：Windows `npm.cmd install -g wrangler@4.152.0`；macOS `npm install -g wrangler@4.152.0`。若沒有全域安裝權限，可在 repo 的 cloudflare 目錄安裝相同版本，helper 會找本機 node_modules。
@@ -18,7 +18,7 @@ Mac `0.8.1-mac.1` 的 WKWebView、五步精靈及來源更新見 [Mac 操作契�
 
 Windows 預設為 `%LOCALAPPDATA%\AIGO LLM Bridge Source`，與既有原生 ZIP 安裝隔離。macOS 預設為 `~/Library/Application Support/AIGO LLM Bridge`。兩者資料都在該安裝目錄的 `data`，詳見 `source-install.json`。
 
-可帶 `--install-root <路徑>`、`--data-dir <路徑>` 做隔離安裝。更新時以同一 install-root 重跑，沿用資料、UUID、Worker URL 與 key hash；拒絕改指別的 data-dir。舊版本保留。更新前暫停、排空並關閉**此安裝**的 Bridge，更新不會自動停止任何程序。不要把原生 ZIP 安裝目錄交給此 source 安裝器。
+可帶 `--install-root <路徑>`、`--data-dir <路徑>` 選擇安裝與資料位置。Mac 同一台電腦僅允許一個 runtime，不因另選目錄／API port 而允許雙開。更新時以同一 install-root 重跑，沿用資料、UUID、Worker URL 與 key hash；拒絕改指別的 data-dir。舊版本保留。更新前暫停、排空並關閉**此安裝**的 Bridge，更新不會自動停止任何程序。不要把原生 ZIP 安裝目錄交給此 source 安裝器。
 
 ## macOS CLI 完整範例
 

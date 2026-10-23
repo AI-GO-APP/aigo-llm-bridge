@@ -68,8 +68,18 @@ Velopack after-install hook 只寫安裝 UUID；一般 update 不觸發此 hook�
 
 Windows 0.8.1 的安全邊界、依賴與 Schema／CLI 傳輸限制見 [SECURITY](SECURITY.md)；更新不重新授權 CLI、不重建 endpoint 或 KEY，也不自動部署 Worker。
 
+## Mac 全機單實例
+
+Mac source 0.9.1-mac.1 在共用啟動入口的 profile 鎖之後、Store／Runtime／API／relay 之前，以 `macos_instance.MachineInstance` 獨占綁定 `127.0.0.1:8919`。固定鎖地址不隨 data-dir、安裝位置、API port 或 OS 使用者改變；只 bind、不 listen、不傳送資料、不提供管理能力，不使用 reuse socket options。OS 在正常／異常程序退出時釋放；fd 不傳給子程序。相同 profile 的重開仍只喚回原視窗。不同 profile 或其他程式占用鎖地址時拒絕啟動，不嘗試辨識／停止占用者。
+
+前景拒絕回 exit 2 並寫固定 stderr 訊息；`--background` 因忙碌拒絕回 exit 0，避免 LaunchAgent 的失敗重啟迴圈，須在原服務正常結束後明確重新啟動。其他鎖錯誤回 exit 2，不能退回無鎖執行。全機鎖不包含 profile 路徑／KEY／token；Windows 原生入口待 issue #20 實作。舊版不持有此鎖，升級前須正常停止舊版，不能宣稱可限制任意歷史 binary。
+
+Mac 發布由 `packaging/macos/build.py` 以 tracked 公開來源 allowlist 建現行 BYO ZIP（不使用 legacy desktop builder），`macos-source-release.yml` 重跑 native／source／ZIP 真安裝後，以 main commit／hash 發布。source-release.json 讓無 .git 的下載包仍保留來源 SHA；詳細見 [Mac Release](MACOS-RELEASE.md)。
+
 ## 模型與 Decisions（0.9）
 
 `model_catalog.ModelCatalog` 是依 provider scope 的 RAM cache：CLI 登入／設定 stat hash 識別世代，模型目錄 30 秒、推論證據 60 秒，重複 refresh 至少間隔 5 秒。Codex 的獨立 app-server 只做 model/list、不建立 thread／turn；Claude 沒有等價目錄，以登錄及近期證據呈現。查詢不寫 inference log，不傳原始憑證。
 
 `decision_contract` 只接受明確 model 與有限 state／questions，生成不含 caller 自訂引用的 bounded schema；`Runtime` 用既有 queue／RPM／deadline 依題順序執行，每題 payload 只含本題與 state，透過既有 stdin 與無工具 provider。`decisions` 經隔離 validator 後計算答案／confidence；不是 Jev 原模型校準結果。逐次 quote.usage 後聚合，先保存已知計量再驗語意或執行後續題目；receipt 揭露未完整計量，不保存題目或答案。外部新增路徑只在 Worker 範本 allowlist，不隨 Windows 更新部署。
+
+啟動入口以 ExitStack 保管已建立的 Store／Runtime／API／relay／management；中途初始化失敗與正常停止都先清理服務，再釋放 profile／全機鎖，避免已開 HTTP／推論仍活著卻允許第二套接手。

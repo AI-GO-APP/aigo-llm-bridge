@@ -22,6 +22,8 @@ Windows 0.8.2 安全修補已合併發布並升級正式安裝，真實 HTTPS、
 | A-08 全頁視覺 | R-11：六頁＋modal＋Windows卡；淺深色、桌面／窄版，無整頁橫向溢出 | 實際render截圖＋DOM尺寸／keyboard／console；樣式文字存在不算視覺通過 |
 | A-09 真安裝更新 | R-12：Setup→A→B、簽章／hash、排空、等待viewer退出、重啟、KEY／URL／資料不變 | `tools/verify_installer_update.py`與Windows runner；公開HTTPS更新另驗，不能只看loopback |
 | A-10 文件可交接 | R-13：入口／七份產品文件／隨包文件／schema與API覆蓋／歷史區隔 | `tools/check_product_docs.py`、build_resources、人工語意對照；不以聊天摘要代替 |
+| A-11 全機單實例 | R-21：不同 profile／port／安裝目錄／OS 使用者不能多開；同 profile 喚回、拒絕不改 DB、正常／異常退出釋鎖；關窗與停止語意清楚 | 原子鎖及真 subprocess 競爭、隔離 headless HTTP、資料回讀；Mac [本輪 QA](qa/2026-10-23-macos-single-instance.md)，Windows issue #20 另驗 |
+| A-12 Mac Release | R-22：現行包可匿名下載、hash／來源吻合、真下載安裝及原裝置升級／HTTPS通過 | [Mac 發布驗收](qa/2026-10-23-macos-release.md)、Mac release workflow／download smoke／既有 KEY／設定前後回讀 |
 
 ## 既有證據：0.7.2
 

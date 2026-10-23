@@ -1,6 +1,6 @@
 # Windows Release 操作手冊
 
-此文件針對 Windows PyInstaller＋Velopack internal。產品文件入口見 [README](README.md)，檢查矩陣見 [CI-CD](CI-CD.md)；Mac 與安裝者 Worker 由各自維護者／擁有者處理，不共享此發布指令。
+此文件針對 Windows PyInstaller＋Velopack internal。產品文件入口見 [README](README.md)，檢查矩陣見 [CI-CD](CI-CD.md)；Mac 與安裝者 Worker 由各自維護者／擁有者處理，不共享此發布指令。Mac 現行 source ZIP 的獨立流程見 [Mac Release](MACOS-RELEASE.md)。
 
 ## 一次性發布環境
 

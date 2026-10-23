@@ -1,10 +1,10 @@
 name: Desktop macos
 on:
   pull_request:
-    paths: ['desktop/**', 'desktop_bridge/**', 'tools/install.py', 'tools/mac_service.py', 'tools/verify_macos_console.py', 'desktop_platform/macos/**', 'packaging/build_desktop.py', 'packaging/macos/**', '.github/workflows/desktop-macos.yml', 'VERSION']
+    paths: ['desktop/**', 'desktop_bridge/**', 'tools/install.py', 'tools/mac_service.py', 'tools/verify_macos_console.py', 'tools/verify_macos_package.py', 'desktop_platform/macos/**', 'packaging/build_desktop.py', 'packaging/macos/**', '.github/workflows/desktop-macos.yml', 'VERSION']
   push:
     branches: [main]
-    paths: ['desktop/**', 'desktop_bridge/**', 'tools/install.py', 'tools/mac_service.py', 'tools/verify_macos_console.py', 'desktop_platform/macos/**', 'packaging/build_desktop.py', 'packaging/macos/**', '.github/workflows/desktop-macos.yml', 'VERSION']
+    paths: ['desktop/**', 'desktop_bridge/**', 'tools/install.py', 'tools/mac_service.py', 'tools/verify_macos_console.py', 'tools/verify_macos_package.py', 'desktop_platform/macos/**', 'packaging/build_desktop.py', 'packaging/macos/**', '.github/workflows/desktop-macos.yml', 'VERSION']
   workflow_dispatch:
   workflow_call:
 permissions:
@@ -22,6 +22,14 @@ jobs:
       - run: python -m pytest desktop_bridge/tests -q
       - run: python tools/check_product_docs.py
       - run: python tools/verify_macos_console.py --output "${{ runner.temp }}/mac-console"
+      - run: python packaging/macos/build.py
+      - name: Install current BYO release ZIP and verify real service
+        run: python tools/verify_macos_package.py --package dist/macos-source/aigo-llm-bridge-macos-source-$(cat VERSION).zip
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: macos-byo-source
+          path: dist/macos-source/*
+
   verify:
     runs-on: macos-15
     timeout-minutes: 15
@@ -38,7 +46,7 @@ jobs:
           AIGO_DESKTOP_HOME: ${{ runner.temp }}/aigo-desktop-smoke
         run: python desktop_platform/macos/install.py --no-start --port 18790
       - name: 建置本平台安裝包
-        run: python packaging/macos/build.py
+        run: python packaging/build_desktop.py --target macos --output dist/macos
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: desktop-macos

@@ -26,6 +26,10 @@
 
 ## [Unreleased]
 
+## [0.9.1-mac.1] - 2026-10-23
+
+Mac source：全機僅允許一個 Bridge runtime；跨 profile、安裝位置、API port 與 macOS 使用者共用固定 loopback 互斥鎖。第二套在 DB／relay 前退出，同 profile 重開仍喚回原管理視窗；正常／異常退出由 OS 釋鎖。補充關窗仍背景供應、明確結束與排空停止的差異。新增現行 BYO source Release／checksum／來源 manifest／ZIP 真安裝閘門與雙平台 README／Agent 引導；Windows 全機限制交由 issue #20，不部署 Worker。
+
 ## [0.9.0] - 2026-10-23
 
 - Add caller-scoped model discovery, timestamped capability evidence and explicit synthetic probes without treating picker lists as subscription entitlement.

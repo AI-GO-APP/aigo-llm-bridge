@@ -30,6 +30,8 @@ Mac source 同步的共通功能及平台差異以 [Mac 設定契約](MACOS-SETU
 | R-18 | CI/CD、Release、pin、權限、政策續期／最低版本、故障恢復與 installed-verified 收據具 repo 正本，不依賴本地記憶或 AI EA Cloud／Supabase。 |
 | R-19 | caller scope 的模型／能力查詢與 refresh 不推論，提供具時間及登入世代的證據；明確 probe 使用固定合成輸入並計量，不把 CLI 選單當成訂閱模型權限。 |
 | R-20 | Jev 相容 Decisions 保留 state／questions／answers，支援 noul／choice／score，逐題隔離、原順序、受限 schema 驗證、不默默換模型或重試，逐次核對模型／token 計價並保留失敗時已知成本與未知計量旗標。新公開路徑需安裝者另授權部署原 Worker。 |
+| R-21 | 一台電腦同時僅允許一個 Bridge runtime，跨設定檔、安裝目錄、API port 及 OS 使用者；同設定檔重開只喚回管理視窗。第二套在開啟資料庫／relay 前拒絕，不重建 URL／KEY。Mac source 0.9.1-mac.1 實作，Windows 待 [issue #20](https://github.com/AI-GO-APP/aigo-llm-bridge/issues/20) 修復及獨立驗收。 |
+| R-22 | Mac Release 交付現行 BYO source ZIP、SHA256、clean commit manifest 與 self-test；下載包可實際安裝／啟停，原裝置更新保留 URL／KEY／模型／容量，README／Agent 指引能分流雙平台及首次／既有安裝。 |
 
 ## 非功能需求與邊界
 

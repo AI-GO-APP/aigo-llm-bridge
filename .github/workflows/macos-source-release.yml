@@ -1,0 +1,48 @@
+name: Mac BYO source release
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: macos-byo-source-release
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/desktop-macos.yml
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: macos-byo-source
+          path: dist/macos-source
+      - name: Verify clean source, hashes and native acceptance before publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          root=pathlib.Path('dist/macos-source')
+          manifest=json.loads((root/'macos-source-manifest.json').read_text())
+          evidence=json.loads((root/'macos-source-self-test.json').read_text())
+          version=pathlib.Path('VERSION').read_text().strip()
+          commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert manifest['version']==version and manifest['commit']==commit
+          assert manifest['format']=='macos-byo-source' and manifest['redistributable'] and not manifest['dirty']
+          assert evidence['success'] and evidence['redistributable']
+          package=root/manifest['package']
+          assert package.name==f'aigo-llm-bridge-macos-source-{version}.zip'
+          assert package.stat().st_size==manifest['size']
+          assert hashlib.sha256(package.read_bytes()).hexdigest()==manifest['sha256']
+          tag='macos-source-v'+version
+          notes=pathlib.Path('macos-release-notes.md')
+          notes.write_text('macOS BYO Cloudflare LLM Bridge source installer. Requires Python 3.12+, your own Claude Code/Codex subscription and Cloudflare account. Extract the ZIP, read README.md, then run Install.command. New installs use the five-step native setup; existing installs preserve their profile, URL and keys. One Bridge runtime per Mac. Closing the viewer keeps service running; use End Bridge or mac_service.py stop to stop. This is a source installer, without a notarized .app/DMG; no Windows or Worker deployment. See docs/MACOS-RELEASE.md and docs/CROSS-PLATFORM-INSTALL.md.\n')
+          subprocess.run(['gh','release','create',tag,'--target',commit,'--title','Mac BYO Bridge '+version,
+                          '--notes-file',str(notes),'--latest=false',*[str(p) for p in sorted(root.iterdir())]],check=True)
+          PY

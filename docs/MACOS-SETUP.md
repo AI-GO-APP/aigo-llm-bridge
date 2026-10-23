@@ -1,10 +1,10 @@
 # Mac 設定、常駐與來源更新
 
-Mac source 候選 `0.8.1-mac.1` 同步 Windows 0.7.3 設計、0.8.0 首次設定及 0.8.1 共用安全修補，使用 Cocoa／WKWebView、登入 Keychain 與使用者 LaunchAgent。實測範圍見 [Mac 同步 QA](qa/2026-10-23-macos-parity.md)。不發布 Mac release／DMG，Windows 發布渠道不適用 Mac。
+Mac source `0.9.1-mac.1` 同步 Windows 0.7.3 設計、0.8.0 首次設定及 0.8.1 共用安全修補，使用 Cocoa／WKWebView、登入 Keychain 與使用者 LaunchAgent。實測範圍見 [Mac 同步 QA](qa/2026-10-23-macos-parity.md)。Mac 發布現行 BYO source ZIP，下載與更新見 [Mac Release](MACOS-RELEASE.md)；不提供公證 .app／DMG，Windows 發布渠道不適用 Mac。
 
 ## 安裝與管理視窗
 
-依 [source 安裝](CROSS-PLATFORM-INSTALL.md) 執行 `python3 tools/install.py`。安裝器在專用 runtime 安裝鎖定版 pywebview 及 Cocoa 依賴，隨附產品文件。`Bridge.command` 開啟原生管理視窗，原生環境不可用時回退預設瀏覽器。關閉視窗不停止背景 Bridge；再次使用捷徑可開回原視窗。完整停止使用管理台「結束 Bridge」或 `mac_service.py stop`。
+從 [Mac Release](MACOS-RELEASE.md) 下載 ZIP、核對 SHA256、解壓，或使用 repo；依 [source 安裝](CROSS-PLATFORM-INSTALL.md) 執行 `python3 tools/install.py`。安裝器在專用 runtime 安裝鎖定版 pywebview 及 Cocoa 依賴，隨附產品文件。`Bridge.command` 開啟原生管理視窗，原生環境不可用時回退預設瀏覽器。關閉視窗不停止背景 Bridge；再次使用捷徑可開回原視窗。完整停止使用管理台「結束 Bridge」或 `mac_service.py stop`。
 
 六頁設計、深淺色、窄版、模型映射、KEY 生命週期、metadata 篩選及 CSV 與 Windows 共用。Mac 適配提供系統剪貼簿及 Save／Cancel；瀏覽器保留 Clipboard／下載備援。原生操作只接受綁定的 loopback 管理頁。管理 token 經子程序 stdin 傳遞，不寫控制檔或 argv。
 
@@ -39,7 +39,7 @@ Mac 適配僅執行固定的 `pmset -c sleep <整數>`，以 `pmset -g custom` �
 
 管理台「排空並從本機來源更新」只用安裝器記錄的 `source_checkout`，不接受網頁傳入任意來源，不自行抓取／合併遠端。依序 pause／wait-idle、停止本 profile、保留 manifest／舊 app、安裝、啟動及確認 HTTP 版本；失敗嘗試還原原 manifest 並啟動舊版。手動實例持有 lock 時拒絕更新，不強殺程序。
 
-此為明確操作的來源更新，沒有 Mac 簽章 feed、強制最低版本或公發安裝包。Windows Ed25519／Velopack 政策不適用 Mac。依賴不相容的大版本仍須依 [回復說明](CROSS-PLATFORM-INSTALL.md#macos-launchagent-管理與回復) 恢復對應 runtime；程式回復不代表資料庫回復。
+此為明確操作的來源更新，沒有 Mac 簽章 feed 或強制最低版本；公開交付格式為 source ZIP。Windows Ed25519／Velopack 政策不適用 Mac。依賴不相容的大版本仍須依 [回復說明](CROSS-PLATFORM-INSTALL.md#macos-launchagent-管理與回復) 恢復對應 runtime；程式回復不代表資料庫回復。
 
 ## 儲存邊界
 
@@ -48,3 +48,19 @@ Mac 適配僅執行固定的 `pmset -c sleep <整數>`，以 `pmset -g custom` �
 ## 0.8.1 共用安全修補
 
 Mac 使用相同的拒絕 Relay redirect、回應讀取上限、provider 環境 allowlist、Claude stdin 及有限 schema 子程序；詳見 [SECURITY](SECURITY.md)。Windows Job Object 的 256 MiB 限制及 Windows Python／OpenSSL 基線屬 Windows 原生封裝，不能視為 Mac 已有相同 OS 記憶體限制。Mac schema 保留輸入／時間／並行預算。既有 Worker 的 queue 修補需另行授權部署；本次 Mac source 更新不自動部署，也不改 endpoint／KEY。
+
+## 單一 Bridge 與乾淨停止（0.9.1-mac.1）
+
+一台 Mac 只允許一個 Bridge runtime，涵蓋不同資料目錄、API port、安裝位置與 macOS 使用者。再次開啟同 profile 只喚回原視窗；另一 profile 會在開啟資料庫及 relay 前拒絕。固定本機 TCP 8919 僅供 OS 互斥 bind、不監聽或交換資料；被其他程式占用時也拒絕，不強殺占用者。不要嘗試以改鎖地址多開。現存舊版不遵守新鎖，更新前先正常停止舊服務。
+
+- **按視窗 X／關瀏覽器分頁**：只關管理視窗，背景 Bridge 繼續供應；不是停止。
+- **管理台「結束 Bridge」**：確認後停止服務並取消未完成工作，等待程序退出；API port 及全機鎖釋放。
+- **先做完工作再停止**：從原安裝 manifest 的 `python`／`app` 執行下列命令。`stop` 先 pause／wait-idle，再 bootout 此 profile 的 LaunchAgent 並確認 profile 鎖釋放；排空失敗時不強殺。手動啟動的程序需在其管理台正常結束。
+
+```sh
+"$BRIDGE_PY" "$BRIDGE_APP/tools/mac_service.py" stop --install-root "/path/to/original/install-root"
+```
+
+`BRIDGE_PY`／`BRIDGE_APP` 分別取自原 `source-install.json` 的 `python`／`app`，不能拿別的安裝目錄代入。`stop` 保留登入自動啟動設定，若要停用下次登入自啟，使用同命令的 `disable`。只 pause 不等於程序退出，也不釋放全機鎖。
+
+停止後固定 Worker URL 仍存在；它可能短暫保留在線狀態或等待至逾時，但無法再由已停止的本機完成推論。判斷停止應確認本機程序已退出、原 API port 無法連線，不單看 Worker health。不同 profile 的背景啟動若因鎖被占而退出，不會自動重試；請先正常停止原服務，再明確啟動選定 profile。全機互斥不改變單一 runtime 內的推論容量設定。

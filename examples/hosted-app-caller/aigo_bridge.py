@@ -35,7 +35,7 @@ from dataclasses import dataclass, field
 from typing import Iterator
 
 __all__ = ["BridgeClient", "BridgeError", "Reply", "Pending", "StreamEvent"]
-VERSION = "0.9.0"
+VERSION = "0.9.1-mac.1"
 
 
 class BridgeError(Exception):

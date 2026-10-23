@@ -6,7 +6,7 @@ Windows 新安裝需依 [ONBOARDING](docs/ONBOARDING.md) 完成本人訂閱 CLI�
 
 0.4 起提供 repo 安裝器與第三方串接訊息：先讀 [安裝流程](docs/CROSS-PLATFORM-INSTALL.md)。Windows 原生 ZIP 與 source 安裝目錄分離。macOS 安裝、實機驗收與發布由獨立維護者處理，狀態見其驗收文件；Windows 工作不得發布 macOS release。首次安裝最終需交付 endpoint、一次性長效 key 及 [第三方 AI IDE 標準說明](docs/THIRD-PARTY-INTEGRATION.md)，不能只撤銷測試 key 後留下無法呼叫的安裝。
 
-本專案目前是 Windows 本機 LLM Bridge，**只採 BYO Cloudflare**。每位安裝者在自己選定的 Cloudflare 帳戶部署、管理、付費及更新專屬 Worker；發布方只提供原始碼與安裝包，不代管入口、帳戶、裝置憑證或訂閱。這不是 AI GO 平台上的 Custom／Hosted App，安裝時不需存取 AI GO 租戶。
+本專案提供 Windows 原生安裝器與 macOS BYO source Release，**只採 BYO Cloudflare**。每位安裝者在自己選定的 Cloudflare 帳戶部署、管理、付費及更新專屬 Worker；發布方只提供原始碼與安裝包，不代管入口、帳戶、裝置憑證或訂閱。這不是 AI GO 平台上的 Custom／Hosted App，安裝時不需存取 AI GO 租戶。
 
 0.9 整合即時模型能力查詢、固定合成 probe 與 Jev 相容 Decisions；安裝及第三方串接前讀 [模型與 Jev 指南](docs/JEV-COMPATIBILITY.md)。GET／refresh 不推論，probe 會消耗用量。模型目錄不等於訂閱權限；Jev 格式相容不等於機率校準相同。新路徑需同步 Worker、Relay、Bridge，仍依本次授權決定是否部署；Windows 更新不自動部署 Worker。
 
@@ -28,4 +28,4 @@ Windows 新安裝需依 [ONBOARDING](docs/ONBOARDING.md) 完成本人訂閱 CLI�
 
 ## 維護
 
-Windows 維護優先；macOS 依其獨立驗收文件，不把 Windows 結果當成 Mac 通過。保持外部標準 POST／GET 及明確 unsupported_parameter；不把非等價 CLI 控制宣稱為完整 OpenRouter 相容。改完執行 `python -m pytest desktop_bridge/tests -q`、`node --test cloudflare/test/relay.test.js`、`python tools/lint_terms.py --require`。BYO 建置見 `tools/build_byo.ps1`；不要將 `.desktop-data/`、`.desktop-build/`、`.wrangler/` 或任何安裝者設定打包／提交。
+依本次使用者授權的平台維護；macOS 安裝／更新／發布依 docs/MACOS-RELEASE.md 與獨立驗收文件，不把 Windows 結果當成 Mac 通過。保持外部標準 POST／GET 及明確 unsupported_parameter；不把非等價 CLI 控制宣稱為完整 OpenRouter 相容。改完執行 `python -m pytest desktop_bridge/tests -q`、`node --test cloudflare/test/relay.test.js`、`python tools/lint_terms.py --require`。BYO 建置見 `tools/build_byo.ps1`；不要將 `.desktop-data/`、`.desktop-build/`、`.wrangler/` 或任何安裝者設定打包／提交。

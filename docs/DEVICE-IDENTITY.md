@@ -32,3 +32,7 @@
 macOS 使用原使用者登入 Keychain，配對項目的 account 由 data-dir 正規化路徑雜湊區分，active／pending 分開；不能將資料目錄任意搬家後聲稱 Keychain 自動跟隨。source 更新必須保留相同 data-dir。新 Mac 不使用 Windows DPAPI 檔；新建自己的 UUID、Worker 與 client key。Keychain 被鎖定／拒絕存取時停止配對或 relay，沒有明文替代；重新解鎖後 relay 採退避重連。失去原 Keychain 時需在原 Cloudflare 帳戶明確 repair-device-key，只改 transport credential；保留原 DB 才能沿用 client key hash。
 
 LaunchAgent 屬於使用者 GUI 登入階段，並非未登入即可供應的系統 daemon。供應商登入、Cloudflare 部署 OAuth、Keychain 裝置 secret 與 client service key 是不同授權層；改訂閱不自動改 device_id、URL 或 client key。
+
+## 同一台電腦的執行數量
+
+產品契約是一台電腦只執行一個 Bridge runtime；Claude／Codex 共用這個設定檔與 Worker。Mac source 0.8.1-mac.2 起，不同設定檔、安裝目錄、本機 API port 或 OS 使用者都不能另開第二套；原 runtime 正常結束後才可切換設定檔。不複製原 DB／配對讓兩套連到同一 Worker。這個限制不刪除任何既有設定檔、Worker、URL 或 KEY，也不自動選另一套 profile 或切換 CLI 登入。Windows 待 [issue #20](https://github.com/AI-GO-APP/aigo-llm-bridge/issues/20) 修復；舊版不遵守新鎖，升級前先正常停止。
