@@ -29,6 +29,7 @@ Mac source 同步的共通功能及平台差異以 [Mac 設定契約](MACOS-SETU
 | R-17 | onboarding 交付有效長效 KEY／endpoint／第三方訊息，明確點選真 GET＋HTTPS POST，確認預期回答與數值 usage.cost 才標完成；原始 I/O／KEY 不落盤。 |
 | R-18 | CI/CD、Release、pin、權限、政策續期／最低版本、故障恢復與 installed-verified 收據具 repo 正本，不依賴本地記憶或 AI EA Cloud／Supabase。 |
 | R-19 | 一台電腦同時僅允許一個 Bridge runtime，跨設定檔、安裝目錄、API port 及 OS 使用者；同設定檔重開只喚回管理視窗。第二套在開啟資料庫／relay 前拒絕，不重建 URL／KEY。Mac source 0.8.1-mac.2 實作，Windows 待 [issue #20](https://github.com/AI-GO-APP/aigo-llm-bridge/issues/20) 修復及獨立驗收。 |
+| R-20 | Mac Release 交付現行 BYO source ZIP、SHA256、clean commit manifest 與 self-test；下載包可實際安裝／啟停，原裝置更新保留 URL／KEY／模型／容量，README／Agent 指引能分流雙平台及首次／既有安裝。 |
 
 ## 非功能需求與邊界
 

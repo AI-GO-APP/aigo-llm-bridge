@@ -3,7 +3,8 @@ import errno
 import json
 import os
 from pathlib import Path
-import selectors
+import queue
+import threading
 import socket
 import subprocess
 import sys
@@ -79,10 +80,11 @@ raise SystemExit(app.main())
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                  cwd=Path(__file__).resolve().parents[2])
         try:
-            with selectors.DefaultSelector() as selector:
-                selector.register(child.stdout, selectors.EVENT_READ)
-                assert selector.select(timeout=15), 'service did not report readiness'
-            port = int(child.stdout.readline().strip())
+            # Read the child's readiness message directly with a bounded cold-start
+            # budget; do not depend on kqueue pipe notifications on hosted Macs.
+            ready = queue.Queue()
+            threading.Thread(target=lambda: ready.put(child.stdout.readline()), daemon=True).start()
+            port = int(ready.get(timeout=60).strip())
             return child, port
         except BaseException:
             child.kill(); child.communicate(timeout=10)
@@ -185,10 +187,9 @@ instance.close()
             child.stdin.write('start\n'); child.stdin.flush()
         results = []
         for child in children:
-            with selectors.DefaultSelector() as selector:
-                selector.register(child.stdout, selectors.EVENT_READ)
-                assert selector.select(timeout=10)
-            results.append(int(child.stdout.readline()))
+            ready = queue.Queue()
+            threading.Thread(target=lambda: ready.put(child.stdout.readline()), daemon=True).start()
+            results.append(int(ready.get(timeout=30)))
         assert sum(results) == 1
     finally:
         for child in children:

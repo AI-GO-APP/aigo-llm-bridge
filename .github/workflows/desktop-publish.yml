@@ -12,7 +12,9 @@ permissions:
 jobs:
   macos:
     if: github.ref == 'refs/heads/main' && inputs.target == 'macos'
-    uses: ./.github/workflows/desktop-macos.yml
+    permissions:
+      contents: write
+    uses: ./.github/workflows/macos-source-release.yml
   windows:
     if: github.ref == 'refs/heads/main' && inputs.target == 'windows'
     uses: ./.github/workflows/desktop-windows.yml
@@ -20,8 +22,7 @@ jobs:
     needs: [macos, windows]
     if: >-
       always() && github.ref == 'refs/heads/main' &&
-      ((inputs.target == 'macos' && needs.macos.result == 'success') ||
-       (inputs.target == 'windows' && needs.windows.result == 'success'))
+      inputs.target == 'windows' && needs.windows.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write

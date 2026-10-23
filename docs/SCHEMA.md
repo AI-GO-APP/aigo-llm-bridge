@@ -125,3 +125,7 @@ onboarding／power 使用 atomic replace，與 SQLite／DPAPI 同放原 profile 
 ## Mac runtime 互斥資源
 
 0.8.1-mac.2 的全機單實例使用程序持有的 `127.0.0.1:8919` TCP bind；沒有 listener 或新持久化欄位／credential，DB schema 不變。profile 的 `instance.lock`／`activate.request` 繼續用於同 profile 管理視窗喚回。被拒絕的第二套不開啟 SQLite，不將另一套的 queued／running 誤標為 interrupted；僅可能建立 profile 鎖所需目錄／檔案。
+
+## Mac 發布來源收據
+
+source ZIP 的 `source-release.json` 只含 schema=1、format=macos-byo-source、version、40位 Git commit。無 .git 的下載安裝使用此收據核對 VERSION 並填入 source-install.json.source_commit。外部 macos-source-manifest.json 另含 target、dirty、redistributable、package、size、sha256、requires_python、architecture、signed、entrypoint；公開來源 metadata，不包含使用者／KEY／裝置憑證。

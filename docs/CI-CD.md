@@ -8,7 +8,7 @@
 |---|---|
 | Windows 原生安裝包 | `packaging/windows/release-target.json`：semver、windows/x64/internal、固定 pack ID；Windows 維護者建置、實機驗收及發布。 |
 | 共用核心／舊 ZIP | 根 `VERSION`、對應平台 build；不以 Windows 安裝器升版帶動 Mac／核心版本。 |
-| Mac | `packaging/macos/`／Mac workflows 與其 QA 正本；由獨立維護者處理。本輪 Windows 通過不等於 Mac 已驗。 |
+| Mac | `VERSION` 的 Mac 版號；`packaging/macos/build.py` 封裝現行 BYO source，`macos-source-release.yml` 發布；[Mac 手冊](MACOS-RELEASE.md)。Windows 通過不等於 Mac 已驗。 |
 | 安裝者 Worker | 安裝者自己的 account／device profile／BYO 工具；不由發布方 Actions 部署。 |
 | 公開更新 | GitHub Windows 固定 signed policy＋每版 immutable assets；不需要安裝者 GitHub／Cloudflare token。 |
 
@@ -21,7 +21,8 @@
 | `windows-installer-publish.yml` | main 手動，package=Windows，announce=Ubuntu | 重做 package gates，clean commit 封裝；預設 announce=false；true 才有發布權限與獨立 environment secret | 建置 artifact 不等於已宣布，宣布不等於使用者已升級。 |
 | `desktop-windows.yml` | 自己的 paths／手動／workflow_call | 舊 Windows ZIP 及 source manifest 的 BYO package／指南 smoke | 不是目前 Windows Setup 的宣布入口。 |
 | `desktop-publish.yml`、`release.yml` | 各檔案實際觸發條件 | 歷史／共用產品渠道，保留相容 | 不可拿來替代 Windows installer policy。 |
-| `desktop-macos.yml` 等 Mac 定義 | Mac 維護者依現行 workflow | Mac 自己的平台建置／驗收 | Windows 不介入發布或把結果代填通過。 |
+| `desktop-macos.yml` | Mac runner，PR／main／workflow_call | 現行 source／原生 renderer、現行 BYO ZIP 真安裝及互斥／停止；歷史回歸另 job | 發布只取 macos-byo-source artifact，不把 legacy ZIP 當新版。 |
+| `macos-source-release.yml` | main 手動，先 Mac runner 驗收，再 Ubuntu announce | 核對 clean main commit／版本／hash，發布 macos-source-v… 及 checksum／manifest／self-test | 不發布 Windows、不部署 Worker；發布後仍驗公開下載與 owner 更新。 |
 
 現行 runner／pin 值以 workflow、`requirements-lock.txt` 為正本；本文件與它們同 PR 更新。fork PR 不能取得正式簽署私鑰；`BANNED_TERMS` 缺失時依 workflow 的 fork 規則處理，不能把秘密清單印到公開 log。
 

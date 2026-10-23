@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -50,7 +51,16 @@ def install(root, data_dir=None, *, dependencies=True):
     if os.name!='nt':root.chmod(0o700);data.chmod(0o700)
     try:
         source_commit=subprocess.check_output(['git','-C',str(SOURCE),'rev-parse','HEAD'],stderr=subprocess.DEVNULL,text=True).strip()
-    except (OSError,subprocess.SubprocessError):source_commit=None
+    except (OSError,subprocess.SubprocessError):
+        source_commit=None
+        receipt=SOURCE/'source-release.json'
+        if receipt.is_file():
+            release_source=json.loads(receipt.read_text(encoding='utf-8'))
+            if (release_source.get('format')!='macos-byo-source' or
+                release_source.get('version')!=version['__version__'] or
+                not re.fullmatch('[0-9a-f]{40}',str(release_source.get('commit','')))):
+                raise ValueError('Mac release source metadata does not match the installer.')
+            source_commit=release_source['commit']
     value={'source_commit':source_commit,'source_checkout':str(SOURCE),'version':version['__version__'],'python':str(python),'app':str(release),'data_dir':str(data),'launcher':str(launcher),'install_root':str(root)}
     if previous:
         backup=root/'source-install.previous.json'

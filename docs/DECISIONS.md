@@ -46,3 +46,7 @@
 | ID／狀態 | 決定與理由 | 代價／何時重訪 |
 |---|---|---|
 | D-26 採用 2026-10-23 | **一台電腦只執行一個 Bridge runtime**，Claude／Codex 共用。Mac 0.8.1-mac.2 使用固定 loopback TCP bind 的 OS 原子所有權，跨 profile／API port／使用者，在 DB／relay 前拒絕第二套；同 profile 保留喚回管理台。 | 鎖地址被任何本機程式占用即拒絕；不自動切 profile、不終止原服務；舊版須先正常停止。只關管理視窗仍背景供應，停止須明確結束或排空 stop。Windows 實作及跨 session 原生驗收交由 issue #20，不用 Mac 證據代替。 |
+
+| ID／狀態 | 決定與理由 | 代價／何時重訪 |
+|---|---|---|
+| D-27 採用 2026-10-23 | Mac 正式交付現行 BYO source ZIP 與專屬 macos-source-v… Release，Python 3.12+／WKWebView；以 tracked 公開檔 allowlist 建包，附 checksum／commit manifest／self-test，CI 從 ZIP 真安裝後發布。 | 不把 legacy desktop 包、Windows Velopack、未公證 .app／DMG 或更新 feed 混稱現有能力；Mac 日後升級沿用 profile、明確排空、下載新來源。發布後匿名回讀並驗 owner 更新及真 HTTPS。 |
