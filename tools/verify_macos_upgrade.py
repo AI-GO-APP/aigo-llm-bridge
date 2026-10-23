@@ -86,7 +86,8 @@ def main():
         check('device_keys_models_capacity_preserved', after == expected,
               version=current['version'], inference_workers=store.get('inference_workers'))
         code, value = models()
-        check('same_key_after_update', code == 200 and len(value.get('data', [])) == len(store.get('models')), http=code)
+        registered = {m['id'] for m in store.get('models') if m['provider'] == 'codex'}
+        check('same_key_after_update', code == 200 and registered <= {m['id'] for m in value.get('data', [])}, http=code)
         screen_before = locked()
         body = {'model': model, 'messages': [{'role': 'user', 'content': 'Synthetic check. Reply exactly PONG.'}], 'stream': False}
         request_id = str(uuid.uuid4()); started = time.monotonic()

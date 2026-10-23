@@ -196,3 +196,25 @@ instance.close()
             if child.poll() is None:
                 child.stdin.write('stop\n'); child.stdin.flush()
             child.communicate(timeout=10)
+
+
+def test_partial_startup_closes_http_before_releasing_machine(tmp_path, address, monkeypatch):
+    from desktop_bridge import __main__ as app
+    from desktop_bridge import relay
+    servers=[]
+    original=app.ApiServer
+    class CapturedServer(original):
+        def start(self):
+            super().start();servers.append(self)
+    def fail(*_args): raise RuntimeError('synthetic relay initialization failure')
+    monkeypatch.setattr(app,'ApiServer',CapturedServer)
+    monkeypatch.setattr(relay,'Relay',fail)
+    monkeypatch.setattr(app.sys,'platform','darwin')
+    monkeypatch.setattr(app.sys,'argv',['bridge','--data-dir',str(tmp_path),'--headless','--port','0'])
+    with pytest.raises(RuntimeError): app.main()
+    assert len(servers)==1 and not servers[0].thread.is_alive()
+    with pytest.raises(OSError):
+        urllib.request.urlopen(f'http://127.0.0.1:{servers[0].port}/health',timeout=1)
+    successor=macos_instance.MachineInstance()
+    try: assert successor.primary
+    finally: successor.close()

@@ -20,3 +20,5 @@
 - 原生畫面檢視找出 Mac 更新卡仍稱沒有公開包，已改為 Release source ZIP／手動下載說明；重跑完整 48 畫面及原生操作全通過。
 
 - 發布前主線新增已合併 #23（core 0.9.0、模型目錄／Decisions）；完整保留新功能與 Windows 安全碼後重整合。Mac 最終版改為 0.9.1-mac.1，R-21／R-22、D-27／D-28 避免覆蓋先合併的 ID，重新跑 Mac／共用／原生驗收。
+
+- 整合 0.9.0 後重跑：332 passed／13 個 Windows／PowerShell 平台案例 skipped；Node relay 12、platform 3 passed。新版 48 畫面／原生操作與現行 ZIP 安裝再次全通過。另補啟動中途失敗的完整清理：API 已開但 relay 建立失敗時先關 HTTP／停止 runtime，再釋放全機鎖；新增第 10 個單實例案例通過。
