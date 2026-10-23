@@ -12,6 +12,8 @@
 | macOS，一般使用者 | [Mac 0.9.1-mac.1 source Release](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/macos-source-v0.9.1-mac.1)：下載 ZIP 與 SHA256；[Mac 安裝／操作](docs/MACOS-SETUP.md) | 需要 Python 3.12+。解壓後執行 `Install.command`，再開安裝目錄的 `Bridge.command`，依五步精靈完成。日後下載新版，排空後更新同一安裝。 |
 | AI Agent 協助安裝或原始碼安裝 | [可直接複製的 Agent prompt](docs/AI-AGENT-SETUP.md)、[雙平台 source 指令](docs/CROSS-PLATFORM-INSTALL.md) | 先辨識 OS、既有安裝與 data-dir；沿用安裝 manifest 的 Python／app／data_dir，不把 clone 當成永久服務。 |
 
+[Windows 0.9.0 internal 已發布](https://github.com/AI-GO-APP/aigo-llm-bridge/releases/tag/windows-installer-internal-v0.9.0)，安全修補及 Jev／模型查詢已整合，正式 Windows 更新／重啟及成本驗收見 [0.9.0 收據](docs/qa/2026-10-23-windows-090-jev.md)。既有 Worker 不會隨 Windows 更新部署；新公開路徑仍需擁有者更新原 Worker。
+
 Windows 使用 PyInstaller＋Velopack＋系統 WebView2；Mac 發布現行 BYO **source 安裝包**與 Cocoa／WKWebView 管理視窗，尚非已公證的 .app／DMG。Windows internal 包目前沒有 Authenticode 公發憑證。兩平台的版本、驗收與發布獨立；請依自己的平台選包，不使用歷史 `desktop-*` 安裝包。
 
 ## 首次安裝：人與 Agent 都依這條路徑

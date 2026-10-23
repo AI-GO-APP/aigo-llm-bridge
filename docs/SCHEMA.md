@@ -59,7 +59,7 @@ startup 不在 settings 表，是 Windows HKCU Run／平台啟動設定；隔離
 |---|---|---|
 | id | TEXT PRIMARY KEY | Bridge request UUID hex |
 | key_id | TEXT | 邏輯關聯 api_keys.id；拒絕授權可為 null |
-| model | TEXT | 已解析、已登錄外部 model id；前置拒絕可 null |
+| model | TEXT | 已解析的登錄／CLI 發現之外部 model id；前置拒絕可 null |
 | provider | TEXT | claude／codex；前置拒絕可 null |
 | created_ts | REAL | 建立 Unix 秒 |
 | started_ts | REAL | 開始執行，尚未執行可 null |

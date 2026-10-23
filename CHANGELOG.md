@@ -1,5 +1,16 @@
 # Changelog
 
+## Windows installer 0.9.0
+
+- Integrate Jev Decisions, model discovery and per-call billing without losing the 0.8.1/0.8.2 Windows security controls; extend exclusive binds to Windows source/ZIP entry points.
+- Publish and upgrade the existing Windows profile, verify real Haiku/Luna, CLI handoff, original-key HTTPS and restart preservation. New Worker routes are template-only and remain undeployed on the existing endpoint.
+- Keep Mac packages and Cloud deployment under their separate owners. Final evidence: docs/qa/2026-10-23-windows-090-jev.md.
+
+## Windows installer 0.8.2
+
+- Make native API and management sockets exclusive on Windows; reject a competing local bind rather than sharing traffic.
+- Verify isolated native update, signed public downloads and actual production upgrade/restart with original device URL, keys, metadata and pricing behavior retained.
+
 ## Windows installer 0.8.1
 
 - Update the Windows runtime to Python 3.14.9, OpenSSL 3.5.9 and certifi 2026.10.19; enforce the security baseline before packaging.
