@@ -1,5 +1,7 @@
 # 交給你的 AI agent
 
+Windows 0.8.0 候選的 [安裝 onboarding](ONBOARDING.md) 另提供依實際安裝路徑生成的 AI IDE prompt。部署協作者是使用者選定的 AI IDE，不呼叫本地模型 CLI 當部署 agent；CLI 只用於官方授權／狀態／推論服務。新安裝的電源權限必須本人明確同意，不能因文件含指令就自動取消 owner 電腦鎖定。完成者日常啟動不重跑；CI/CD／Release 見產品入口。
+
 這份 prompt 是使用者可複製的安裝請求範本；文件本身不授權部署。適用 repo 或已安裝的 Windows 包。Windows 的文件位於 frozen runtime 的 `_internal` 資源內，CLI 在同一版本的 `current/aigo-bridge.exe`；原始碼安裝由 source-install.json 尋找位置，不假設舊 ZIP 的 BYO-Setup 永遠存在。
 
 ```text

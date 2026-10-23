@@ -45,6 +45,15 @@ def acceptance(window,api,directory,value):
         progress(stage)
         wait(lambda:window.evaluate_js("Boolean(window.BridgePlatform?.native && typeof showToken==='function')"))
         checks['actual_webview2_adapter_ready']=True
+        stage='onboarding_renderer'
+        progress(stage)
+        wait(lambda:window.evaluate_js("Boolean(document.querySelector('#windows-onboarding') && state?.windows_onboarding)"))
+        wait(lambda:window.evaluate_js("document.querySelector('#windows-onboarding').open === state.windows_onboarding.required"))
+        checks['onboarding_first_launch_or_daily_bypass']=True
+        checks['onboarding_five_steps_rendered']=bool(window.evaluate_js("document.querySelectorAll('[data-ob-panel]').length === 5"))
+        checks['onboarding_consent_defaults_off']=bool(window.evaluate_js("!document.querySelector('#ob-power-consent').checked && !document.querySelector('#ob-deploy-consent').checked"))
+        # Close the test renderer's modal only; no completion flag/power/Cloud mutation.
+        window.evaluate_js("document.querySelector('#windows-onboarding').close();")
         stage='default_key'
         progress(stage)
         checks['frontend_new_key_all_checked']=bool(window.evaluate_js('createKey(); document.querySelector("#key-form input[name=claude]").checked && document.querySelector("#key-form input[name=codex]").checked;'))

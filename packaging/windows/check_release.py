@@ -18,7 +18,7 @@ def windows_only(paths):
           and p != 'tools/lint_terms.py']
     native=any(p.startswith(('desktop_bridge/windows_','packaging/windows/')) for p in code)
     return bool(code) and native and all(p.startswith(('desktop_bridge/windows_','packaging/windows/')) or p in frontend or
-        p in {'tools/verify_installer_update.py','tools/publish_windows_installer.py','tools/check_product_docs.py','tools/build_byo.ps1'} for p in code)
+        p in {'tools/verify_installer_update.py','tools/verify_windows_onboarding.py','tools/verify_windows_locked.py','tools/publish_windows_installer.py','tools/check_product_docs.py','tools/build_byo.ps1'} for p in code)
 
 
 def version(value):

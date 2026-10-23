@@ -55,3 +55,11 @@ Cloudflare CLI 授權、Worker DEVICE_KEY、caller client KEY、本機管理 tok
 固定 GitHub policy → 固定公鑰驗簽／反降版 → HTTPS feed／package hash → 排空本 profile → 備份 → 正常關閉自有 viewer 並等 OS exit → Velopack `HttpSource` apply → 相同 data-dir 重啟。更新不部署 Worker、不切換供應商帳號。0.7.0／0.7.1 客戶端有已知來源判斷缺陷，需一次新版 Setup 或受控簽章修復，見 [Windows 指南](WINDOWS-INSTALL-UPDATE.md)。
 
 Mac 的啟動器、Keychain、並行與 release 為獨立平台責任。共用前端的可攜性不代表 Mac 已跑過本次新 UI；本次不修改 Mac launcher、Cloud 設定或 release。
+
+## Windows 安裝協調層（0.8.0 候選）
+
+`packaging/windows/onboarding.js` 只追加到 Windows 管理台，沿用共用設計 tokens／BridgePlatform，不改 Mac 前端。`windows_onboarding.Onboarding` 由 WindowsManagementServer 持有，loopback 管理權限保護；非同步工作不持有管理 mutation lock，狀態僅回 allowlist。不建立第二個 LLM agent，不將本地 CLI 用來編排 Cloudflare。
+
+Velopack after-install hook 只寫安裝 UUID；一般 update 不觸發此 hook。coordinator 比對此 UUID 與 profile 的完成紀錄，首次顯示精靈、完成者跳過。部署仍走既有 BYO 帳戶鎖定及 pending secret 機制；KEY 仍在 SQLite 只存 hash；HTTPS proof 與完整 KEY 在 RAM，持久化只留測試 metadata。完成判斷在後端檢查，不信任前端自行送 success。
+
+`windows_power.PowerPolicy` 與 `NativePower` 分離規則／Win32。先備份後建立專用 AC 計畫，背景每 5 秒依供電調整目前使用者鎖定值；DC／正常停止復原。`windows_power_admin` 是明確點選後的 UAC 窄 helper，只更改電源計畫，不操作管理員的 HKCU／CLI 登入；原使用者值由未提權程序保存與套用。電源與鎖定限制見 [ONBOARDING](ONBOARDING.md)。[CI-CD](CI-CD.md)／[RELEASE](RELEASE.md) 為維護操作正本。

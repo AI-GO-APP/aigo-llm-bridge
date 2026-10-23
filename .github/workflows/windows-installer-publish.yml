@@ -55,6 +55,8 @@ jobs:
           node --test packaging/windows/tests/platform.test.js
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           .desktop-build/venv/Scripts/python tools/verify_installer_update.py --output "$env:RUNNER_TEMP/bridge-update-proof" --vpk "$env:RUNNER_TEMP/bridge-vpk/vpk.exe"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          .desktop-build/venv/Scripts/python tools/verify_windows_onboarding.py --output "$env:RUNNER_TEMP/bridge-onboarding-power"
       - name: Build redistributable Windows internal package
         shell: pwsh
         run: |

@@ -58,9 +58,12 @@ def main(argv=None):
     (stage / 'windows-release.json').write_text(json.dumps(cfg), encoding='utf-8')
     stage_documents(ROOT, stage, cfg['commit'])
     shutil.copytree(ROOT / 'desktop_bridge/web', stage / 'web', dirs_exist_ok=True)
+    with (stage / 'web/style.css').open('a', encoding='utf-8') as stream:
+        stream.write('\n' + (ROOT / 'packaging/windows/onboarding.css').read_text(encoding='utf-8'))
     with (stage / 'web/app.js').open('a', encoding='utf-8') as stream:
         stream.write('\n' + (ROOT / 'packaging/windows/platform.js').read_text(encoding='utf-8'))
         stream.write('\n' + (ROOT / 'packaging/windows/console_extension.js').read_text(encoding='utf-8'))
+        stream.write('\n' + (ROOT / 'packaging/windows/onboarding.js').read_text(encoding='utf-8'))
     env = dict(os.environ, BRIDGE_WINDOWS_STAGE=str(stage))
     subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--distpath', str(out / 'dist'),
         '--workpath', str(out / 'work'), str(ROOT / 'packaging/windows/bridge.spec')], cwd=ROOT, env=env, check=True)

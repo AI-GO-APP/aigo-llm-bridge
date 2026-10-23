@@ -104,3 +104,18 @@ startup 不在 settings 表，是 Windows HKCU Run／平台啟動設定；隔離
 啟動將 queued／running 設為 interrupted／503／process_restarted；原文不在磁碟，不能重播。更新使用 SQLite backup 並記 schema digest；recover 只允許原版本、相同 pack id／schema，不覆蓋新資料。手動備份不可只在運作時複製 sqlite 而漏 WAL；應停止此 profile 或使用 SQLite backup API。
 
 刪紀錄不刪裝置身分或 KEY。撤銷不清理歷史計量。遺失完整 client KEY 需輪替；換 Windows 使用者／重灌即使保留 SQLite，仍須授權恢復 DPAPI／配對。見 [裝置生命週期](DEVICE-IDENTITY.md)。
+
+## Windows onboarding 檔案（0.8.0 候選）
+
+不新增 SQLite 表／settings 欄位；以下皆不保存原始 request／response 或完整 KEY：
+
+| 檔案／位置 | 欄位與用途 |
+|---|---|
+| 安裝根 `windows-installation.json` | `schema=1`、`installation_id`；after-install 寫新 UUID，正常更新保留。不可與 device_id 混用。來源／舊包採 pack_id＋device_id 的穩定 fallback，新增安裝不刪原裝置資料。 |
+| profile `windows-onboarding.json` | `schema=1`、`installation_id`、`completed_at`、`completed_version`、`power_consent`、`key_id`；新安裝 ID 清除流程完成狀態，不碰 SQLite。`verification` 僅 success、http_status、elapsed_ms（可缺）、cost_usd（可缺）、code、model、key_id、checked_at。 |
+| profile `windows-power.json` | `schema=2`、`enabled`、`original_scheme`、`bridge_scheme`、`settings`（sleep／hibernate／unattended_sleep 支援項原 ac/dc）、`unsupported`。不保存或修改鎖定 HKCU。舊未發布 schema=1 已啟用設定需原候選先還原。 |
+| profile `windows-power-elevation.json` | 短期 UAC 請求：schema、nonce、operation（apply/restore）、created_at；五分鐘失效、完成／取消清除。nonce 非 client KEY，helper 不執行任意命令、不更改任何 HKCU。 |
+
+onboarding／power 使用 atomic replace，與 SQLite／DPAPI 同放原 profile 並納入更新備份。安裝 UUID 位於不被 current 版本替換的根目錄；更新不重產。完整 KEY、協作 handoff 含 KEY 版本、HTTPS回覆、一次完成 proof、Cloudflare 原始輸出及 OAuth token 不寫入上述檔案。帳戶 ID／Worker／URL 仍沿用 settings，CLI憑證仍由各 CLI 管理。
+
+版本更新保留完成旗標，不會默默執行未同意的電源變更；既有無紀錄的安裝升級後需跑一次精靈。日後若有不相容 onboarding schema，要先定遷移與相對應驗收，不用「刪 profile 重來」處理。

@@ -18,6 +18,10 @@ class WindowsManagementServer(ManagementServer):
         self.update_lock = threading.Lock()
         self.before_update = None
         self.update_stop = threading.Event()
+        from .windows_power import PowerPolicy
+        from .windows_onboarding import Onboarding
+        self.power_policy = PowerPolicy(self.store.directory)
+        self.onboarding = Onboarding(self, self.power_policy)
 
     def minimum_blocked(self):
         path = self.store.directory / 'updates' / 'minimum-block.json'
@@ -68,6 +72,7 @@ class WindowsManagementServer(ManagementServer):
         value = super().state()
         value['windows_release'] = {k: self.release[k] for k in ('version', 'core_version', 'commit', 'channel', 'local_probe')}
         value['windows_update'] = self.update_state
+        value['windows_onboarding'] = self.onboarding.state()
         status=self.store.directory/'windows-console.json'
         try:
             console=json.loads(status.read_text())
@@ -76,6 +81,8 @@ class WindowsManagementServer(ManagementServer):
         return value
 
     def action(self, path, data):
+        if path.startswith('/manage/windows-onboarding/'):
+            return self.onboarding.action(path.rsplit('/', 1)[-1], data)
         if path == '/manage/windows-console/open':
             if type(data.get('browser',False)) is not bool:raise ValueError()
             from .windows_console import launch

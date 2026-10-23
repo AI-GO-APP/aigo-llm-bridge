@@ -123,6 +123,32 @@ def main(argv=None):
             stream.reconfigure(encoding='utf-8')
     cfg = config()
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ['power-admin']:
+        parser = argparse.ArgumentParser(description='Scoped Windows power-plan administrator helper')
+        parser.add_argument('--data-dir', required=True)
+        parser.add_argument('--nonce', required=True)
+        parser.add_argument('--operation', required=True, choices=['apply', 'restore'])
+        args = parser.parse_args(argv[1:])
+        from .windows_power_admin import elevated
+        try:
+            return elevated(profile(cfg, args.data_dir), args.nonce, args.operation)
+        except Exception:
+            return 1  # No raw OS diagnostics / user registry contents on the helper console.
+    if argv[:1] == ['onboarding']:
+        # Same loopback-authenticated coordinator as the GUI; no second setup implementation.
+        parser = argparse.ArgumentParser(description='Windows installation onboarding')
+        parser.add_argument('operation', choices=['open', 'status'])
+        parser.add_argument('--data-dir')
+        args = parser.parse_args(argv[1:])
+        from .windows_console import ensure_service, request_owner
+        owner = ensure_service(profile(cfg, args.data_dir))
+        if args.operation == 'open':
+            request_owner(owner, '/manage/windows-onboarding/open', {})
+            value = json.loads(request_owner(owner, '/manage/windows-console/open', {}))
+        else:
+            value = json.loads(request_owner(owner, '/manage/state'))['windows_onboarding']
+        print(json.dumps(value, ensure_ascii=False))
+        return 0
     if argv[:1] == ['byo']:
         from .byo import main as byo_main
         values = argv[1:]

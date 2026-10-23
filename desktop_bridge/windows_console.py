@@ -175,15 +175,30 @@ def ensure_service(directory):
         request_owner(value,'/manage/state')
         return value
     except (OSError,ValueError):pass
-    subprocess.Popen([str(stable_entry()),'--background','--data-dir',str(directory)],
-        stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+    def start():
+        return subprocess.Popen([str(stable_entry()),'--background','--data-dir',str(directory)],
+            stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+    process = start()
     until=time.monotonic()+40
     while time.monotonic()<until:
         try:
             value=owner(directory,cfg)
             request_owner(value,'/manage/state')
             return value
-        except (OSError,ValueError):time.sleep(.2)
+        except (OSError,ValueError):
+            code = process.poll()
+            if code == 0:
+                # The previous service may have deleted its owner file but still
+                # hold the profile instance lock while shutting down. A second
+                # launch then exits cleanly without becoming the new service.
+                instance = Instance(directory)
+                available = instance.primary
+                instance.close()
+                if available:
+                    process = start()
+            elif code is not None:
+                raise ValueError('The background service could not start.') from None
+            time.sleep(.2)
     raise ValueError('The background service did not become ready.')
 
 

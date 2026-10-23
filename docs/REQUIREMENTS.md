@@ -21,6 +21,11 @@
 | R-11 | 共用前端與 Windows 適配層分離。全頁沿用 AI GO 合約請款系統的深藍側欄／表頭、靛藍操作色、卡片／表單與深淺色語言，保留 Bridge 獨立產品名稱與功能。 |
 | R-12 | 由 GitHub 專屬 Windows internal 渠道公告更新與最低版本；客戶端驗固定公鑰簽章、序號、來源及 SHA256，排空自有工作再套用。更新後 profile、KEY、URL、token／cost 不變。 |
 | R-13 | 規格、資料、設計、決策、驗收及操作指引在 repo 與 Windows 包中可找到，不依賴任一 LLM 私有記憶。 |
+| R-14 | Windows 新安裝／新 profile 首次必走可續接 onboarding；完成者日常啟動直接主畫面，正常更新保留完成紀錄；重裝建立新安裝識別但不刪 URL／KEY／metadata。 |
+| R-15 | 引導至少一來源的官方 CLI 訂閱授權、Cloudflare OAuth 及自有帳戶選擇；已登入者不重新登入。提供一鍵 Worker 部署及無憑證 AI IDE prompt，不呼叫推論 CLI 當部署 agent。 |
+| R-16 | 安裝時明確同意只關閉 AC 自動睡眠／休眠／無人值守睡眠；備份原計畫、保留 DC、螢幕、鎖定及實體按鍵，讀回驗證／可還原；一般權限優先，電源權限不足才選用窄 UAC helper。不覆寫組織休眠政策。 |
+| R-17 | onboarding 交付有效長效 KEY／endpoint／第三方訊息，明確點選真 GET＋HTTPS POST，確認預期回答與數值 usage.cost 才標完成；原始 I/O／KEY 不落盤。 |
+| R-18 | CI/CD、Release、pin、權限、政策續期／最低版本、故障恢復與 installed-verified 收據具 repo 正本，不依賴本地記憶或 AI EA Cloud／Supabase。 |
 
 ## 非功能需求與邊界
 

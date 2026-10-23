@@ -1,5 +1,12 @@
 # Changelog
 
+## Windows installer 0.8.0
+
+- Add resumable first-install onboarding for subscription CLI authorization, BYO Cloudflare login, explicit account selection, one-click deployment and AI IDE collaboration.
+- Limit the reversible AC policy to automatic sleep, hibernate and unattended sleep; preserve screen locking, display, physical buttons and DC settings. Use ordinary permissions first, with an explicit power-only UAC fallback.
+- Require a real HTTPS models/chat check with numeric usage.cost and long-lived key handoff before completing setup; retain device data and completion across updates.
+- Document CI/CD and Release operations, evidence gates, recovery and installer onboarding in the bundled product handbook.
+
 ## Windows installer 0.7.3
 
 - Adopt the contract/billing console visual system across all six Bridge pages, light/dark themes and Windows settings.

@@ -26,7 +26,7 @@
       notice.hidden = !(update.available || update.required);
       notice.textContent = update.required ? '此 Windows 版本需要更新，已暫停新 LLM 工作。請到「連線與設定」檢查並更新；網址、KEY 與紀錄會保留。' : `Windows ${update.latest} 可更新。請到「連線與設定」查看。`;
       document.querySelector('#pause').disabled = !!update.required;
-      section.querySelector('#windows-release-status').textContent = `已安裝 ${state.windows_release.version}（核心 ${state.windows_release.core_version}）／${update.status || 'not_checked'}${update.latest ? '／渠道版本 ' + update.latest : ''}`;
+      section.querySelector('#windows-release-status').textContent = `已安裝 ${state.windows_release.version}（核心 ${state.windows_release.core_version}）／${update.status || 'not_checked'}${update.latest ? '／渠道版本 ' + update.latest : ''}${state.windows_onboarding?.required ? '／首次安裝設定尚未完成' : ''}`;
     }, 1000);
   }
 }
