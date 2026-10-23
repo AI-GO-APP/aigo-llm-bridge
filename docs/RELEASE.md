@@ -52,7 +52,7 @@ gh workflow run windows-installer-publish.yml --repo AI-GO-APP/aigo-llm-bridge -
 | 訂閱登入失效 | 依本人 CLI 授權流程處理；不換 Worker／URL／client KEY。 |
 | Worker health 500／1101 或離線 | 與 installer 更新分開記錄；Windows 成功不能宣稱 Cloud 已好。安裝者確認自有帳戶與原 Worker後另行處理，不未經授權重建或更動另一團隊 Cloud。 |
 | 精靈中途關窗／重啟 | 沿用同一 profile，重新檢查；保存的 KEY 可貼回繼續真 POST。不自動重播部署／推論，也不自動輪替 KEY。 |
-| 電源或鎖定權限不足／組織政策 | 安裝保持未完成，找裝置管理員。按原備份還原，不關閉 UAC／MDM，不假報永不鎖定。 |
+| 電源權限不足／組織休眠政策 | 安裝保持未完成，找裝置管理員。按原備份還原，不關閉 UAC／MDM，保留鎖定；不假報永不休眠。 |
 
 ## 發布收據 checklist
 

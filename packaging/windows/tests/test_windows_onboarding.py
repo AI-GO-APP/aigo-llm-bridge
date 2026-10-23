@@ -6,7 +6,7 @@ import pytest
 
 from desktop_bridge import windows_onboarding as onboarding
 from desktop_bridge.store import Store
-from desktop_bridge.windows_power import PowerPolicy, SETTINGS, USER_VALUES
+from desktop_bridge.windows_power import PowerPolicy, SETTINGS
 
 
 class FakePower:
@@ -14,7 +14,7 @@ class FakePower:
         self.active = 'original'
         self.values = {('original', setting, dc): 120 if not dc else 30 for _, _, setting in SETTINGS for dc in (False, True)}
         self.registry_values = {(path, name, False): {'exists': True, 'value': '1' if isinstance(value, str) else 1,
-                                                     'type': 1 if isinstance(value, str) else 4} for path, name, value in USER_VALUES}
+                                                     'type': 1 if isinstance(value, str) else 4} for path, name, value in [(r'Control Panel\Desktop', 'ScreenSaveActive', '1'), (r'Control Panel\Desktop', 'ScreenSaverIsSecure', '1')]}
         self.connected = True
         self.writes = []
         self.denied = False
@@ -43,7 +43,7 @@ class FakePower:
         return copy.deepcopy(self.registry_values.get((path, name, machine), {'exists': False}))
 
     def set_registry(self, path, name, value):
-        self.registry_values[path, name, False] = copy.deepcopy(value)
+        pytest.fail('Power policy must never write lock registry settings')
 
     def ac(self):
         return self.connected
@@ -67,23 +67,18 @@ def test_power_requires_explicit_consent_and_never_touches_dc(tmp_path):
     assert not policy.inspect()['enabled']
 
 
-def test_ac_guard_restores_locks_on_battery_and_does_not_rewrite_them(tmp_path):
+def test_power_only_changes_automatic_sleep_and_keeps_locks_on_battery(tmp_path):
     native = FakePower()
     old = copy.deepcopy(native.registry_values)
     policy = PowerPolicy(tmp_path, native)
-    policy.apply(consent=True)
-    assert native.registry_values != old
-    native.connected = False
-    policy.tick()
+    assert {name for name, _, _ in SETTINGS} == {'sleep', 'hibernate', 'unattended_sleep'}
+    assert policy.apply(consent=True)['verified']
     assert native.registry_values == old
-    path, name, _ = USER_VALUES[0]
-    native.registry_values[path, name, False]['value'] = 'owner-change'
-    policy.tick()
-    assert native.registry_values[path, name, False]['value'] == 'owner-change'
-    native.connected = True
-    policy.tick()
-    policy.stop()
-    assert native.registry_values[path, name, False]['value'] == '1'
+    native.connected = False
+    assert policy.inspect()['verified']
+    assert native.registry_values == old
+    policy.restore()
+    assert native.registry_values == old
 
 
 def test_power_failure_rolls_back_and_cannot_claim_success(tmp_path):
@@ -95,14 +90,26 @@ def test_power_failure_rolls_back_and_cannot_claim_success(tmp_path):
     assert native.active == 'original' and not policy.inspect()['verified']
 
 
-def test_managed_lock_policy_is_not_overridden(tmp_path):
+def test_managed_lock_policy_is_allowed_and_never_overridden(tmp_path):
     native = FakePower()
     native.registry_values[r'SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System', 'InactivityTimeoutSecs', True] = {
+        'exists': True, 'value': 600, 'type': 4}
+    old = copy.deepcopy(native.registry_values)
+    policy = PowerPolicy(tmp_path, native)
+    assert policy.apply(consent=True)['verified']
+    assert not policy.inspect()['blockers']
+    assert native.registry_values == old
+
+
+def test_managed_sleep_policy_is_not_overridden(tmp_path):
+    native = FakePower()
+    _, _, setting = SETTINGS[0]
+    native.registry_values[r'SOFTWARE\Policies\Microsoft\Power\PowerSettings' + '\\' + setting, 'ACSettingIndex', True] = {
         'exists': True, 'value': 600, 'type': 4}
     policy = PowerPolicy(tmp_path, native)
     with pytest.raises(ValueError):
         policy.apply(consent=True)
-    assert policy.inspect()['blockers'] == ['InactivityTimeoutSecs']
+    assert policy.inspect()['blockers'] == ['AC_sleep']
     assert not native.writes
 
 
@@ -114,6 +121,36 @@ def test_changed_plan_is_reported_and_owner_plan_survives_restore(tmp_path):
     assert not policy.inspect()['verified']
     policy.restore()
     assert native.active == 'owner-other-plan'
+
+
+def test_legacy_unreleased_lock_settings_cannot_be_silently_overwritten(tmp_path):
+    from desktop_bridge.windows_release import atomic_json
+    native = FakePower()
+    policy = PowerPolicy(tmp_path, native)
+    original = {'schema': 1, 'enabled': True, 'original_scheme': 'original',
+                'bridge_scheme': 'original', 'settings': {}, 'user_values': [{'exists': False}]}
+    atomic_json(policy.path, original)
+    assert not policy.inspect()['verified']
+    assert policy.inspect()['changed'] == ['legacy_unreleased_settings']
+    with pytest.raises(ValueError):
+        policy.apply(consent=True)
+    with pytest.raises(ValueError):
+        policy.restore()
+    assert policy.load() == original and not native.writes
+
+
+def test_missing_optional_sleep_control_is_reported_not_fabricated(tmp_path):
+    native = FakePower()
+    read = native.read
+    def unsupported(scheme, sub, setting, dc=False):
+        if setting == SETTINGS[1][2]:
+            raise OSError(2, 'unsupported synthetic hibernate control')
+        return read(scheme, sub, setting, dc)
+    native.read = unsupported
+    policy = PowerPolicy(tmp_path, native)
+    result = policy.apply(consent=True)
+    assert result['verified'] and result['unsupported'] == ['hibernate']
+    assert all(setting != SETTINGS[1][2] for _, _, setting, _ in native.writes)
 
 
 @pytest.fixture
@@ -186,7 +223,7 @@ def test_unverified_http_and_forged_handoff_cannot_complete(wizard):
         wizard.action('finish', {'key_saved': True, 'handoff_copied': True})
     assert wizard.state()['required']
     with pytest.raises(ValueError):
-        wizard.action('power', {'consent': True})
+        wizard.action('power', {'consent': False})
 
 
 def test_full_workflow_persists_metadata_only_and_bypasses_daily_wizard(wizard, monkeypatch):
@@ -195,9 +232,6 @@ def test_full_workflow_persists_metadata_only_and_bypasses_daily_wizard(wizard, 
     monkeypatch.setattr(onboarding, 'verify', lambda *_: {'success': True, 'http_status': 200, 'cost_usd': .012345, 'code': 'ok'})
     wizard.store.set('public_url', 'https://synthetic.example.invalid')
     wizard.power.apply(consent=True)
-    saved = wizard.load()
-    saved['lock_checks_acknowledged'] = True
-    wizard.save(saved)
     created = wizard.action('create-key', {})
     assert wizard.store.authenticate(created['token'])['providers'] == ['claude', 'codex']
     wizard.action('verify', {'key': created['token'], 'model': wizard.store.get('models')[1]['id']})
@@ -251,7 +285,6 @@ def test_reinstall_can_deliver_same_existing_key_after_real_verification(wizard,
     wizard.store.set('public_url', 'https://same.example.invalid')
     kid, key = wizard.store.create_key('original-saved-key')
     wizard.power.apply(consent=True)
-    value = wizard.load(); value['lock_checks_acknowledged'] = True; wizard.save(value)
     wizard.action('verify', {'key': key, 'model': wizard.store.get('models')[1]['id']})
     wait_job(wizard)
     wizard.action('finish', {'key_saved': True, 'handoff_copied': True, 'model': wizard.store.get('models')[1]['id']})
@@ -271,13 +304,12 @@ def test_admin_helper_does_not_change_administrator_hkcu(tmp_path, monkeypatch):
             calls.append(kwargs)
             return {'verified': True}
     monkeypatch.setattr(admin, 'PowerPolicy', Policy)
-    values = [{'exists': False}] * 3
     path = tmp_path / 'windows-power-elevation.json'
-    atomic_json(path, {'nonce': 'synthetic-request', 'created_at': time.time(), 'operation': 'apply', 'user_values': values})
+    atomic_json(path, {'nonce': 'synthetic-request', 'created_at': time.time(), 'operation': 'apply'})
     assert admin.elevated(tmp_path, 'wrong', 'apply') == 1
     assert not calls
     assert admin.elevated(tmp_path, 'synthetic-request', 'apply') == 0
-    assert calls == [{'consent': True, 'user_values': values, 'manage_user': False}]
+    assert calls == [{'consent': True}]
     assert not path.exists()
 
 
@@ -315,7 +347,6 @@ def test_delivered_model_and_native_mapping_must_match_actual_verification(wizar
     wizard.store.set('public_url', 'https://same.example.invalid')
     _, key = wizard.store.create_key('original-saved-key')
     wizard.power.apply(consent=True)
-    value = wizard.load(); value['lock_checks_acknowledged'] = True; wizard.save(value)
     models = wizard.store.get('models')
     wizard.action('verify', {'key': key, 'model': models[1]['id']}); wait_job(wizard)
     with pytest.raises(ValueError):

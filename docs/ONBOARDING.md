@@ -6,7 +6,7 @@
 
 1. 先依 [BYO 準備事項](BYO-QUICKSTART.md) 備妥 Node.js 22+，在新開啟的終端機確認 `node --version`，再下載並啟動 Windows Setup；先安裝前置工具可避免背景程式沿用舊 PATH。核對 [Release](RELEASE.md) 的公開附件、大小／SHA256。現階段未有 Authenticode，依自己裝置政策確認未知發布者；不要停用系統防護。
 2. 執行 Setup，首次開啟管理視窗進入五步精靈。可關閉整個視窗稍後續接；已完成安裝後正常啟動不再彈出，可從「連線與設定 → 安裝設定精靈」手動重開。
-3. 明確同意此電腦的插電電源與使用者鎖定調整，完成額外鎖定檢查，再按套用。程式先保存原值、建立專用計畫、只改 AC 索引，逐項讀回；不會因單純開啟安裝包就修改電源。
+3. 明確同意此電腦只調整插電自動睡眠／休眠，再按套用。鎖定、螢幕及實體按鍵設定保留。程式先保存原值、建立專用計畫、只改 AC 索引，逐項讀回；不會因單純開啟安裝包就修改電源。
 4. 檢查本地 LLM CLI。預設 Codex／ChatGPT 訂閱；Claude 選用，至少一來源可用。不需要將供應商憑證輸入 Bridge。
 5. 安裝 Node.js 22+、Wrangler 4.95.0，以自己的瀏覽器完成 Cloudflare OAuth。明確選定自有 account ID。
 6. 選「一鍵部署並綁定」，或把「AI IDE 協作 prompt」貼給自己的 AI IDE。完成後重新檢查，確認固定 workers.dev endpoint、裝置已配對與 Relay 在線。
@@ -59,24 +59,27 @@ AI IDE 模式會產生**這個安裝位置與原 data-dir 專用**的 prompt。�
 
 若 AI IDE 在外部 CLI 完成部署，回精靈重新檢查；服務以同一 SQLite／DPAPI 讀取設定並重新啟動 Relay。若 URL 是已配置的正式入口，不能以「測試」名義換網址、重建 Worker 或修復其他團隊正在管理的 Cloud。
 
-## 插電不休眠／不自動鎖定
+## 插電不自動睡眠／休眠，保留鎖定
 
-此要求須分成可驗證的範圍，**不承諾對所有 Windows／企業政策／硬體取消所有鎖定**。鎖定畫面與休眠不同，正常 Win+L 不應讓背景 API 停止；不需為 API 讓密碼失效。
+Windows 鎖定與休眠是不同狀態。API 的目標是主機持續運作，不要求桌面持續解鎖。候選已取消所有禁止鎖定的設定；本機真鎖定驗收狀態見 [鎖定 QA](qa/2026-10-23-windows-locked.md)，不得以文件或單元測試代替實測。
 
-| 範圍 | 實作與驗收 |
+| 控制 | 實作範圍 |
 |---|---|
-| AC 電源計畫 | 複製原計畫；可用的 sleep、hibernate、unattended sleep、display、locked display 設 0（永不），lid、sleep button、一般 power button 設不動作；一般按電源鍵不執行原動作，仍可由 Windows 選單關機。逐項讀回 AC=0、DC=原值。至少 sleep／display 必須可控制。未支援項列出，不假裝已套用。 |
-| 原始資料 | `windows-power.json` 先存原計畫 GUID、專用 GUID、各項原 AC/DC、目前使用者登錄值；不含憑證。專用計畫保持有效直到使用者還原或另選計畫。 |
-| 個人自動鎖定 | 只有 Bridge 常駐且接 AC 時，停用目前使用者 ScreenSaveActive／ScreenSaverIsSecure／EnableGoodbye；螢幕保護程式另通知系統套用。每 5 秒讀取 AC；DC／未知供電／正常停止還原原值。不反覆覆寫 DC 的使用者後續選擇。 |
-| 組織政策 | 檢查 machine inactivity、MDM DeviceLock、使用者強制螢幕保護政策。遇到限制不覆寫、不假裝通過，須找裝置管理員處理。檢查不是全套企業政策稽核。 |
-| 人體感測／廠商工具 | 使用者需在 Windows 電源與登入選項及廠商工具檢查、關閉額外插電離席鎖定並勾選確認。此項不能由一般電源索引保證，需實際待機／拔插電驗證。 |
-| 手動鎖定、實體長按電源、關機、斷電、更新重啟 | 不攔截。API 需要主機實際運作；URL／KEY 持久不代表主機關機仍能推論。 |
+| 插電 AC 自動睡眠 | 複製原電源計畫，只將支援的 sleep、hibernate、unattended sleep 設 0（永不）。至少 sleep 必須可控制；未支援項目列出，不宣稱已套用。逐項讀回 AC=0、DC=原值。 |
+| 螢幕與鎖定 | 不更改 display／locked display、螢幕保護、動態鎖定、登入密碼、Win+L 或組織鎖定政策；沒有相關登錄寫入及常駐取消鎖定程序。 |
+| 闔蓋／睡眠鍵／電源鍵 | 保持原動作；若原本會睡眠或關機仍會中斷 API。需要常駐 API 時請保持主機實際運作，另依裝置政策管理。 |
+| 電池 DC | 不更改全部 DC 索引，也不在拔電時更改使用者設定。 |
+| 備份與還原 | `windows-power.json` schema=2 保存原計畫、專用 GUID、三項原 AC/DC 及 unsupported。不含 HKCU 值或憑證。還原原計畫；若 owner 已改選其他計畫，不擅自切回。 |
+| 組織休眠政策／廠商工具 | 不覆寫強制 AC 休眠政策；受限時保持安裝未完成，由裝置管理員處理。組織鎖定政策不阻擋這個步驟。廠商另行觸發的睡眠需實機驗證。 |
+| 登出、手動睡眠／休眠、關機、斷電、Windows 重啟 | 不攔截。URL／KEY 持久不表示主機關機或使用者尚未登入仍能推論。鎖定不可當成登出。 |
 
-電源設定失敗會嘗試還原原計畫與已改使用者值，不把安裝標示完成。一般權限不足可明確點「以管理員權限套用／還原（UAC）」，本人在 Windows 提示授權；這不是偷偷提權。helper 只修改電源計畫，原安裝使用者的 HKCU 仍由原服務保存／操作，不切換 LLM／Cloudflare 登入。未簽包的 UAC 會顯示未知發布者；拒絕、逾時或有組織政策時保持未完成。**不要以另一個 Windows 使用者登入管理介面、不要關閉 UAC／企業防護**。管理員仍受企業政策與硬體限制，不能以 UAC 當作全能鎖定解除。
+優先使用一般權限。只有電源計畫 ACL 不允許修改時，才由本人明確點選「電源權限不足時以管理員套用（UAC）」；不是為了禁止鎖定而提權，也不要求所有安裝者都通過 UAC。helper 僅處理三項電源設定／還原，從不寫原使用者或管理員 HKCU、不處理 LLM／Cloudflare 登入。取消或拒絕時保持未完成，禁止降低 UAC／企業防護。原值備份完成後才寫入，失敗嘗試還原，不假報成功。
 
-管理台「還原原電源及鎖定設定」可取消。若使用者自行選了另一電源計畫，不把它切回舊計畫。Windows 的 [Powercfg AC 索引說明](https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/powercfg-command-line-options)、[機器閒置鎖定政策](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/security-policy-settings/interactive-logon-machine-inactivity-limit) 是不同控制，不能只驗 `powercfg` 就宣稱所有鎖定已取消。
+管理台「還原原電源計畫」可取消，已套用的 AC 計畫在服務重啟後持續有效。電源計畫是 OS 共用資源，多 profile 同時管理尚未驗收，請勿同時啟用。開發期舊 schema=1 候選若曾套用，需先用原候選還原；新版偵測後拒絕直接覆蓋，以免遺失舊備份。這不影響正式 0.7.3，它沒有此電源功能。
 
-目前不自動開啟登入時啟動；請在管理台啟用既有選項。沒有自動登入 Windows，也不保存 Windows 密碼。正常關閉視窗仍常駐；手動停止服務、登出或電腦重開尚未登入時，使用者鎖定控制沒有常駐保證。多個 profile 同時管理同一 OS 使用者電源設定尚未驗收，勿同時啟用。
+目前不自動啟用 Windows 登入時啟動，可於管理台選用。程式不保存 Windows 密碼、不啟用自動登入；正常關閉視窗仍常駐，停止服務或登出後不再提供推論。
+
+參考：[Windows AC 電源索引](https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/powercfg-command-line-options)、[SetThreadExecutionState](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setthreadexecutionstate)、[WTS 鎖定狀態](https://learn.microsoft.com/en-us/windows/win32/api/wtsapi32/ns-wtsapi32-wtsinfoex_level1_w)。鎖定探針使用暫時的 system-required，不要求 display-required，不改永久電源或鎖定政策。
 
 ## 何時重跑，什麼永遠保留
 

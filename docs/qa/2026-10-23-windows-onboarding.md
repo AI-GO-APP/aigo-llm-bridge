@@ -1,8 +1,10 @@
 # Windows 0.8.0 onboarding 候選驗收
 
-目前階段：原始碼／CI／隔離安裝驗證通過，**尚未發布／未升級正式 Windows**。原正式 0.7.3 與其先前已知 Worker 500/1101 是不同狀態；本輪不修／不部署該 Cloud，也不改正式機電源或既有 Claude Code。
+以下記錄為修訂前含鎖定設定候選的歷史收據。最新 AC-only 候選及 Win+L 實測見 [鎖定 QA](2026-10-23-windows-locked.md)，不得將下列舊原生電源結果套用至修訂版。
 
-最終功能來源 `80fe9074d709084d180381e9601271aba17ec5ca`，[PR #15](https://github.com/AI-GO-APP/aigo-llm-bridge/pull/15)。本機完整 Python **174 passed、2 skipped**，onboarding 專屬 25 案例、console boundary 16；relay 7、平台 adapter 2；文件覆蓋、terms、secrets 通過。[一般 CI](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39881637172)、[Windows ZIP／指南](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39881637160)、[Windows installer／原生電源](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39881637166) 全通過。沒有 Mac release 或自有 Worker 部署。
+先前階段：原始碼／CI／隔離安裝驗證通過，**尚未發布／未升級正式 Windows**。原正式 0.7.3 與其先前已知 Worker 500/1101 是不同狀態；本輪不修／不部署該 Cloud，也不改正式機電源或既有 Claude Code。
+
+先前功能來源 `80fe9074d709084d180381e9601271aba17ec5ca`，[PR #15](https://github.com/AI-GO-APP/aigo-llm-bridge/pull/15)。本機完整 Python **174 passed、2 skipped**，onboarding 專屬 25 案例、console boundary 16；relay 7、平台 adapter 2；文件覆蓋、terms、secrets 通過。[一般 CI](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39881637172)、[Windows ZIP／指南](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39881637160)、[Windows installer／原生電源](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39881637166) 全通過。沒有 Mac release 或自有 Worker 部署。
 
 | 案例 | 狀態／邊界 |
 |---|---|

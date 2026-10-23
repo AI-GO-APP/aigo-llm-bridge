@@ -112,9 +112,9 @@ startup 不在 settings 表，是 Windows HKCU Run／平台啟動設定；隔離
 | 檔案／位置 | 欄位與用途 |
 |---|---|
 | 安裝根 `windows-installation.json` | `schema=1`、`installation_id`；after-install 寫新 UUID，正常更新保留。不可與 device_id 混用。來源／舊包採 pack_id＋device_id 的穩定 fallback，新增安裝不刪原裝置資料。 |
-| profile `windows-onboarding.json` | `schema=1`、`installation_id`、`completed_at`、`completed_version`、`lock_checks_acknowledged`、`key_id`；新安裝 ID 清除流程完成狀態，不碰 SQLite。`verification` 僅 success、http_status、elapsed_ms（可缺）、cost_usd（可缺）、code、model、key_id、checked_at。 |
-| profile `windows-power.json` | `schema=1`、`enabled`、`original_scheme`、`bridge_scheme`、`settings`（支援項原 ac/dc）、`unsupported`、`user_values`（三個 allowlist HKCU 值的 exists/value/type）、`user_relaxed`。備份／讀回／還原專用，含 OS 設定而非密碼。 |
-| profile `windows-power-elevation.json` | 短期 UAC 請求：schema、nonce、operation（apply/restore）、created_at、原使用者 user_values；五分鐘失效、完成／取消清除。nonce 非 client KEY，helper 不執行任意命令、不更改管理員 HKCU。 |
+| profile `windows-onboarding.json` | `schema=1`、`installation_id`、`completed_at`、`completed_version`、`power_consent`、`key_id`；新安裝 ID 清除流程完成狀態，不碰 SQLite。`verification` 僅 success、http_status、elapsed_ms（可缺）、cost_usd（可缺）、code、model、key_id、checked_at。 |
+| profile `windows-power.json` | `schema=2`、`enabled`、`original_scheme`、`bridge_scheme`、`settings`（sleep／hibernate／unattended_sleep 支援項原 ac/dc）、`unsupported`。不保存或修改鎖定 HKCU。舊未發布 schema=1 已啟用設定需原候選先還原。 |
+| profile `windows-power-elevation.json` | 短期 UAC 請求：schema、nonce、operation（apply/restore）、created_at；五分鐘失效、完成／取消清除。nonce 非 client KEY，helper 不執行任意命令、不更改任何 HKCU。 |
 
 onboarding／power 使用 atomic replace，與 SQLite／DPAPI 同放原 profile 並納入更新備份。安裝 UUID 位於不被 current 版本替換的根目錄；更新不重產。完整 KEY、協作 handoff 含 KEY 版本、HTTPS回覆、一次完成 proof、Cloudflare 原始輸出及 OAuth token 不寫入上述檔案。帳戶 ID／Worker／URL 仍沿用 settings，CLI憑證仍由各 CLI 管理。
 

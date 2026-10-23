@@ -7,7 +7,7 @@ import secrets
 import subprocess
 import time
 
-from .windows_power import PowerPolicy, USER_VALUES
+from .windows_power import PowerPolicy
 from .windows_release import atomic_json, stable_entry
 
 
@@ -21,47 +21,25 @@ def elevated(directory, nonce, operation):
             or request.get('operation') != operation or not 0 <= time.time() - request['created_at'] <= 300):
         return 1
     policy = PowerPolicy(directory)
-    values = request['user_values']
-    if not isinstance(values, list) or len(values) != len(USER_VALUES):
-        return 1
-    for value in values:
-        if not isinstance(value, dict) or type(value.get('exists')) is not bool:
-            return 1
-        if value['exists'] and (value.get('type') not in {1, 4} or type(value.get('value')) not in {str, int}):
-            return 1
     try:
         if operation == 'apply':
-            result = policy.apply(consent=True, user_values=values, manage_user=False)
+            result = policy.apply(consent=True)
             return 0 if result['verified'] else 1
-        policy.restore(manage_user=False)
+        policy.restore()
         return 0
     finally:
         path.unlink(missing_ok=True)
 
 
 def request(policy, operation):
-    policy.suspended = True
-    try:
-        return _request(policy, operation)
-    finally:
-        policy.suspended = False
-
-
-def _request(policy, operation):
     if operation not in {'apply', 'restore'}:
         raise ValueError()
     if policy.blockers():
-        raise ValueError('Managed security policy must be handled by its administrator.')
-    if operation == 'restore':
-        # Always restore the installing user's values in that user's process.
-        policy.stop()
-    values = [policy.native.registry(p, n) for p, n, _ in USER_VALUES]
-    if policy.load().get('enabled'):
-        values = policy.load()['user_values']
+        raise ValueError('Managed sleep policy must be handled by its administrator.')
     path = policy.path.parent / 'windows-power-elevation.json'
     nonce = secrets.token_hex(16)
     atomic_json(path, {'schema': 1, 'nonce': nonce, 'operation': operation,
-                       'created_at': time.time(), 'user_values': values})
+                       'created_at': time.time()})
     class Execute(ctypes.Structure):
         _fields_ = [('cbSize', wintypes.DWORD), ('fMask', wintypes.ULONG), ('hwnd', wintypes.HWND),
                     ('lpVerb', wintypes.LPCWSTR), ('lpFile', wintypes.LPCWSTR), ('lpParameters', wintypes.LPCWSTR),
@@ -94,8 +72,6 @@ def _request(policy, operation):
                 raise OSError(5, 'Power administrator helper failed.')
         finally:
             kernel.CloseHandle(info.hProcess)
-        policy.suspended = False
-        policy.tick()
         return policy.inspect() if operation == 'apply' else {'restored': True}
     finally:
         path.unlink(missing_ok=True)

@@ -22,7 +22,6 @@ class WindowsManagementServer(ManagementServer):
         from .windows_onboarding import Onboarding
         self.power_policy = PowerPolicy(self.store.directory)
         self.onboarding = Onboarding(self, self.power_policy)
-        self.power_thread = None
 
     def minimum_blocked(self):
         path = self.store.directory / 'updates' / 'minimum-block.json'
@@ -43,21 +42,9 @@ class WindowsManagementServer(ManagementServer):
             while not self.update_stop.wait(6 * 3600):
                 self.check_updates()
         threading.Thread(target=periodic, daemon=True, name='windows-update-timer').start()
-        def power_guard():
-            while not self.update_stop.is_set():
-                try:
-                    self.power_policy.tick()
-                except (OSError, ValueError):
-                    pass  # State/readback reports incomplete; never write a raw OS diagnostic.
-                self.update_stop.wait(5)
-        self.power_thread = threading.Thread(target=power_guard, daemon=True, name='windows-ac-policy')
-        self.power_thread.start()
 
     def stop(self):
         self.update_stop.set()
-        if self.power_thread:
-            self.power_thread.join(timeout=6)
-        self.power_policy.stop()
         (self.store.directory / 'windows-control.dpapi').unlink(missing_ok=True)
         super().stop()
 

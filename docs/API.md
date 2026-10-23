@@ -86,8 +86,8 @@ Windows 0.8.0 候選另加 `state.windows_onboarding` 及 POST `/manage/windows-
 | login | `provider=codex/claude/cloudflare`；只啟動官方授權，ready 者沿用；來源有 active request 時拒絕。 |
 | cli-paths | codex_path／claude_path 字串，空白自動偵測；原生執行檔驗證後只保存 Bridge 設定。 |
 | prompt | `{}`；回傳不含憑證的 AI IDE 協作 prompt，帶原安裝位置／data-dir。 |
-| power／power-admin | `consent=true, lock_checks_acknowledged=true`；一般套用／明確 UAC 提權；背景讀回，無權／政策限制不得通過。 |
-| restore-power／restore-power-admin | 一般還原／UAC 還原，後者需 consent=true；不變更 DC 或管理員 HKCU。 |
+| power／power-admin | `consent=true`；只調整 AC 自動睡眠三項，一般權限優先／電源 ACL 不足才選用 UAC；背景讀回，不需要鎖定檢查或解除鎖定政策。 |
+| restore-power／restore-power-admin | 一般還原原電源計畫／UAC 還原，後者需 consent=true；不變更 DC、螢幕、按鍵或任何鎖定登錄值。 |
 | deploy | 明確 account_id 與 consent=true；重新驗帳戶後部署原 profile／Worker。 |
 | create-key | 可選 label；回 id、一次 token、integration（含KEY的標準訊息）；預設來源全開，僅 hash 持久化。 |
 | verify | key、model；背景真 HTTPS GET models＋單次合成 POST；RAM key不落盤；要求 PONG／有限非負數值 cost。 |

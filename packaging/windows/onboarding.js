@@ -5,14 +5,13 @@
   wizard.setAttribute('aria-labelledby', 'onboarding-title');
   wizard.innerHTML = `<div class="modal-header"><div><div class="eyebrow">DEVICE SETUP</div><h2 id="onboarding-title">完成這台電腦的安裝設定</h2></div><button type="button" class="icon-button" id="ob-close" aria-label="關閉安裝設定">×</button></div>
     <div class="onboarding-body"><p>每台電腦首次安裝需完成一次；完成後日常啟動直接進主畫面。中途關窗可稍後續接，網址與 KEY 不會因此改變。</p>
-    <nav id="ob-steps" class="row-actions" aria-label="安裝步驟">${['插電與鎖定','訂閱授權','Cloudflare','Worker 入口','KEY 與交付'].map((text,i)=>`<button type="button" class="secondary compact" data-ob-step="${i}">${i+1}. ${text}</button>`).join('')}</nav>
+    <nav id="ob-steps" class="row-actions" aria-label="安裝步驟">${['插電與休眠','訂閱授權','Cloudflare','Worker 入口','KEY 與交付'].map((text,i)=>`<button type="button" class="secondary compact" data-ob-step="${i}">${i+1}. ${text}</button>`).join('')}</nav>
     <p id="ob-job" role="status" aria-live="polite">正在取得安裝狀態…</p>
-    <section data-ob-panel="0"><h3>1. 同意插電服務設定</h3><p>建立專用電源計畫，插電時螢幕、睡眠、休眠與支援的闔蓋／睡眠鍵／一般電源鍵動作設為永不／不動作。一般按電源鍵將不執行原動作，仍可由 Windows 選單關機。保留原計畫與電池值；拔電後還原原本的使用者鎖定設定。</p>
-      <p>Bridge 常駐且插電時停用目前使用者的螢幕保護鎖定與動態鎖定。這會讓他人有機會直接操作桌面，僅適合受控場所。公司政策、人體感測、廠商工具、手動 Win+L、強制關機與斷電另行處理；鎖定桌面本身不會讓 API 停止。</p>
-      <label class="check-label"><input id="ob-power-consent" type="checkbox">我同意此電腦套用上述插電設定，並了解桌面不自動鎖定的影響。</label>
-      <label class="check-label"><input id="ob-lock-ack" type="checkbox">我已檢查 Windows「登入選項／人體感測」與廠商電源工具，關閉額外的插電離席鎖定；組織限制需由管理員處理。</label>
-      <p id="ob-power-state" role="status"></p><div class="row-actions"><button type="button" id="ob-power" class="primary">同意並套用、讀回驗證</button><button type="button" id="ob-power-admin" class="secondary">以管理員權限套用（UAC）</button><button type="button" id="ob-restore" class="secondary">還原原電源及鎖定設定</button><button type="button" id="ob-restore-admin" class="secondary">以管理員權限還原（UAC）</button></div>
-      <p>若出現權限不足，請由裝置管理員依隨附 ONBOARDING.md 處理；未驗證成功前不能完成安裝。程式不會覆寫組織鎖定政策。</p></section>
+    <section data-ob-panel="0"><h3>1. 同意插電不自動休眠</h3><p>建立專用電源計畫，只把支援的插電自動睡眠、休眠與無人值守睡眠設為永不。保留原計畫及電池設定；螢幕關閉、Win+L、自動鎖定、螢幕保護、動態鎖定與組織安全政策維持原狀。</p>
+      <p>鎖定不等於休眠。服務在電腦持續運作且目前使用者未登出的情況下可在背景接單。手動睡眠、闔蓋、實體按鍵、關機及斷電仍依 Windows 原設定處理，可能中斷 API。</p>
+      <label class="check-label"><input id="ob-power-consent" type="checkbox">我同意只調整上述插電自動休眠設定，保留電池與鎖定設定。</label>
+      <p id="ob-power-state" role="status"></p><div class="row-actions"><button type="button" id="ob-power" class="primary">同意並套用、讀回驗證</button><button type="button" id="ob-power-admin" class="secondary">電源權限不足時以管理員套用（UAC）</button><button type="button" id="ob-restore" class="secondary">還原原電源計畫</button><button type="button" id="ob-restore-admin" class="secondary">以管理員權限還原電源（UAC）</button></div>
+      <p>優先使用一般權限；只有電源計畫權限不足時才由本人選擇 UAC。程式不調整鎖定登錄值，不覆寫組織休眠政策。未支援項目會列出；請依自己的裝置檢查廠商休眠工具。</p></section>
     <section data-ob-panel="1" hidden><h3>2. 本地 LLM 訂閱授權</h3><p>預設使用 Codex 的 ChatGPT 訂閱；至少一個來源可用即可。登入僅在你點選後啟動官方授權，不會登出、切換帳戶或打斷正在使用的 CLI。</p>
       <div class="field-grid"><div><h4>Codex</h4><p id="ob-codex-state">尚未檢查</p><button type="button" id="ob-login-codex" class="secondary">開啟 Codex 訂閱登入</button><p>未安裝時在自己的 PowerShell 執行：</p><pre class="code-block">npm install -g @openai/codex\ncodex login\ncodex login status</pre><p>選 ChatGPT 登入；不輸入 OpenAI API key。</p></div>
       <div><h4>Claude Code（選用）</h4><p id="ob-claude-state">尚未檢查</p><button type="button" id="ob-login-claude" class="secondary">開啟 Claude 訂閱登入</button><p>先依 code.claude.com/docs/en/setup 安裝，再執行：</p><pre class="code-block">claude auth login\nclaude auth status</pre><p>沿用 Claude.ai 訂閱。已登入者不會再次登入。</p></div></div><p>Node.js 需 22 以上。授權或換訂閱不改變此裝置的 URL 和 KEY。</p><details><summary>進階：指定已安裝的原生 CLI 路徑</summary><label>Codex<input id="ob-codex-path" placeholder="自動偵測"></label><label>Claude<input id="ob-claude-path" placeholder="自動偵測"></label><button type="button" id="ob-cli-paths" class="secondary">保存 CLI 路徑</button></details></section>
@@ -55,8 +54,8 @@
   bind('ob-refresh', () => action('refresh'));
   bind('ob-cli-paths', () => action('cli-paths', {codex_path:el('ob-codex-path').value, claude_path:el('ob-claude-path').value}));
   for (const provider of ['codex','claude','cloudflare']) bind('ob-login-' + provider, () => action('login', {provider}));
-  bind('ob-power', () => action('power', {consent:el('ob-power-consent').checked, lock_checks_acknowledged:el('ob-lock-ack').checked}));
-  bind('ob-power-admin', () => action('power-admin', {consent:el('ob-power-consent').checked, lock_checks_acknowledged:el('ob-lock-ack').checked}));
+  bind('ob-power', () => action('power', {consent:el('ob-power-consent').checked}));
+  bind('ob-power-admin', () => action('power-admin', {consent:el('ob-power-consent').checked}));
   bind('ob-restore', () => action('restore-power'));
   bind('ob-restore-admin', () => action('restore-power-admin', {consent:el('ob-power-consent').checked}));
   bind('ob-deploy', () => action('deploy', {account_id:el('ob-account').value, consent:el('ob-deploy-consent').checked}));
@@ -102,7 +101,8 @@
     for (const id of ['ob-refresh','ob-power','ob-power-admin','ob-restore','ob-restore-admin','ob-deploy','ob-login-codex','ob-login-claude','ob-login-cloudflare','ob-verify','ob-create-key','ob-finish','ob-cli-paths']) el(id).disabled = busy;
     for (const p of ['codex','claude']) el('ob-' + p + '-state').textContent = ob.subscriptions[p] === true ? '訂閱已登入，將沿用現況' : ob.subscriptions[p] === false ? '尚未就緒，請安裝並完成訂閱登入' : '尚未檢查';
     if (!pathsFilled) { pathsFilled = true; for (const p of ['codex','claude']) el('ob-' + p + '-path').value = state.settings[p + '_path'] || ''; }
-    el('ob-power-state').textContent = ob.power.verified ? '插電計畫已套用並讀回；電池設定保留。額外感測／廠商機制以本人檢查為準。' : `尚未通過電源設定${ob.power.blockers?.length ? '；有組織鎖定政策：' + ob.power.blockers.join('、') : ''}${ob.power.changed?.length ? '；電源計畫已被更改，請還原後重新套用。' : ''}`;
+    el('ob-power-state').textContent = ob.power.verified ? '插電自動休眠設定已套用並讀回；電池、螢幕與鎖定設定保留。' : `尚未通過電源設定${ob.power.blockers?.length ? '；有組織休眠政策：' + ob.power.blockers.join('、') : ''}${ob.power.changed?.length ? '；電源計畫已被更改，請還原後重新套用。' : ''}`;
+    if (ob.power.unsupported?.length) el('ob-power-state').textContent += ' 未支援項目：' + ob.power.unsupported.join('、') + '；請依裝置確認休眠行為。';
     el('ob-cf-state').textContent = ob.accounts.length ? `已授權 ${ob.accounts.length} 個帳戶；下一步需明確選定。` : '尚未取得可用 Cloudflare 帳戶，請登入後按重新檢查。';
     const accounts = JSON.stringify([ob.accounts, ob.bound_account]);
     if (accounts !== lastAccounts) {

@@ -39,7 +39,7 @@ python tools/verify_installer_update.py --output <全新隔離輸出目錄> --vp
 
 完整工具回歸另跑 `python -m pytest tools/tests -q`；含 shell 合約的測試需實際 Git Bash／Ubuntu，不把 WSL 缺失當作產品錯誤，也不能直接略過未釐清失敗。不可分發 LocalProbe 可用 dirty tree 迭代；發布包必須 clean commit。隨附文件必須 tracked，避免把本機漏提交的指南帶進包。
 
-原生電源探針 `tools/verify_windows_onboarding.py` 只允許 `GITHUB_ACTIONS=true` 且 `RUNNER_ENVIRONMENT=github-hosted` 的 Windows runner；不對 owner 工作站開一個「測試」旗標就取消鎖定。它是避免誤操作的執行護欄，不是防止惡意環境變數的安全邊界。探針使用新目錄、保存原值、finally 還原／移除專用計畫；模擬 DC 切換另由 fake adapter 驗，實體拔插／闔蓋待安裝者實機驗收。
+原生電源探針 `tools/verify_windows_onboarding.py` 只允許 `GITHUB_ACTIONS=true` 且 `RUNNER_ENVIRONMENT=github-hosted` 的 Windows runner；不對 owner 工作站開一個「測試」旗標就改永久電源。它是避免誤操作的執行護欄，不是防止惡意環境變數的安全邊界。探針使用新目錄、保存原值、驗證鎖定登錄與螢幕／按鍵未變、finally 還原／移除專用計畫；模擬 DC 切換另由 fake adapter 驗，實體拔插／闔蓋待安裝者實機驗收。
 
 ## 不同層級的放行條件
 

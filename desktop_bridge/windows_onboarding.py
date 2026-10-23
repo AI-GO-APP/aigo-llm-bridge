@@ -140,8 +140,7 @@ class Onboarding:
                     'job': dict(self.job), 'subscriptions': self.subscriptions, 'accounts': self.accounts,
                     'bound_account': self.store.get('cloudflare_account_id'),
                     'deployment': byo.status(self.store), 'power': power,
-                    'verification': value.get('verification'), 'key_id': value.get('key_id'),
-                    'lock_checks_acknowledged': bool(value.get('lock_checks_acknowledged'))}
+                    'verification': value.get('verification'), 'key_id': value.get('key_id')}
 
     def task(self, name, work):
         if not self.busy.acquire(blocking=False):
@@ -267,8 +266,8 @@ class Onboarding:
         if action == 'prompt':
             return self.prompt()
         if action in {'power', 'power-admin'}:
-            if data.get('consent') is not True or data.get('lock_checks_acknowledged') is not True:
-                raise ValueError('Explicit consent and manual lock checks are required.')
+            if data.get('consent') is not True:
+                raise ValueError('Explicit AC automatic-sleep consent is required.')
             def apply():
                 if action == 'power-admin':
                     from .windows_power_admin import request
@@ -279,7 +278,7 @@ class Onboarding:
                     raise ValueError('Power readback failed.')
                 with self.lock:
                     value = self.load()
-                    value['lock_checks_acknowledged'] = True
+                    value['power_consent'] = True
                     self.save(value)
             return self.task('power', apply)
         if action == 'restore-power-admin':
@@ -333,7 +332,7 @@ class Onboarding:
                 model = next((m for m in self.store.get('models') if m['id'] == data.get('model')), None)
                 if (data.get('key_saved') is not True or data.get('handoff_copied') is not True or not identity
                     or not model or self.proof != (identity['id'], self.store.get('public_url'), json.dumps(model, sort_keys=True))
-                    or not value.get('lock_checks_acknowledged') or not self.power.inspect()['verified']):
+                    or not self.power.inspect()['verified']):
                     raise ValueError('Complete power, HTTPS verification and key handoff first.')
                 # Login is read-only and checked freshly; quota is established by the actual POST.
                 if not providers.status(model['provider'], self.store)['ready']:
