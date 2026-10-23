@@ -18,6 +18,11 @@ class WindowsManagementServer(ManagementServer):
         self.update_lock = threading.Lock()
         self.before_update = None
         self.update_stop = threading.Event()
+        from .windows_power import PowerPolicy
+        from .windows_onboarding import Onboarding
+        self.power_policy = PowerPolicy(self.store.directory)
+        self.onboarding = Onboarding(self, self.power_policy)
+        self.power_thread = None
 
     def minimum_blocked(self):
         path = self.store.directory / 'updates' / 'minimum-block.json'
@@ -38,9 +43,21 @@ class WindowsManagementServer(ManagementServer):
             while not self.update_stop.wait(6 * 3600):
                 self.check_updates()
         threading.Thread(target=periodic, daemon=True, name='windows-update-timer').start()
+        def power_guard():
+            while not self.update_stop.is_set():
+                try:
+                    self.power_policy.tick()
+                except (OSError, ValueError):
+                    pass  # State/readback reports incomplete; never write a raw OS diagnostic.
+                self.update_stop.wait(5)
+        self.power_thread = threading.Thread(target=power_guard, daemon=True, name='windows-ac-policy')
+        self.power_thread.start()
 
     def stop(self):
         self.update_stop.set()
+        if self.power_thread:
+            self.power_thread.join(timeout=6)
+        self.power_policy.stop()
         (self.store.directory / 'windows-control.dpapi').unlink(missing_ok=True)
         super().stop()
 
@@ -68,6 +85,7 @@ class WindowsManagementServer(ManagementServer):
         value = super().state()
         value['windows_release'] = {k: self.release[k] for k in ('version', 'core_version', 'commit', 'channel', 'local_probe')}
         value['windows_update'] = self.update_state
+        value['windows_onboarding'] = self.onboarding.state()
         status=self.store.directory/'windows-console.json'
         try:
             console=json.loads(status.read_text())
@@ -76,6 +94,8 @@ class WindowsManagementServer(ManagementServer):
         return value
 
     def action(self, path, data):
+        if path.startswith('/manage/windows-onboarding/'):
+            return self.onboarding.action(path.rsplit('/', 1)[-1], data)
         if path == '/manage/windows-console/open':
             if type(data.get('browser',False)) is not bool:raise ValueError()
             from .windows_console import launch

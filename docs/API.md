@@ -76,3 +76,20 @@ Worker 同步等待上限約 90 秒，SDK 建議 timeout 95–100 秒、停用�
 ## 本機管理 API
 
 `GET /manage/state`、`/manage/logs`、`/manage/export`、`/manage/handoff`；POST `/manage/keys/create|rotate|revoke`、`/manage/accepting`、`/manage/auth`、`/manage/settings`、`/manage/pair`、`/manage/logs/clear`、`/manage/test-connection`、`/manage/tunnel/start|stop`、`/manage/shutdown`。只允許本機管理 token；Windows 包另加 `/manage/windows-update/*`。這些不是外部 OpenRouter 契約，不能轉到 Worker 或用 client KEY 呼叫。
+
+Windows 0.8.0 候選另加 `state.windows_onboarding` 及 POST `/manage/windows-onboarding/<action>`：
+
+| action | 請求／回傳 |
+|---|---|
+| refresh | `{}`；背景重新查詢兩來源登入與 Cloudflare allowlist accounts。 |
+| login | `provider=codex/claude/cloudflare`；只啟動官方授權，ready 者沿用；來源有 active request 時拒絕。 |
+| cli-paths | codex_path／claude_path 字串，空白自動偵測；原生執行檔驗證後只保存 Bridge 設定。 |
+| prompt | `{}`；回傳不含憑證的 AI IDE 協作 prompt，帶原安裝位置／data-dir。 |
+| power／power-admin | `consent=true, lock_checks_acknowledged=true`；一般套用／明確 UAC 提權；背景讀回，無權／政策限制不得通過。 |
+| restore-power／restore-power-admin | 一般還原／UAC 還原，後者需 consent=true；不變更 DC 或管理員 HKCU。 |
+| deploy | 明確 account_id 與 consent=true；重新驗帳戶後部署原 profile／Worker。 |
+| create-key | 可選 label；回 id、一次 token、integration（含KEY的標準訊息）；預設來源全開，僅 hash 持久化。 |
+| verify | key、model；背景真 HTTPS GET models＋單次合成 POST；RAM key不落盤；要求 PONG／有限非負數值 cost。 |
+| finish | key_saved=true、handoff_copied=true；後端檢查當次 RAM proof、同 key_id／URL、KEY 未撤銷、來源登入、電源讀回與手動檢查確認，才存 completed_at。 |
+
+非同步接受回 `{ok:true,status:running}`，忙碌回 `{ok:false,code:busy}`；結果從 state 讀 job/status/action/code。狀態錯誤只回 operation_failed／permission_required，不回 CLI 原始錯誤、token 或模型內容。重新啟動後未完成者需貼回已保存 KEY 再明確 verify，不自動重播推論。詳細流程及環境限制見 [ONBOARDING](ONBOARDING.md)。

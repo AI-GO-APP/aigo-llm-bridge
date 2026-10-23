@@ -1,0 +1,18 @@
+/* Appended to the same-origin stylesheet; keep CSP style-src 'self'. */
+#windows-onboarding {
+  width: min(960px, calc(100vw - 32px));
+  max-height: 92dvh;
+  padding: 0;
+}
+#windows-onboarding .modal-header { padding: 24px 24px 0; }
+#windows-onboarding .onboarding-body { padding: 24px; overflow-wrap: anywhere; }
+#windows-onboarding section { margin-top: 24px; }
+#windows-onboarding .onboarding-footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); }
+#windows-onboarding .check-label { margin: 16px 0; }
+#windows-onboarding .code-block { white-space: pre-wrap; }
+#windows-onboarding h4 { margin: 12px 0; }
+#ob-steps button[aria-current=step] { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 600px) {
+  #windows-onboarding .modal-header { padding: 18px 18px 0; }
+  #windows-onboarding .onboarding-body { padding: 18px; }
+}

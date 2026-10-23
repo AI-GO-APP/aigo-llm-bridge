@@ -1,10 +1,10 @@
 name: Windows installer regression
 on:
   pull_request:
-    paths: ['desktop_bridge/**', 'packaging/windows/**', 'tools/verify_installer_update.py', '.github/workflows/windows-installer*.yml']
+    paths: ['desktop_bridge/**', 'packaging/windows/**', 'tools/verify_installer_update.py', 'tools/verify_windows_onboarding.py', '.github/workflows/windows-installer*.yml']
   push:
     branches: [main]
-    paths: ['desktop_bridge/**', 'packaging/windows/**', 'tools/verify_installer_update.py', '.github/workflows/windows-installer*.yml']
+    paths: ['desktop_bridge/**', 'packaging/windows/**', 'tools/verify_installer_update.py', 'tools/verify_windows_onboarding.py', '.github/workflows/windows-installer*.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -48,9 +48,14 @@ jobs:
       - name: Real isolated Setup and A-to-B native update
         shell: pwsh
         run: .desktop-build/venv/Scripts/python tools/verify_installer_update.py --output "$env:RUNNER_TEMP/bridge-update-proof" --vpk "$env:RUNNER_TEMP/bridge-vpk/vpk.exe"
+      - name: Native AC policy and restore on disposable runner
+        shell: pwsh
+        run: .desktop-build/venv/Scripts/python tools/verify_windows_onboarding.py --output "$env:RUNNER_TEMP/bridge-onboarding-power"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: windows-installer-acceptance
-          path: ${{ runner.temp }}/bridge-update-proof/acceptance.json
+          path: |
+            ${{ runner.temp }}/bridge-update-proof/acceptance.json
+            ${{ runner.temp }}/bridge-onboarding-power/acceptance.json
           if-no-files-found: warn

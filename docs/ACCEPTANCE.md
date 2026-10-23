@@ -1,5 +1,7 @@
 # 驗收與交付矩陣
 
+Windows 0.8.0 候選新增的首次安裝、CLI／Cloudflare 授權、電源／UAC、真 HTTPS 與交付狀態，單獨記在 [onboarding QA](qa/2026-10-23-windows-onboarding.md)。尚未發布／未驗項不可套用 0.7.3 通過結果。
+
 本檔區分需求、測試與交付。source／單元測試、真實本機CLI、公開HTTPS、frozen安裝包、CI、正式已安裝、人工UI是不同證據，不能互相替代。沒有在本輪執行的測試不得標成新通過。
 
 ## 固定驗收案例

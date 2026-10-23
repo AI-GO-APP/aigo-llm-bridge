@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT))
 def check(root=ROOT):
     from desktop_bridge.store import DEFAULTS, Store
     names = ('README', 'REQUIREMENTS', 'ARCHITECTURE', 'SCHEMA', 'API',
-             'DESIGN-SYSTEM', 'DECISIONS', 'ACCEPTANCE')
+             'DESIGN-SYSTEM', 'DECISIONS', 'ACCEPTANCE', 'ONBOARDING', 'CI-CD', 'RELEASE')
     errors, documents = [], {}
     for name in names:
         path = root / 'docs' / (name + '.md')

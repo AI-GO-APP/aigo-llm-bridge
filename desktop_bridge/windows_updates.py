@@ -179,7 +179,7 @@ def backup(directory, target):
     root.mkdir(parents=True, exist_ok=True)
     with closing(sqlite3.connect(directory / 'bridge.sqlite')) as source, closing(sqlite3.connect(root / 'bridge.sqlite')) as dest:
         source.backup(dest)
-    for name in ('relay-device.dpapi', 'relay-device.pending.dpapi'):
+    for name in ('relay-device.dpapi', 'relay-device.pending.dpapi', 'windows-onboarding.json', 'windows-power.json'):
         source = directory / name
         if source.is_file():
             (root / name).write_bytes(source.read_bytes())

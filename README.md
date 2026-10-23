@@ -6,6 +6,8 @@
 
 ## 安裝與交付
 
+0.8.0 候選將首次安裝整合為五步 [onboarding](docs/ONBOARDING.md)：插電設定同意、訂閱 CLI、Cloudflare OAuth、自有 Worker、一鍵／AI IDE 協作、長效 KEY 與真 HTTPS 驗證。正常更新／日常啟動保留完成狀態；實際發布狀態見 QA。發行者另有 [CI/CD](docs/CI-CD.md) 與 [Release 手冊](docs/RELEASE.md)。
+
 - **Windows 安裝器**：在 [GitHub Releases](https://github.com/AI-GO-APP/aigo-llm-bridge/releases) 選 `windows-installer-internal-v…`，執行其 Setup。此渠道使用 PyInstaller＋Velopack＋系統 Evergreen WebView2；尚無 Authenticode 公發憑證。詳細步驟見 [Windows 安裝與更新](docs/WINDOWS-INSTALL-UPDATE.md)。
 - **首次 BYO 部署**：依 [BYO Quickstart](docs/BYO-QUICKSTART.md) 或把 [agent prompt](docs/AI-AGENT-SETUP.md) 交給自己的 AI agent。明確選擇自己的 Cloudflare 帳戶，CLI 引導不會擅自登入／登出供應商。
 - **完成交付**：固定 endpoint、可用長效 client KEY、[第三方 AI IDE 串接訊息](docs/THIRD-PARTY-INTEGRATION.md)。完整 KEY 只顯示一次，放呼叫服務的 secret。

@@ -97,6 +97,8 @@ def main():
         checks['cli_setup_cancel_without_deploy']='BYO Cloudflare setup' in guided.stdout
         cli(executable,'start','--data-dir',data)
         wait(lambda:(data/'windows-control.dpapi').is_file())
+        checks['fresh_install_requires_onboarding']=cli(executable,'onboarding','status','--data-dir',data)['required'] is True
+        installation=(installed/'windows-installation.json').read_bytes()
         import urllib.request
         opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
         def models():
@@ -109,6 +111,12 @@ def main():
         assert console_report['success'],console_report['stage']
         checks.update({'console_'+k:v for k,v in console_report['checks'].items()})
         checks['closed_console_keeps_same_key_service']=bool(models()['data'])
+        # Fixture marks only local lifecycle completion. It does not claim Cloud/login/power acceptance.
+        onboarding_path=data/'windows-onboarding.json'
+        onboard=json.loads(onboarding_path.read_text());onboard['completed_at']=time.time()
+        onboard['acceptance_fixture']=True;atomic_json(onboarding_path,onboard)
+        onboarding_bytes=onboarding_path.read_bytes()
+        checks['completed_profile_daily_bypass']=cli(executable,'onboarding','status','--data-dir',data)['required'] is False
         atomic_json(web/'policy.json',policy_b)
         checks['new_version_detected']=cli(executable,'update','check','--data-dir',data)['latest']=='0.7.1'
         def rejected_update():
@@ -180,6 +188,10 @@ def main():
         checks['accepting_restored']=store.get('accepting') is True
         store.close()
         checks['dpapi_retained']=secret.load(data)==credential
+        checks['installation_id_survives_update']=(installed/'windows-installation.json').read_bytes()==installation
+        checks['onboarding_receipt_survives_restart_update']=onboarding_path.read_bytes()==onboarding_bytes
+        checks['updated_profile_daily_bypass']=cli(executable,'onboarding','status','--data-dir',data)['required'] is False
+        checks['onboarding_receipt_backed_up']=(data/'updates/before-0.7.1/windows-onboarding.json').read_bytes()==onboarding_bytes
         checks['database_backup']=(data/'updates/before-0.7.1/bridge.sqlite').is_file()
         checks['key_not_stored_plaintext']=all(key.encode() not in path.read_bytes() for path in data.rglob('*') if path.is_file())
         control(data,'drain',pack_id=package_id);control(data,'shutdown',pack_id=package_id)

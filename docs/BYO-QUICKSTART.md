@@ -1,5 +1,7 @@
 # 自有 Cloudflare 安裝指南
 
+Windows 0.8.0 候選可透過 [首次安裝精靈](ONBOARDING.md) 執行官方 CLI 授權、明確選帳戶、一鍵部署或複製 AI IDE 協作 prompt。首次本人電源同意、KEY 保存及真 HTTPS／cost 測試完成後，日常啟動直接主畫面；此段不是宣稱候選已發布，實際狀態見 QA。
+
 Windows 新安裝優先使用 [PyInstaller＋Velopack Setup](WINDOWS-INSTALL-UPDATE.md)，不需要 Python；原始碼安裝見 [repo 流程](CROSS-PLATFORM-INSTALL.md)。舊 ZIP 路線保留在下方，不能和 Setup 共用程式目錄。Mac 由其維護者獨立驗收與發布。產品正本見 [文件入口](README.md)；完成後交付 [第三方串接訊息](THIRD-PARTY-INTEGRATION.md)、固定 endpoint 與可用長效 KEY。
 
 適合進階使用者與其 AI agent。每個安裝者自己擁有 Worker、Cloudflare 帳單、裝置設定與登入。發布方只提供程式，不管理任何安裝者的入口或帳戶。沒有中央註冊、共享 API key 或預設公開 endpoint。

@@ -10,6 +10,8 @@
 
 ## 首次安裝及 CLI
 
+0.8.0 候選新增 [首次安裝精靈](ONBOARDING.md)：CLI／Cloudflare 授權、明確選帳戶、一鍵或 AI IDE 部署、插電電源同意與還原、長效 KEY 及真 HTTPS cost 驗證。完成後日常啟動直接主畫面；升級保留完成紀錄及原 profile。`onboarding open/status` 可由 CLI 操作。現行發布狀態見 QA，不將候選原始碼當作已發布包。
+
 執行 Setup.exe，開啟管理介面。安裝目錄中的 `current/aigo-bridge.exe` 是 console CLI；GUI 與 CLI 共用 frozen runtime，不需要 Python。首次設定使用 `aigo-bridge.exe setup`，或使用 `byo doctor`、`byo plan`、`byo deploy` 分步完成。部署仍需 Node.js 22+、Wrangler 與安裝者自己的帳戶；不自動變更 provider／Cloudflare 登入。
 
 所有命令可帶 `--data-dir <原設定檔>`。BYO 子命令寫在 `byo` 後，例如 `aigo-bridge.exe byo status --data-dir <路徑>`。`setup` 會先 doctor，要求明確 account ID，展示計畫並確認後部署，最後可建立僅顯示一次的服務 KEY。新 KEY 預設開放 Claude／Codex 所有目前及之後登錄的模型；仍受本機模型目錄及訂閱權限限制，可明確指定 provider 縮限，既有 KEY 與輪替 scope 不變。未完成環境／登入時，依 [BYO 指南](BYO-QUICKSTART.md) 操作；不是安裝完成即代表已有公開入口。

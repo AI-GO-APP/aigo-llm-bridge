@@ -63,3 +63,5 @@ loading、空清單、離線上次資料、錯誤、成功、disabled、required
 `web/platform.js` 提供 browser copy／Blob CSV。Windows build 後附加 `packaging/windows/platform.js`，將兩個操作改為明確 pywebview API；`console_extension.js` 注入Windows更新卡；共用頁面不 import pythonnet／Windows SDK。無 WebView2 時開預設瀏覽器，關閉 view 不停止服務。
 
 更改 CSS token 同時改本表；新增頁面／modal更新本檔與 ACCEPTANCE。驗收至少含淺／深色、桌面／窄版、長模型字串、空／有資料、建立KEY表單／危險確認、Windows附加卡。不可只用首頁截圖聲稱整個前端通過。Mac 需獨立重驗，不因共用CSS就宣稱已驗收。
+
+0.8.0 候選 `packaging/windows/onboarding.js` 是 Windows 專用五步安裝 dialog：沿用既有 tokens／按鈕／表單／深淺色，最大寬 960px、最大高 92dvh、內容捲動。首次未完成時不能按 Esc／關閉 dialog 略過，但可以關閉整個管理視窗稍後續接；完成後日常不彈出。不得預勾電源風險同意／帳戶部署授權，不以 busy 卡住背景管理；KEY 只留密碼輸入框 RAM，關閉清空。電源 UAC、OAuth、訂閱額度測試皆需明確按鈕，狀態有失敗及未驗說明。五步、權限取消、淺深色及窄版需另驗，見 [ONBOARDING](ONBOARDING.md)。
