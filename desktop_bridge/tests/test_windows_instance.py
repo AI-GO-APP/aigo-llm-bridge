@@ -135,7 +135,7 @@ def test_real_profiles_normal_exit_kill_and_restart(tmp_path, address, ending):
     one, two = tmp_path / 'one', tmp_path / 'two'
     child, port = start(one)
     try:
-        duplicate = subprocess.run(command + ['--background', '--data-dir', str(one), '--port', '0'],
+        duplicate = subprocess.run(command + ['--data-dir', str(one), '--port', '0'],
             capture_output=True, text=True, cwd=ROOT, timeout=15, creationflags=subprocess.CREATE_NO_WINDOW)
         assert duplicate.returncode == 0
         assert line(child) == 'activated'

@@ -15,6 +15,8 @@
 
 同 profile 的 source 喚回測試會捕捉 browser callback 並確認實際 activation event 已處理，不開 owner 桌面瀏覽器；Windows native WebView 複製／匯出／關窗另在 runner 驗證。
 
+新增 activation fixture 首輪把第二次啟動也帶 background，按契約不通知視窗，因此兩個案例等候逾時；已改成真正的前景重開，並保留原失敗紀錄。這不是放寬等待條件或變更背景啟動語意。
+
 ## CI 與正式閘門
 
 CI 的 `tools/verify_windows_machine.py parent` 只允許 Actions Windows disposable runner，建立一個暫時標準帳號與 SYSTEM broker，密碼只在 parent RAM，以 duplicated token handle 啟動另一真實 TS session 的非互動子程序。檢查非管理員、不同 SID／TS session、拒絕前不建 profile、DPAPI 管理憑證不可跨使用者解密、原 owner 釋放後可啟動、反向拒絕、正常退出可接手，最後刪除帳號與 task。這不是產品安裝步驟，不在 owner 工作站執行。
