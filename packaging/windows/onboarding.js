@@ -51,7 +51,7 @@
   wizard.addEventListener('close', () => { el('ob-key').value = ''; handoff = ''; });
   wizard.querySelectorAll('[data-ob-step]').forEach(button => button.addEventListener('click', () => showStep(Number(button.dataset.obStep))));
   bind('ob-next', () => showStep(step + 1)); bind('ob-back', () => showStep(step - 1));
-  bind('ob-defer', () => { wizard.close(); navigate('settings'); toast('安裝尚未完成，下次啟動會繼續。可先調整模型／CLI，或結束 Bridge 讓新安裝工具的 PATH 生效；請保存 KEY。'); });
+  bind('ob-defer', () => { fillSettings(); renderModels(); wizard.close(); navigate('settings'); toast('安裝尚未完成，下次啟動會繼續。可先調整模型／CLI，或結束 Bridge 讓新安裝工具的 PATH 生效；請保存 KEY。'); });
   bind('ob-refresh', () => action('refresh'));
   bind('ob-cli-paths', () => action('cli-paths', {codex_path:el('ob-codex-path').value, claude_path:el('ob-claude-path').value}));
   for (const provider of ['codex','claude','cloudflare']) bind('ob-login-' + provider, () => action('login', {provider}));
@@ -77,7 +77,7 @@
   bind('ob-finish', async () => {
     if (!copiedHandoff) throw new Error('請先複製完整串接訊息。');
     await action('finish', {key_saved:el('ob-key-saved').checked, handoff_copied:el('ob-handoff-saved').checked, model:el('ob-model').value});
-    closeAfterComplete = true; wizard.close(); toast('安裝設定完成；下次啟動直接進主畫面。');
+    fillSettings(); renderModels(); closeAfterComplete = true; wizard.close(); toast('安裝設定完成；下次啟動直接進主畫面。');
   });
   el('ob-key').addEventListener('input', () => { handoff = ''; copiedHandoff = false; });
   el('ob-model').addEventListener('change', () => { copiedHandoff = false; el('ob-handoff-saved').checked = false; });

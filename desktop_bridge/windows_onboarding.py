@@ -56,11 +56,11 @@ def cloud_accounts(directory):
     return accounts
 
 
-def verify(store, key, model):
+def verify(store, key, model, public_url=None):
     """One explicit synthetic HTTPS POST; no redirects, raw body, or key on disk."""
     if not store.authenticate(key):
         raise ValueError('Invalid client key.')
-    endpoint = byo.origin(store.get('public_url')) + '/api/v1'
+    endpoint = byo.origin(public_url if public_url is not None else store.get('public_url')) + '/api/v1'
     class NoRedirect(urllib.request.HTTPRedirectHandler):
         def redirect_request(self, *_args, **_kwargs):
             return None
@@ -311,16 +311,20 @@ class Onboarding:
             selected = next((m for m in self.store.get('models') if m['id'] == model), None)
             if not identity or not selected or selected['provider'] not in identity['providers']:
                 raise ValueError()
+            target_url = self.store.get('public_url')
             def probe():
-                result = verify(self.store, key, model)
+                result = verify(self.store, key, model, target_url)
                 with self.lock:
+                    current = next((m for m in self.store.get('models') if m['id'] == model), None)
+                    if self.store.get('public_url') != target_url or current != selected:
+                        result = {**result, 'success': False, 'code': 'configuration_changed'}
                     value = self.load()
                     # Only allowlisted receipt fields. Key and raw response remain in RAM.
                     value['verification'] = {**result, 'model': model, 'key_id': identity['id'], 'checked_at': time.time()}
                     if result['success']:
                         value['key_id'] = identity['id']  # Reinstall can reuse an already-saved valid key.
                     self.save(value)
-                    self.proof = (identity['id'], self.store.get('public_url'), json.dumps(selected, sort_keys=True)) if result['success'] else None
+                    self.proof = (identity['id'], target_url, json.dumps(selected, sort_keys=True)) if result['success'] else None
             return self.task('verify', probe)
         if action == 'finish':
             with self.lock:

@@ -327,3 +327,19 @@ def test_delivered_model_and_native_mapping_must_match_actual_verification(wizar
     wizard.action('verify', {'key': key, 'model': models[1]['id']}); wait_job(wizard)
     wizard.action('finish', {'key_saved': True, 'handoff_copied': True, 'model': models[1]['id']})
     assert not wizard.state()['required']
+
+
+def test_endpoint_changed_during_https_test_cannot_be_reported_as_complete(wizard, monkeypatch):
+    original = 'https://original.example.invalid'
+    wizard.store.set('public_url', original)
+    _, key = wizard.store.create_key('saved-key')
+    def changed(store, _key, _model, target):
+        assert target == original
+        store.set('public_url', 'https://different.example.invalid')
+        return {'success': True, 'cost_usd': .012345, 'code': 'ok'}
+    monkeypatch.setattr(onboarding, 'verify', changed)
+    wizard.action('verify', {'key': key, 'model': wizard.store.get('models')[1]['id']})
+    wait_job(wizard)
+    receipt = wizard.load()['verification']
+    assert not receipt['success'] and receipt['code'] == 'configuration_changed'
+    assert receipt['cost_usd'] == .012345 and wizard.proof is None
