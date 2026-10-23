@@ -49,3 +49,39 @@ def test_native_export_cancel_does_not_fetch_or_write(tmp_path,monkeypatch):
     api._window=SimpleNamespace(get_current_url=lambda:'http://127.0.0.1:8000/',create_file_dialog=lambda *_a,**_k:None)
     assert api.export_logs('provider=codex')=={'saved':False}
     with pytest.raises(ValueError):api.export_logs('destination=external')
+
+
+def test_quick_restart_retries_clean_instance_handoff_without_terminating_old_service(tmp_path,monkeypatch):
+    from types import SimpleNamespace
+    from desktop_bridge import windows_console as console
+    launches=[]
+    monkeypatch.setattr(console,'config',lambda:{'pack_id':'synthetic'})
+    monkeypatch.setattr(console,'stable_entry',lambda:'synthetic.exe')
+    monkeypatch.setattr(console.time,'sleep',lambda *_:None)
+    def owner(*_):
+        if len(launches)<2:raise OSError('old owner removed while old instance still holds lock')
+        return {'origin':'http://127.0.0.1:12345','token':'synthetic'}
+    def launch(args,**_kwargs):
+        launches.append(args)
+        return SimpleNamespace(poll=lambda:0)
+    monkeypatch.setattr(console,'owner',owner)
+    monkeypatch.setattr(console,'request_owner',lambda *_:b'{}')
+    monkeypatch.setattr(console.subprocess,'Popen',launch)
+    assert console.ensure_service(tmp_path)['token']=='synthetic'
+    assert len(launches)==2 and launches[0]==launches[1]
+    assert launches[0][1:]==['--background','--data-dir',str(tmp_path)]
+
+
+def test_failed_service_is_not_repeatedly_restarted(tmp_path,monkeypatch):
+    from types import SimpleNamespace
+    from desktop_bridge import windows_console as console
+    launches=[]
+    monkeypatch.setattr(console,'config',lambda:{'pack_id':'synthetic'})
+    monkeypatch.setattr(console,'stable_entry',lambda:'synthetic.exe')
+    monkeypatch.setattr(console,'owner',lambda *_:(_ for _ in ()).throw(OSError('unavailable')))
+    def launch(args,**_kwargs):
+        launches.append(args)
+        return SimpleNamespace(poll=lambda:2)
+    monkeypatch.setattr(console.subprocess,'Popen',launch)
+    with pytest.raises(ValueError):console.ensure_service(tmp_path)
+    assert len(launches)==1
