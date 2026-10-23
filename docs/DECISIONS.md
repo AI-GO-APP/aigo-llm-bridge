@@ -35,4 +35,9 @@
 
 記錄觸發問題、選項、採用理由、資料／API／使用者影響及驗收。被取代項保留編號並指向新項。不要把「尚未實測」寫成「已決定不支援」，也不要從技術註解推論使用者批准了Cloud／帳號變更。
 
+| ID／狀態 | 決定與理由 | 代價／何時重訪 |
+|---|---|---|
 | D-22 採用 2026-10-23 | Windows 0.8.1 安全修補：CA／runtime、Relay 拒絕 redirect、CLI 動態內容只走 stdin、Schema 子程序預算、Worker body 名額預留、依賴 hash／CVE 閘門。 | core 0.6.7 只標識共用修補，不發布 Mac；Worker 只交付範本，既有 Cloud 須擁有者另授權部署。沿用 URL／KEY／profile 與牌價換算。詳見 SECURITY。 |
+
+| D-23 Mac source 候選 2026-10-23 | Mac 採獨立 Cocoa／WKWebView viewer，共用六頁前端與 BYO 驗證 coordinator；session 只走 stdin，關窗不停止 LaunchAgent。 | Mac UI／剪貼簿／CSV／生命週期獨立驗收，不把 Windows 結果當 Mac 證據。 |
+| D-24 Mac source 候選 2026-10-23 | Mac 僅同意後改 AC idle sleep，先備份、讀回、可還原；來源更新使用已記錄 checkout 排空安裝、失敗回復。 | 保留鎖定、電池及個人登入；不借用 Windows 簽章 feed，不宣稱已有 Mac 公發更新渠道。 |

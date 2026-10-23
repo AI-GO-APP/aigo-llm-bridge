@@ -30,6 +30,8 @@
 
 ## 維護約定
 
+Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [本輪 QA](qa/2026-10-23-macos-parity.md) 分別定義契約與獨立證據，不以 Windows 結果代替。
+
 修改功能時，同一 PR 更新需求／API、資料字典、決策或設計文件中受影響的部分，並在 ACCEPTANCE 指向具體證據。新功能不能只留在聊天。文件的日期是維護日期，不是驗收通過證明。
 
 執行 `python tools/check_product_docs.py` 檢查入口連結、SQLite 欄位／設定、API 頂層參數及設計 tokens 的文件覆蓋。它只能防止明顯漂移，不能代替語意審查或實機測試。CI 亦執行此檢查。Windows 安裝包隨附本組文件，未隨附的程式連結固定至該包的來源 commit。

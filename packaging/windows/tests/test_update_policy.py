@@ -114,6 +114,9 @@ def test_immutable_github_release_uses_explicit_http_source(tmp_path,monkeypatch
     """A string chooses GithubSource and 404s; the loopback A/B test cannot catch that."""
     import hashlib
     import json
+    import os
+    if os.name != 'nt':
+        pytest.skip('Velopack apply requires the native Windows msvcrt lock.')
     import velopack
     from desktop_bridge import windows_updates as updates
     raw=json.dumps({'Assets':[{'Type':'Full','Version':'0.7.2','PackageId':'fixture','FileName':'fixture-full.nupkg'}]}).encode()

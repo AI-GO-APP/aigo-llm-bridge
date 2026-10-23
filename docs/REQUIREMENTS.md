@@ -1,5 +1,7 @@
 # 產品需求
 
+Mac source 同步的共通功能及平台差異以 [Mac 設定契約](MACOS-SETUP.md) 為準：六頁管理、五步設定、原生剪貼簿／CSV、KEY／真 HTTPS 交付、AC sleep 同意／還原及來源更新。不得將 Windows 簽章／安裝包、OAuth 或電源 fake adapter 的結果冒稱 Mac 實機通過。
+
 基準：Windows 安裝器 0.7.3 設計／文件更新。既有 0.7.2 安裝與公開更新結果見 [ACCEPTANCE](ACCEPTANCE.md)。本檔列契約，通過狀態由驗收文件另行記錄。
 
 ## 目標與角色

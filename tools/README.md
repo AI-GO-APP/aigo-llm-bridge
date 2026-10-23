@@ -2,6 +2,8 @@
 
 都是單一 Python 檔,在 repo 根目錄執行(`python tools/<名稱>.py`)。每支的完整用法寫在檔頭,這裡是總覽。
 
+現行 BYO 的產品入口為 [產品文件](../docs/README.md)。Mac 使用 `install.py` 及 `mac_service.py` 來源安裝／排空／更新／rollback；`verify_macos_console.py --output <隔離目錄>` 執行合成原生 UI 驗證，`verify_macos_upgrade.py --apply` **會更新既有 Mac 服務並用少量訂閱額度做真 HTTPS 合成測試**。後者沿用原 profile，臨時 key 在 RAM，結束撤銷；不部署 Worker、不改電源。見 [Mac 指南](../docs/MACOS-SETUP.md)。下列 Hosted 工具屬歷史產品線。
+
 ## 部署到 AI GO(會動到租戶上的正式資源)
 
 | 工具 | 做什麼 | 動到什麼 | 先看再做 |

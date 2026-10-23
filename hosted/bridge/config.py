@@ -35,7 +35,7 @@ import os
 import re
 from dataclasses import dataclass, field
 
-VERSION = "0.6.7"
+VERSION = "0.8.1-mac.1"
 _SOURCE_RE = re.compile(r"^BRIDGE_KEY__([A-Z0-9_]{1,40})$")
 
 

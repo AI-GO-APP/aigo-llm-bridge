@@ -1,5 +1,7 @@
 # 驗收與交付矩陣
 
+Mac `0.8.1-mac.1` 的單元、原生 renderer、安裝更新與公開 HTTPS 證據另見 [Mac 同步 QA](qa/2026-10-23-macos-parity.md)；不發布 Mac release，不替代 Windows 安裝器測試。
+
 Windows 0.8.0 internal 已合併發布，新增首次安裝／CLI／BYO 引導與只調整 AC 自動休眠的電源設定。[發布收據](qa/2026-10-23-windows-080-release.md) 包含來源、公開 assets／policy 回讀與未驗範圍；[原 onboarding QA](qa/2026-10-23-windows-onboarding.md) 及 [鎖定 QA](qa/2026-10-23-windows-locked.md) 保留各階段歷史。正式安裝尚未升級。
 
 本檔區分需求、測試與交付。source／單元測試、真實本機CLI、公開HTTPS、frozen安裝包、CI、正式已安裝、人工UI是不同證據，不能互相替代。沒有在本輪執行的測試不得標成新通過。

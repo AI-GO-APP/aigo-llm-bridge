@@ -4,6 +4,8 @@
 
 ## SQLite
 
+Mac source 另有 `macos-onboarding.json`：schema、installation_id、completed_at／completed_version、power_consent、key_id、verification（success、http_status、elapsed_ms、cost_usd、code、model、key_id、checked_at）。`macos-power.json` 存 schema、enabled、pending、original_sleep。兩者位於原 owner-only data-dir，沒有 KEY 或原始內容。`source-install.json` 新增 source_checkout，僅供明確來源更新；管理 session 只經 viewer stdin 傳遞。詳細生命週期見 [Mac 設定](MACOS-SETUP.md)。
+
 profile 下 `bridge.sqlite`，WAL 模式、`secure_delete=ON`；並行存取用 RLock。版本目錄與 profile 分離。下列 nullable 依 SQLite 定義，不代表應用會為每筆提供值。沒有宣告 SQL foreign key；`requests.key_id` 是 API key 的邏輯關聯，拒絕請求可沒有 key。
 
 ### settings

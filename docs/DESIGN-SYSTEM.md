@@ -60,6 +60,8 @@ loading、空清單、離線上次資料、錯誤、成功、disabled、required
 
 ## 平台適配與維護
 
+Mac `web/macos.js`／`macos-onboarding.js` 使用同一六頁 tokens 與 dialog 樣式；僅注入 Mac 設定卡、五步精靈及 WKWebView clipboard／Save 適配。AC sleep 與 macOS 系統授權有明確同意按鈕，不預勾；視覺與生命週期依 [Mac QA](qa/2026-10-23-macos-parity.md) 獨立記錄。
+
 `web/platform.js` 提供 browser copy／Blob CSV。Windows build 後附加 `packaging/windows/platform.js`，將兩個操作改為明確 pywebview API；`console_extension.js` 注入Windows更新卡；共用頁面不 import pythonnet／Windows SDK。無 WebView2 時開預設瀏覽器，關閉 view 不停止服務。
 
 更改 CSS token 同時改本表；新增頁面／modal更新本檔與 ACCEPTANCE。驗收至少含淺／深色、桌面／窄版、長模型字串、空／有資料、建立KEY表單／危險確認、Windows附加卡。不可只用首頁截圖聲稱整個前端通過。Mac 需獨立重驗，不因共用CSS就宣稱已驗收。

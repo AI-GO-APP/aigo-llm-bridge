@@ -33,8 +33,9 @@ CONSTANTS = [
     ROOT / "hosted" / "bridge" / "config.py",
     ROOT / "worker" / "aigo_bridge_worker.py",
     ROOT / "clients" / "python" / "aigo_bridge.py",
+    ROOT / "desktop_bridge" / "__init__.py",
 ]
-CONST_RE = re.compile(r'^VERSION = "([^"]+)"$', re.MULTILINE)
+CONST_RE = re.compile(r'^(?:VERSION|__version__) = "([^"]+)"$', re.MULTILINE)
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$")
 UNRELEASED = "## [Unreleased]"
 
@@ -115,7 +116,8 @@ def bump(how: str) -> str:
     VERSION_FILE.write_bytes(f"{new}\n".encode("utf-8"))
     for path in CONSTANTS:
         text = path.read_text(encoding="utf-8")
-        path.write_bytes(CONST_RE.sub(f'VERSION = "{new}"', text, count=1).encode("utf-8"))
+        name = '__version__' if path.name == '__init__.py' else 'VERSION'
+        path.write_bytes(CONST_RE.sub(f'{name} = "{new}"', text, count=1).encode("utf-8"))
 
     text = CHANGELOG.read_text(encoding="utf-8")
     if UNRELEASED not in text:

@@ -102,9 +102,26 @@ def verify(store, key, model, public_url=None):
 
 
 class Onboarding:
+    state_filename = 'windows-onboarding.json'
+
+    def installation_identity(self):
+        return installation_id(self.store, self.owner.release)
+
+    def apply_power(self, admin=False):
+        if admin:
+            from .windows_power_admin import request
+            return request(self.power, 'apply')
+        return self.power.apply(consent=True)
+
+    def restore_power(self, admin=False):
+        if admin:
+            from .windows_power_admin import request
+            return request(self.power, 'restore')
+        return self.power.restore()
+
     def __init__(self, owner, power):
         self.owner, self.store, self.power = owner, owner.store, power
-        self.path = self.store.directory / 'windows-onboarding.json'
+        self.path = self.store.directory / self.state_filename
         self.lock = threading.RLock()
         self.busy = threading.Lock()
         self.job = {'status': 'idle'}
@@ -114,7 +131,7 @@ class Onboarding:
         self.proof = None
         self.open_requested = False
         self.deployment_identity = (self.store.get('public_url'), self.store.get('relay_enabled'))
-        self.installation = installation_id(self.store, owner.release)
+        self.installation = self.installation_identity()
         value = self.load()
         if value.get('installation_id') != self.installation:
             # Never touch URL, account binding, pairing secret, API keys or request rows.
@@ -269,11 +286,7 @@ class Onboarding:
             if data.get('consent') is not True:
                 raise ValueError('Explicit AC automatic-sleep consent is required.')
             def apply():
-                if action == 'power-admin':
-                    from .windows_power_admin import request
-                    result = request(self.power, 'apply')
-                else:
-                    result = self.power.apply(consent=True)
+                result = self.apply_power(admin=action == 'power-admin')
                 if not result['verified']:
                     raise ValueError('Power readback failed.')
                 with self.lock:
@@ -284,10 +297,9 @@ class Onboarding:
         if action == 'restore-power-admin':
             if data.get('consent') is not True:
                 raise ValueError()
-            from .windows_power_admin import request
-            return self.task('restore-power', lambda: request(self.power, 'restore'))
+            return self.task('restore-power', lambda: self.restore_power(admin=True))
         if action == 'restore-power':
-            return self.task('restore-power', self.power.restore)
+            return self.task('restore-power', self.restore_power)
         if action == 'deploy':
             account, consent = data.get('account_id'), data.get('consent')
             return self.task('deploy', lambda: self.deploy(account, consent))
