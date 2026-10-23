@@ -26,11 +26,30 @@ def main():
         if not args.background and not args.no_activate: instance.notify()
         instance.close(); return 0
     threading.excepthook=lambda _args:None
+    machine = None
+    try:
+        if sys.platform == 'darwin':
+            from .macos_instance import MachineInstance
+            try:
+                machine = MachineInstance()
+            except OSError:
+                print('無法取得全機 Bridge 啟動鎖；為避免多開，本次未啟動。請檢查本機 TCP 8919。', file=sys.stderr)
+                return 2
+            if not machine.primary:
+                print('一台電腦只能執行一個 Bridge。本機已有 Bridge 或 TCP 8919 被占用；請先正常結束既有 Bridge 再切換設定檔。', file=sys.stderr)
+                # A rejected LaunchAgent must not retry forever (KeepAlive on failure).
+                return 0 if args.background else 2
+        return run(args, instance)
+    finally:
+        if machine is not None: machine.close()
+        instance.close()
+
+
+def run(args, instance):
     store=Store(args.data_dir); runtime=Runtime(store)
     try: api=ApiServer(runtime,port=args.port)
     except OSError:
         runtime.stop(); store.close()
-        instance.close()
         if args.headless: return 2
         import tkinter as tk
         from tkinter import messagebox
@@ -48,7 +67,7 @@ def main():
         if hasattr(signal,"SIGTERM"): signal.signal(signal.SIGTERM,lambda *_:done.set())
         try:
             while not done.wait(30): store.prune(); runtime.cleanup()
-        finally: relay.stop(); runtime.stop(); api.stop(); store.close(); instance.close()
+        finally: relay.stop(); runtime.stop(); api.stop(); store.close()
         return 0
     if not args.native_ui:
         import webbrowser
@@ -80,7 +99,7 @@ def main():
                     with runtime.lock: runtime.cleanup()
                     last_cleanup=time.monotonic()
         finally:
-            manager.stop(); relay.stop(); runtime.stop(); api.stop(); store.close(); instance.close()
+            manager.stop(); relay.stop(); runtime.stop(); api.stop(); store.close()
         return 0
     import tkinter as tk
     from .ui import App
@@ -103,7 +122,6 @@ def main():
         root.iconify()
     root.mainloop()
     store.close()
-    instance.close()
     return 0
 
 

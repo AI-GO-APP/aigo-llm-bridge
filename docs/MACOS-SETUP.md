@@ -48,3 +48,19 @@ Mac 適配僅執行固定的 `pmset -c sleep <整數>`，以 `pmset -g custom` �
 ## 0.8.1 共用安全修補
 
 Mac 使用相同的拒絕 Relay redirect、回應讀取上限、provider 環境 allowlist、Claude stdin 及有限 schema 子程序；詳見 [SECURITY](SECURITY.md)。Windows Job Object 的 256 MiB 限制及 Windows Python／OpenSSL 基線屬 Windows 原生封裝，不能視為 Mac 已有相同 OS 記憶體限制。Mac schema 保留輸入／時間／並行預算。既有 Worker 的 queue 修補需另行授權部署；本次 Mac source 更新不自動部署，也不改 endpoint／KEY。
+
+## 單一 Bridge 與乾淨停止（0.8.1-mac.2）
+
+一台 Mac 只允許一個 Bridge runtime，涵蓋不同資料目錄、API port、安裝位置與 macOS 使用者。再次開啟同 profile 只喚回原視窗；另一 profile 會在開啟資料庫及 relay 前拒絕。固定本機 TCP 8919 僅供 OS 互斥 bind、不監聽或交換資料；被其他程式占用時也拒絕，不強殺占用者。不要嘗試以改鎖地址多開。現存舊版不遵守新鎖，更新前先正常停止舊服務。
+
+- **按視窗 X／關瀏覽器分頁**：只關管理視窗，背景 Bridge 繼續供應；不是停止。
+- **管理台「結束 Bridge」**：確認後停止服務並取消未完成工作，等待程序退出；API port 及全機鎖釋放。
+- **先做完工作再停止**：從原安裝 manifest 的 `python`／`app` 執行下列命令。`stop` 先 pause／wait-idle，再 bootout 此 profile 的 LaunchAgent 並確認 profile 鎖釋放；排空失敗時不強殺。手動啟動的程序需在其管理台正常結束。
+
+```sh
+"$BRIDGE_PY" "$BRIDGE_APP/tools/mac_service.py" stop --install-root "/path/to/original/install-root"
+```
+
+`BRIDGE_PY`／`BRIDGE_APP` 分別取自原 `source-install.json` 的 `python`／`app`，不能拿別的安裝目錄代入。`stop` 保留登入自動啟動設定，若要停用下次登入自啟，使用同命令的 `disable`。只 pause 不等於程序退出，也不釋放全機鎖。
+
+停止後固定 Worker URL 仍存在；它可能短暫保留在線狀態或等待至逾時，但無法再由已停止的本機完成推論。判斷停止應確認本機程序已退出、原 API port 無法連線，不單看 Worker health。不同 profile 的背景啟動若因鎖被占而退出，不會自動重試；請先正常停止原服務，再明確啟動選定 profile。全機互斥不改變單一 runtime 內的推論容量設定。

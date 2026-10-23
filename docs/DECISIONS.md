@@ -41,3 +41,7 @@
 
 | D-23 Mac source 候選 2026-10-23 | Mac 採獨立 Cocoa／WKWebView viewer，共用六頁前端與 BYO 驗證 coordinator；session 只走 stdin，關窗不停止 LaunchAgent。 | Mac UI／剪貼簿／CSV／生命週期獨立驗收，不把 Windows 結果當 Mac 證據。 |
 | D-24 Mac source 候選 2026-10-23 | Mac 僅同意後改 AC idle sleep，先備份、讀回、可還原；來源更新使用已記錄 checkout 排空安裝、失敗回復。 | 保留鎖定、電池及個人登入；不借用 Windows 簽章 feed，不宣稱已有 Mac 公發更新渠道。 |
+
+| ID／狀態 | 決定與理由 | 代價／何時重訪 |
+|---|---|---|
+| D-25 採用 2026-10-23 | **一台電腦只執行一個 Bridge runtime**，Claude／Codex 共用。Mac 0.8.1-mac.2 使用固定 loopback TCP bind 的 OS 原子所有權，跨 profile／API port／使用者，在 DB／relay 前拒絕第二套；同 profile 保留喚回管理台。 | 鎖地址被任何本機程式占用即拒絕；不自動切 profile、不終止原服務；舊版須先正常停止。只關管理視窗仍背景供應，停止須明確結束或排空 stop。Windows 實作及跨 session 原生驗收交由 issue #20，不用 Mac 證據代替。 |

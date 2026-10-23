@@ -121,3 +121,7 @@ startup 不在 settings 表，是 Windows HKCU Run／平台啟動設定；隔離
 onboarding／power 使用 atomic replace，與 SQLite／DPAPI 同放原 profile 並納入更新備份。安裝 UUID 位於不被 current 版本替換的根目錄；更新不重產。完整 KEY、協作 handoff 含 KEY 版本、HTTPS回覆、一次完成 proof、Cloudflare 原始輸出及 OAuth token 不寫入上述檔案。帳戶 ID／Worker／URL 仍沿用 settings，CLI憑證仍由各 CLI 管理。
 
 版本更新保留完成旗標，不會默默執行未同意的電源變更；既有無紀錄的安裝升級後需跑一次精靈。日後若有不相容 onboarding schema，要先定遷移與相對應驗收，不用「刪 profile 重來」處理。
+
+## Mac runtime 互斥資源
+
+0.8.1-mac.2 的全機單實例使用程序持有的 `127.0.0.1:8919` TCP bind；沒有 listener 或新持久化欄位／credential，DB schema 不變。profile 的 `instance.lock`／`activate.request` 繼續用於同 profile 管理視窗喚回。被拒絕的第二套不開啟 SQLite，不將另一套的 queued／running 誤標為 interrupted；僅可能建立 profile 鎖所需目錄／檔案。
