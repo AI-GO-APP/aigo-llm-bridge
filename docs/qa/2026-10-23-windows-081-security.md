@@ -28,3 +28,5 @@ Worker 修補只交付範本，不代表既有雲端已修補；未部署、未�
 ## 宣布前的封裝流程修復
 
 首次 publish run 39894565618 的 package／native gates 成功，announce 在讀 artifacts.json 前失敗：將稽核檔與 installer 檔一起上傳使 artifact 共同根目錄提高一層。尚未建立 Windows 0.8.1 release 或變更 policy，正式仍為 0.7.3。修復將 dependency audit 分成獨立 artifact，加入跨 job common-root 回歸；不換 signer、不覆寫已發布版本，也不盲目重跑舊失敗 job。
+
+PR #19 首次 native run 39895161883 在 APPLY B 的子 CLI 回 exit 1；先前 source／renderer／最低版本等檢查成功。舊工具只記 exit code，未留下已去敏錯誤；新增只允許來源 literal UpdateError 的診斷後重新驗證，不能把缺少原因的失敗直接當成通過。
