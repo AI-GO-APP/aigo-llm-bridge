@@ -4,7 +4,7 @@
 
 ## 安裝者的完整路徑
 
-1. 下載 Windows Setup，核對 [Release](RELEASE.md) 的公開附件、大小／SHA256。現階段未有 Authenticode，依自己裝置政策確認未知發布者；不要停用系統防護。
+1. 先依 [BYO 準備事項](BYO-QUICKSTART.md) 備妥 Node.js 22+，在新開啟的終端機確認 `node --version`，再下載並啟動 Windows Setup；先安裝前置工具可避免背景程式沿用舊 PATH。核對 [Release](RELEASE.md) 的公開附件、大小／SHA256。現階段未有 Authenticode，依自己裝置政策確認未知發布者；不要停用系統防護。
 2. 執行 Setup，首次開啟管理視窗進入五步精靈。可關閉整個視窗稍後續接；已完成安裝後正常啟動不再彈出，可從「連線與設定 → 安裝設定精靈」手動重開。
 3. 明確同意此電腦的插電電源與使用者鎖定調整，完成額外鎖定檢查，再按套用。程式先保存原值、建立專用計畫、只改 AC 索引，逐項讀回；不會因單純開啟安裝包就修改電源。
 4. 檢查本地 LLM CLI。預設 Codex／ChatGPT 訂閱；Claude 選用，至少一來源可用。不需要將供應商憑證輸入 Bridge。
@@ -63,7 +63,7 @@ AI IDE 模式會產生**這個安裝位置與原 data-dir 專用**的 prompt。�
 
 | 範圍 | 實作與驗收 |
 |---|---|
-| AC 電源計畫 | 複製原計畫；可用的 sleep、hibernate、unattended sleep、display、locked display 設 0（永不），lid、sleep button 設不動作；逐項讀回 AC=0、DC=原值。至少 sleep／display 必須可控制。未支援項列出，不假裝已套用。 |
+| AC 電源計畫 | 複製原計畫；可用的 sleep、hibernate、unattended sleep、display、locked display 設 0（永不），lid、sleep button、一般 power button 設不動作；一般按電源鍵不執行原動作，仍可由 Windows 選單關機。逐項讀回 AC=0、DC=原值。至少 sleep／display 必須可控制。未支援項列出，不假裝已套用。 |
 | 原始資料 | `windows-power.json` 先存原計畫 GUID、專用 GUID、各項原 AC/DC、目前使用者登錄值；不含憑證。專用計畫保持有效直到使用者還原或另選計畫。 |
 | 個人自動鎖定 | 只有 Bridge 常駐且接 AC 時，停用目前使用者 ScreenSaveActive／ScreenSaverIsSecure／EnableGoodbye；螢幕保護程式另通知系統套用。每 5 秒讀取 AC；DC／未知供電／正常停止還原原值。不反覆覆寫 DC 的使用者後續選擇。 |
 | 組織政策 | 檢查 machine inactivity、MDM DeviceLock、使用者強制螢幕保護政策。遇到限制不覆寫、不假裝通過，須找裝置管理員處理。檢查不是全套企業政策稽核。 |

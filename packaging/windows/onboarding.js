@@ -7,7 +7,7 @@
     <div class="onboarding-body"><p>每台電腦首次安裝需完成一次；完成後日常啟動直接進主畫面。中途關窗可稍後續接，網址與 KEY 不會因此改變。</p>
     <nav id="ob-steps" class="row-actions" aria-label="安裝步驟">${['插電與鎖定','訂閱授權','Cloudflare','Worker 入口','KEY 與交付'].map((text,i)=>`<button type="button" class="secondary compact" data-ob-step="${i}">${i+1}. ${text}</button>`).join('')}</nav>
     <p id="ob-job" role="status" aria-live="polite">正在取得安裝狀態…</p>
-    <section data-ob-panel="0"><h3>1. 同意插電服務設定</h3><p>建立專用電源計畫，插電時螢幕、睡眠、休眠與支援的闔蓋／睡眠鍵動作設為永不／不動作。保留原計畫與電池值；拔電後還原原本的使用者鎖定設定。</p>
+    <section data-ob-panel="0"><h3>1. 同意插電服務設定</h3><p>建立專用電源計畫，插電時螢幕、睡眠、休眠與支援的闔蓋／睡眠鍵／一般電源鍵動作設為永不／不動作。一般按電源鍵將不執行原動作，仍可由 Windows 選單關機。保留原計畫與電池值；拔電後還原原本的使用者鎖定設定。</p>
       <p>Bridge 常駐且插電時停用目前使用者的螢幕保護鎖定與動態鎖定。這會讓他人有機會直接操作桌面，僅適合受控場所。公司政策、人體感測、廠商工具、手動 Win+L、強制關機與斷電另行處理；鎖定桌面本身不會讓 API 停止。</p>
       <label class="check-label"><input id="ob-power-consent" type="checkbox">我同意此電腦套用上述插電設定，並了解桌面不自動鎖定的影響。</label>
       <label class="check-label"><input id="ob-lock-ack" type="checkbox">我已檢查 Windows「登入選項／人體感測」與廠商電源工具，關閉額外的插電離席鎖定；組織限制需由管理員處理。</label>
