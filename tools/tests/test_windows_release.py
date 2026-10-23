@@ -3,9 +3,19 @@ import ast
 import os
 import subprocess
 import shutil
+import posixpath
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[2]
+
+
+def test_windows_artifact_common_root_matches_announce_input():
+    text=(ROOT/'.github/workflows/windows-installer-publish.yml').read_text()
+    block=text.split('name: windows-internal-installer',1)[1].split('      - uses:',1)[0]
+    paths=[line.strip().replace('${{ runner.temp }}','/temp') for line in block.splitlines() if '${{ runner.temp }}' in line]
+    # upload-artifact uses the common directory across all selected files.
+    assert posixpath.commonpath([posixpath.dirname(path) for path in paths])=='/temp/bridge-installer'
+    assert 'name: windows-dependency-audit' in text
 
 
 def test_publish_python_is_valid_and_windows_checks_native_format():
