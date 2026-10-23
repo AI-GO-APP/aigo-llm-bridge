@@ -35,6 +35,7 @@ SENSITIVE_VARS = (
 )
 
 RULES: list[tuple[str, re.Pattern[str]]] = [
+    ("Bridge client 金鑰", re.compile(r"sk-br-[0-9a-f]{8}-[A-Za-z0-9_-]{43}(?![A-Za-z0-9_-])")),
     ("OpenRouter 金鑰", re.compile(r"sk-or-[A-Za-z0-9_-]{20,}")),
     ("Anthropic 金鑰", re.compile(r"sk-ant-[A-Za-z0-9_-]{20,}")),
     ("OpenAI 金鑰", re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9]{32,}")),

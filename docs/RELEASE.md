@@ -64,3 +64,5 @@ gh workflow run windows-installer-publish.yml --repo AI-GO-APP/aigo-llm-bridge -
 - [ ] Release notes／QA／ACCEPTANCE 與隨包文件同步。公發簽章與未驗 Mac／Cloud 不列通過。
 
 所有檔案與終端 log 都只允許中繼資料，不為了 release debug 加入原始 request/response、完整 client KEY、DPAPI 明文或 provider auth。
+
+Windows 0.8.1 的安全邊界、依賴與 Schema／CLI 傳輸限制見 [SECURITY](SECURITY.md)；更新不重新授權 CLI、不重建 endpoint 或 KEY，也不自動部署 Worker。

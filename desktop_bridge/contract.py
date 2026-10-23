@@ -4,7 +4,7 @@ import base64
 import json
 import re
 from dataclasses import dataclass
-from jsonschema import Draft202012Validator, SchemaError
+from .schema_guard import check_schemas
 
 from .errors import BridgeError
 
@@ -157,10 +157,7 @@ def validate(body, settings, caller):
             if set(js)-{"name","description","schema","strict"} or not isinstance(js.get("name"),str) or not isinstance(js.get("schema"),dict) or ("strict" in js and not isinstance(js["strict"],bool)):
                 raise BridgeError(400,"invalid_request","json_schema 必須包含 name 與 schema。","response_format")
             schema=js["schema"]
-            try:
-                Draft202012Validator.check_schema(schema)
-            except SchemaError:
-                raise BridgeError(400,"invalid_request","JSON Schema 定義無效。","response_format") from None
+            check_schemas([schema],'response_format')
             if schema.get("type")!="object" or re.search(r'"\$(?:dynamicRef|ref)"\s*:\s*"(?!#)',json.dumps(schema)):
                 bad("response_format","P1 僅支援 object schema，不接受外部 schema 引用。")
         else:

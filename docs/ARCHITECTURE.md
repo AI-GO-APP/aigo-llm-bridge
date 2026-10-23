@@ -65,3 +65,5 @@ Mac 的啟動器、Keychain、並行與 release 為獨立平台責任。共用�
 Velopack after-install hook 只寫安裝 UUID；一般 update 不觸發此 hook。coordinator 比對此 UUID 與 profile 的完成紀錄，首次顯示精靈、完成者跳過。部署仍走既有 BYO 帳戶鎖定及 pending secret 機制；KEY 仍在 SQLite 只存 hash；HTTPS proof 與完整 KEY 在 RAM，持久化只留測試 metadata。完成判斷在後端檢查，不信任前端自行送 success。
 
 `windows_power.PowerPolicy` 與 `NativePower` 分離規則／Win32。先備份後建立專用 AC 計畫，背景每 5 秒依供電調整目前使用者鎖定值；DC／正常停止復原。`windows_power_admin` 是明確點選後的 UAC 窄 helper，只更改電源計畫，不操作管理員的 HKCU／CLI 登入；原使用者值由未提權程序保存與套用。電源與鎖定限制見 [ONBOARDING](ONBOARDING.md)。[CI-CD](CI-CD.md)／[RELEASE](RELEASE.md) 為維護操作正本。
+
+Windows 0.8.1 的安全邊界、依賴與 Schema／CLI 傳輸限制見 [SECURITY](SECURITY.md)；更新不重新授權 CLI、不重建 endpoint 或 KEY，也不自動部署 Worker。

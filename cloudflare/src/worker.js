@@ -11,7 +11,7 @@ export default {
     const id=env.DEVICE.idFromName("primary-device");
     const response=await env.DEVICE.get(id).fetch(request);
     const headers=new Headers(response.headers);
-    headers.set('X-Bridge-Relay-Version','0.3.4-relay');
+    headers.set('X-Bridge-Relay-Version','0.3.5-relay');
     return new Response(response.body,{status:response.status,headers});
   }
 };
@@ -19,7 +19,7 @@ export default {
 export class DeviceRelay {
   constructor(ctx, env) {
     this.ctx=ctx; this.env=env;
-    this.pending=new Map(); this.waiter=null; this.lastSeen=0; this.keys=new Set();this.agentSession=null;
+    this.pending=new Map(); this.reading=0; this.waiter=null; this.lastSeen=0; this.keys=new Set();this.agentSession=null;
   }
   async body(request,max=MAX_BODY) {
     const length=Number(request.headers.get("content-length")||0);
@@ -27,8 +27,13 @@ export class DeviceRelay {
     const reader=request.body?.getReader();
     if(!reader) return "";
     let size=0; const parts=[];
-    for(;;){ const {done,value}=await reader.read(); if(done)break;
-      size+=value.byteLength; if(size>max){ await reader.cancel(); throw new Error("size"); } parts.push(value); }
+    let timer;
+    const expired=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('body timeout')),15_000);});
+    try {
+      for(;;){ const {done,value}=await Promise.race([reader.read(),expired]); if(done)break;
+        size+=value.byteLength; if(size>max)throw new Error('size'); parts.push(value); }
+    } catch(error) {reader.cancel().catch(()=>{});throw error;}
+    finally {clearTimeout(timer);}
     const all=new Uint8Array(size); let pos=0;
     for(const part of parts){all.set(part,pos);pos+=part.byteLength;}
     return new TextDecoder().decode(all);
@@ -84,7 +89,7 @@ export class DeviceRelay {
         }
         return error(404,"not_found","Unknown agent endpoint.");
       }
-      if(path==="/health")return Response.json({ok:true,device_online:Date.now()-this.lastSeen<35_000,version:"0.3.4-relay"},{headers:{"Cache-Control":"no-store"}});
+      if(path==="/health")return Response.json({ok:true,device_online:Date.now()-this.lastSeen<35_000,version:"0.3.5-relay"},{headers:{"Cache-Control":"no-store"}});
       const allowed=(request.method==="POST"&&["/api/v1/chat/completions","/v1/chat/completions","/bridge/v1/jobs","/bridge/v1/preflight"].includes(path))
         ||(request.method==="GET"&&(["/api/v1/models","/v1/models"].includes(path)||/^\/bridge\/v1\/jobs\/[a-f0-9]{32}$/.test(path)||/^\/bridge\/v1\/receipts\/[a-f0-9-]{36}$/i.test(path)));
       if(!allowed)return error(404,"not_found","Unknown API endpoint.");
@@ -92,8 +97,12 @@ export class DeviceRelay {
       if(!authorization.startsWith("Bearer ")||authorization.length>263)return error(401,"authentication","Invalid API key.");
       if(Date.now()-this.lastSeen>=35_000)return error(503,"device_offline","Local computer is offline.");
       if(!this.keys.has(await hash(authorization.slice(7))))return error(401,"authentication","Invalid or revoked API key.");
-      if(this.pending.size>=9)return error(429,"queue_full","Device queue is full.");
-      const body=request.method==="POST"?await this.body(request):"";
+      if(this.pending.size+this.reading>=9)return error(429,"queue_full","Device queue is full.");
+      // Reserve synchronously before yielding to body I/O; count in-flight reads.
+      this.reading++;
+      let body;
+      try {body=request.method==="POST"?await this.body(request):"";}
+      finally {this.reading--;}
       const id=crypto.randomUUID();
       const deadline=Math.min(Date.now()+90_000,Number(request.headers.get("X-Bridge-Deadline"))||Date.now()+90_000);
       const requestId=request.headers.get("X-AIEA-Request-Id");

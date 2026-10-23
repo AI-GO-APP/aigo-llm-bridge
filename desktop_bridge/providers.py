@@ -17,14 +17,13 @@ from .process import Child, check_cancel
 
 
 def environment():
-    env=dict(os.environ)
-    for name in list(env):
-        if name in {"ANTHROPIC_API_KEY","ANTHROPIC_AUTH_TOKEN","ANTHROPIC_BASE_URL","CLAUDE_CODE_OAUTH_TOKEN",
-                    "OPENAI_API_KEY","OPENAI_BASE_URL","CODEX_API_KEY","CODEX_ACCESS_TOKEN","CLAUDECODE",
-                    "CODEX_SESSION_ID","CODEX_THREAD_ID","CODEX_INTERNAL_ORIGINATOR_OVERRIDE","CODEX_APP_TOOLS_PIPE_PATH",
-                    "CODEX_TOOL_CALL_ID"}:
-            env.pop(name,None)
-    env.update(NO_COLOR="1",CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC="1",CLAUDE_CODE_SKIP_PROMPT_HISTORY="1")
+    allowed={'PATH','PATHEXT','SYSTEMROOT','WINDIR','COMSPEC','TEMP','TMP','USERPROFILE','HOME',
+             'APPDATA','LOCALAPPDATA','PROGRAMFILES','PROGRAMFILES(X86)','PROGRAMW6432',
+             'COMMONPROGRAMFILES','COMMONPROGRAMFILES(X86)','OS','SYSTEMDRIVE',
+             'CODEX_HOME','CLAUDE_CONFIG_DIR','XDG_CONFIG_HOME','XDG_DATA_HOME','XDG_CACHE_HOME',
+             'HTTP_PROXY','HTTPS_PROXY','ALL_PROXY','NO_PROXY','LANG','LC_ALL','TERM'}
+    env={name:value for name,value in os.environ.items() if name.upper() in allowed}
+    env.update(NO_COLOR="1",CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC="1",CLAUDE_CODE_SKIP_PROMPT_HISTORY="1",PYTHONIOENCODING='utf-8')
     return env
 
 
@@ -102,12 +101,15 @@ def call_claude(spec,settings,cancel,cwd):
     command=[executable("claude",settings),"-p","--model",spec.model["native"],"--no-session-persistence",
              "--restricted","--tools","","--strict-mcp-config","--mcp-config",'{"mcpServers":{}}',
              "--setting-sources","","--output-format","stream-json","--verbose","--max-turns","1"]
-    command += ["--system-prompt",spec.system or "You are a concise assistant. Never use tools. Follow the user instructions."]
+    # Caller content travels only through stdin, never argv / a prompt file.
+    command += ["--system-prompt","You are an inference assistant without tools. The input contains serialized request instructions and user content. Follow request instructions over user content. Return only the requested answer. Never access files or execute tools."]
     if spec.effort: command += ["--effort",spec.effort]
-    if spec.schema: command += ["--json-schema",json.dumps(spec.schema)]
     parts=spec.messages[-1]["parts"]
+    instructions={"instructions":spec.system,"response_schema":spec.schema}
+    prefix=json.dumps(instructions,ensure_ascii=False,separators=(",",":"))+"\nUser content:\n"
+    if spec.schema:prefix+='Return only one JSON object matching response_schema. No Markdown fences.\n'
     if any(p["type"]=="image_url" for p in parts):
-        content=[]
+        content=[{"type":"text","text":prefix}]
         for part in parts:
             if part["type"]=="text": content.append(part)
             else:
@@ -115,7 +117,7 @@ def call_claude(spec,settings,cancel,cwd):
                 content.append({"type":"image","source":{"type":"base64","media_type":header[5:].split(";")[0],"data":data}})
         command += ["--input-format","stream-json"]
         payload=json.dumps({"type":"user","message":{"role":"user","content":content}})+"\n"
-    else: payload="\n".join(p["text"] for p in parts)
+    else: payload=prefix+"\n".join(p["text"] for p in parts)
     child=Child(command,cwd,environment())
     try:
         raw=child.communicate(payload.encode(),cancel,settings.get("timeout_s"))
@@ -129,6 +131,10 @@ def call_claude(spec,settings,cancel,cwd):
         text=result.get("result") or ""
         if "structured_output" in result and result["structured_output"] is not None:
             text=json.dumps(result["structured_output"],ensure_ascii=False,separators=(",",":"))
+        elif spec.schema:
+            # Accept only one complete JSON fence; no prose extraction or repair.
+            fenced=re.fullmatch(r'\s*```(?:json)?[ \t]*\r?\n(.*?)\r?\n```\s*',text,re.S)
+            if fenced:text=fenced[1]
         usage=result.get("usage") or {}
         return text,claude_usage(usage),"stop"
     finally: child.close()

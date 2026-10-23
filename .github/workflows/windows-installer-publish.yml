@@ -28,21 +28,25 @@ jobs:
       PYTHONIOENCODING: utf-8
       BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY: ${{ vars.BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: '3.14.3'
-      - uses: actions/setup-dotnet@v4
+          python-version: '3.14.9'
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: '8.0.x'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '22'
+          node-version: '24.22.1'
       - name: Dependencies
         shell: pwsh
         run: |
           python -m venv .desktop-build/venv
-          .desktop-build/venv/Scripts/python -m pip install -r packaging/windows/requirements-lock.txt
+          .desktop-build/venv/Scripts/python -m pip install --require-hashes -r packaging/windows/requirements-lock.txt
+          npm.cmd ci --ignore-scripts --prefix cloudflare
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          .desktop-build/venv/Scripts/python tools/audit_dependencies.py --output "$env:RUNNER_TEMP/bridge-dependency-audit.json"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           dotnet tool install --tool-path "$env:RUNNER_TEMP/bridge-vpk" vpk --version 1.2.161
       - name: Disposable-runner WebView2 prerequisite
         shell: pwsh
@@ -63,13 +67,15 @@ jobs:
           if (!$env:BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY) { throw 'Configure the dedicated Windows update public key first.' }
           $policy = 'https://github.com/${{ github.repository }}/releases/download/windows-updates-internal/windows-x64-internal-policy.json'
           .desktop-build/venv/Scripts/python packaging/windows/build_installer.py --public-key $env:BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY --policy-url $policy --vpk "$env:RUNNER_TEMP/bridge-vpk/vpk.exe" --output "$env:RUNNER_TEMP/bridge-installer"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-internal-installer
           path: |
             ${{ runner.temp }}/bridge-installer/Releases/*
             ${{ runner.temp }}/bridge-installer/artifacts.json
             ${{ runner.temp }}/bridge-installer/self-test.json
+            ${{ runner.temp }}/bridge-installer/security-runtime.json
+            ${{ runner.temp }}/bridge-dependency-audit.json
   announce:
     needs: package
     if: always() && inputs.announce && github.ref == 'refs/heads/main' && (needs.package.result == 'success' || inputs.published_version != '')
@@ -82,12 +88,12 @@ jobs:
       BRIDGE_WINDOWS_UPDATE_PRIVATE_KEY: ${{ secrets.BRIDGE_WINDOWS_UPDATE_PRIVATE_KEY }}
       BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY: ${{ vars.BRIDGE_WINDOWS_UPDATE_PUBLIC_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
-      - run: python -m pip install cryptography==50.0.2 certifi==2026.2.25
-      - uses: actions/download-artifact@v4
+      - run: python -m pip install --require-hashes -r packaging/windows/requirements-signing-lock.txt
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         if: inputs.published_version == ''
         with:
           name: windows-internal-installer

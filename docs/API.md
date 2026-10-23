@@ -96,3 +96,7 @@ Windows 0.8.0 候選另加 `state.windows_onboarding` 及 POST `/manage/windows-
 | finish | key_saved=true、handoff_copied=true、model；後端檢查當次 RAM proof、同 key_id／URL／交付模型與 native/provider 對應、KEY 未撤銷、來源登入、電源讀回與手動檢查確認，才存 completed_at。改交付模型／native 對應後必須重新 verify。 |
 
 非同步接受回 `{ok:true,status:running}`，忙碌回 `{ok:false,code:busy}`；結果從 state 讀 job/status/action/code。狀態錯誤只回 operation_failed／permission_required，不回 CLI 原始錯誤、token 或模型內容。重新啟動後未完成者需貼回已保存 KEY 再明確 verify，不自動重播推論。詳細流程及環境限制見 [ONBOARDING](ONBOARDING.md)。
+
+## 0.8.1 安全限制
+
+Schema aggregate ≤256 KiB／8192 nodes／深度 24，不接受任何 $ref／$dynamicRef，包含 local ref；超限回 unsupported_parameter，不默默忽略。Schema 定義與輸出於自有子程序驗證，單次 3 秒、全機最多 4 個 validator；輸出超時 502，仍保留已發生用量與成本。Claude caller system／developer／schema 由 stdin 包裝，非原生 system role 或 CLI --json-schema；工具提案／structured output 仍須通過驗證。完整邊界見 [SECURITY](SECURITY.md)。

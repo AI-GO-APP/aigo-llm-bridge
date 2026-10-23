@@ -17,7 +17,7 @@
 | Workflow | 觸發／runner | 做什麼 | 不能聲稱的事 |
 |---|---|---|---|
 | `ci.yml` | PR／main，Ubuntu | Python syntax、產品文件覆蓋、歷史產品回歸、同步副本、terms／secrets、版本閘門 | 不代表 Windows 安裝／GUI／Cloud 成功。 |
-| `windows-installer.yml` | 相關 Windows／core 路徑 PR／main；可手動；Windows 2025 | 固定 Python 3.14.3／Node 22／.NET 8／vpk 1.2.161／鎖檔；核心與 Windows 測試、relay／adapter；真 Setup→A→B、native renderer、備份／強更新；最後在拋棄 runner 套用／還原真 AC 計畫 | 無使用者 OAuth、真訂閱、外部 BYO inference，也不驗 owner 桌面待機。 |
+| `windows-installer.yml` | 相關 Windows／core 路徑 PR／main；可手動；Windows 2025 | 固定 Python 3.14.9／Node 24.22.1／.NET 8／vpk 1.2.161／鎖檔；核心與 Windows 測試、relay／adapter；真 Setup→A→B、native renderer、備份／強更新；最後在拋棄 runner 套用／還原真 AC 計畫 | 無使用者 OAuth、真訂閱、外部 BYO inference，也不驗 owner 桌面待機。 |
 | `windows-installer-publish.yml` | main 手動，package=Windows，announce=Ubuntu | 重做 package gates，clean commit 封裝；預設 announce=false；true 才有發布權限與獨立 environment secret | 建置 artifact 不等於已宣布，宣布不等於使用者已升級。 |
 | `desktop-windows.yml` | 自己的 paths／手動／workflow_call | 舊 Windows ZIP 及 source manifest 的 BYO package／指南 smoke | 不是目前 Windows Setup 的宣布入口。 |
 | `desktop-publish.yml`、`release.yml` | 各檔案實際觸發條件 | 歷史／共用產品渠道，保留相容 | 不可拿來替代 Windows installer policy。 |
@@ -61,3 +61,7 @@ python tools/verify_installer_update.py --output <全新隔離輸出目錄> --vp
 - pin 升級、runner 變更、UI adapter、installer hook、policy schema、公鑰輪替需相對應原生閘門。正常發布沿用更新 signer；丟失／疑似洩漏 signer 先停止宣布並單獨提出可信遷移，不自動信任新公鑰。
 
 發行者操作細節、首次配置、policy 續期／強制更新、回復與完成 checklist 見 [RELEASE](RELEASE.md)。
+
+## Windows 0.8.1 安全閘門
+
+詳見 [SECURITY](SECURITY.md)。Windows hash-lock 安裝、固定 Actions SHA、builder runtime baseline、每日／release 前 OSV（Python、Wrangler 全鎖檔與 Velopack）採 fail-closed；原生 package self-test 包含實際 Python／OpenSSL／certifi 與 CA SHA256。這些檢查不部署 Worker 或發布 Mac。

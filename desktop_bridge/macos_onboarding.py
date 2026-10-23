@@ -76,7 +76,7 @@ class Onboarding(SharedOnboarding):
         return {'prompt': f'''請協助完成這台 macOS LLM Bridge 的 BYO Cloudflare 設定。你是 AI IDE 協作者，不要呼叫 Claude/Codex 的推論 CLI 當作設定 agent。
 先讀 {root / 'docs/MACOS-SETUP.md'}、{root / 'docs/README.md'} 及 {root / 'skills/byo-cloudflare/SKILL.md'}。
 沿用原 data-dir、device_id、Keychain、endpoint 及 client KEY，不更改其他電腦、Windows 或其他 Cloud 專案。
-檢查 Node.js 22+、Wrangler 4.95.0、wrangler whoami --json。官方登入由本人完成，不要求 token、auth.json、Keychain 檔或 Global API key。
+檢查 Node.js 24.22.1+（或 22.23.4+）、Wrangler 4.152.0、wrangler whoami --json。官方登入由本人完成，不要求 token、auth.json、Keychain 檔或 Global API key。
 請本人明確選擇自有 account ID；已綁定時必須與原帳戶相同。
 先規劃：{base} plan --account-id <本人選定的帳戶>{args}
 展示帳戶與 Worker 名稱後，依本人本次部署授權執行：{base} deploy{args}

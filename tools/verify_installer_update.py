@@ -46,6 +46,7 @@ def wait(predicate,seconds=45):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--vpk',required=True)
+    p.add_argument('--skip-renderer',action='store_true',help='Local non-desktop acceptance; CI still exercises the real renderer and clipboard.')
     args=p.parse_args();root=Path(args.output).resolve()
     if root.exists():raise ValueError('Use a new isolated acceptance output directory.')
     root.mkdir(parents=True);data=root/'profile';installed=root/'installed';web=root/'web';web.mkdir()
@@ -105,12 +106,19 @@ def main():
             req=urllib.request.Request('http://127.0.0.1:'+str(port)+'/api/v1/models',headers={'Authorization':'Bearer '+key})
             with opener.open(req,timeout=5) as response:return json.load(response)
         checks['a_original_key_authenticates']=bool(wait(models)['data'])
-        run([installed/'current/AIGO-LLM-Bridge.exe','--console-probe','--data-dir',data],
-            capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=120)
-        console_report=json.loads((data/'windows-console-probe.json').read_text())
-        assert console_report['success'],console_report['stage']
-        checks.update({'console_'+k:v for k,v in console_report['checks'].items()})
-        checks['closed_console_keeps_same_key_service']=bool(models()['data'])
+        schema_request=urllib.request.Request('http://127.0.0.1:'+str(port)+'/bridge/v1/preflight',
+            data=json.dumps({'messages':[{'role':'user','content':'synthetic schema preflight'}],
+                'response_format':{'type':'json_schema','json_schema':{'name':'probe','schema':{'type':'object'}}}}).encode(),
+            headers={'Authorization':'Bearer '+key,'Content-Type':'application/json'})
+        with opener.open(schema_request,timeout=15) as response:
+            checks['frozen_schema_helper_preflight']=json.load(response)['ready'] is True
+        if not args.skip_renderer:
+            run([installed/'current/AIGO-LLM-Bridge.exe','--console-probe','--data-dir',data],
+                capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=120)
+            console_report=json.loads((data/'windows-console-probe.json').read_text())
+            assert console_report['success'],console_report['stage']
+            checks.update({'console_'+k:v for k,v in console_report['checks'].items()})
+            checks['closed_console_keeps_same_key_service']=bool(models()['data'])
         # Fixture marks only local lifecycle completion. It does not claim Cloud/login/power acceptance.
         onboarding_path=data/'windows-onboarding.json'
         onboard=json.loads(onboarding_path.read_text());onboard['completed_at']=time.time()
@@ -170,14 +178,17 @@ def main():
         except urllib.error.HTTPError as error:
             checks['mandatory_policy_cannot_resume_old_version']=error.code==400 and blocked()
         print('APPLY B (native download and restart)',flush=True)
-        view=subprocess.Popen([str(installed/'current/AIGO-LLM-Bridge.exe'),'--console','--console-hidden',
-            '--data-dir',str(data)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-        wait(lambda:json.loads((data/'windows-console.json').read_text()).get('mode')=='webview2')
+        view=None
+        if not args.skip_renderer:
+            view=subprocess.Popen([str(installed/'current/AIGO-LLM-Bridge.exe'),'--console','--console-hidden',
+                '--data-dir',str(data)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            wait(lambda:json.loads((data/'windows-console.json').read_text()).get('mode')=='webview2')
         cli(executable,'update','apply','--data-dir',data,timeout=180)
         result=wait(lambda:json.loads((data/'updates/last-result.json').read_text()) if (data/'updates/last-result.json').is_file() else None,90)
         checks['native_restarted_to_b']=result['target']=='0.7.1' and cli(executable,'version')['version']=='0.7.1'
-        checks['open_console_exits_for_update']=(view.wait(timeout=30)==0 and
-            json.loads((data/'windows-console.json').read_text())['mode']=='closed')
+        if view:
+            checks['open_console_exits_for_update']=(view.wait(timeout=30)==0 and
+                json.loads((data/'windows-console.json').read_text())['mode']=='closed')
         checks['b_same_key_authenticates']=bool(wait(models)['data'])
         store=Store(data,startup=False)
         checks['same_device']=store.get('device_id')==device
@@ -211,6 +222,7 @@ def main():
         except Exception:pass
         server.shutdown();server.server_close()
         report={'checks':checks,'success':successful,'package_id':package_id,
+            'native_renderer_tested':not args.skip_renderer,
             'external_https_tested':False,'provider_inference_tested':False,'production_modified':False,
             'notes':'Real Setup and native A-to-B update; URL is a retained synthetic fixture. No Cloud change.'}
         atomic_json(root/'acceptance.json',report)

@@ -1,6 +1,6 @@
 # Mac 設定、常駐與來源更新
 
-Mac source 候選 `0.8.0-mac.1` 同步 Windows 0.7.3 設計及 0.8.0 首次設定流程，使用 Cocoa／WKWebView、登入 Keychain 與使用者 LaunchAgent。實測範圍見 [Mac 同步 QA](qa/2026-10-23-macos-parity.md)。不發布 Mac release／DMG，Windows 發布渠道不適用 Mac。
+Mac source 候選 `0.8.1-mac.1` 同步 Windows 0.7.3 設計、0.8.0 首次設定及 0.8.1 共用安全修補，使用 Cocoa／WKWebView、登入 Keychain 與使用者 LaunchAgent。實測範圍見 [Mac 同步 QA](qa/2026-10-23-macos-parity.md)。不發布 Mac release／DMG，Windows 發布渠道不適用 Mac。
 
 ## 安裝與管理視窗
 
@@ -12,7 +12,7 @@ Mac source 候選 `0.8.0-mac.1` 同步 Windows 0.7.3 設計及 0.8.0 首次設�
 
 1. 檢查插電自動睡眠，明確同意後套用。已是 `sleep 0` 只讀回；需要變更時本人點選系統管理員授權。保留電池、顯示器、螢幕保護、鎖定、闔蓋及實體按鍵行為。
 2. 檢查 Codex／Claude 訂閱，已就緒則沿用。只有本人按登入才開新的 Terminal 執行官方登入，不操作既有 CLI 視窗。CLI 安裝及瀏覽器 OAuth 由本人處理；Bridge 尚有工作時拒絕發起來源登入。
-3. 準備 Node.js 22+／Wrangler 4.95.0，完成自己的 Cloudflare OAuth，明確選定自有帳戶。部署登入、LLM 訂閱、Keychain 裝置 secret 與 client KEY 分離。
+3. 準備 Node.js 24.22.1+（或 22.23.4+）／Wrangler 4.152.0，完成自己的 Cloudflare OAuth，明確選定自有帳戶。部署登入、LLM 訂閱、Keychain 裝置 secret 與 client KEY 分離。
 4. 選一鍵部署或複製此安裝位置專用的 AI IDE prompt。沿用同一帳戶、裝置與 Worker 的 plan／verify／publish 流程。開啟管理台不代表部署授權，不能直接部署 repo 範本。
 5. 建立或貼回已保存的長效 KEY，選模型並明確按一次真 HTTPS 測試。GET models 成功後只發一次合成 POST，需取得 PONG 與有限、非負數值的 `usage.cost`。保存 KEY 並複製第三方串接訊息後才完成。驗證綁定同一 KEY、endpoint、model／provider／native，變更後須重測。
 
@@ -44,3 +44,7 @@ Mac 適配僅執行固定的 `pmset -c sleep <整數>`，以 `pmset -g custom` �
 ## 儲存邊界
 
 `macos-onboarding.json` 只存 installation ID、完成時間／版本、power_consent、key ID 與 allowlist 驗證收據。`macos-power.json` 只存原 AC sleep、pending／enabled 狀態。均不含 KEY、CLI stdout 或原始內容。裝置 secret 仍在原使用者登入 Keychain，SQLite 只存 KEY hash 與 metadata。更新保留 endpoint、device ID、有效 KEY、模型、推論容量與紀錄。
+
+## 0.8.1 共用安全修補
+
+Mac 使用相同的拒絕 Relay redirect、回應讀取上限、provider 環境 allowlist、Claude stdin 及有限 schema 子程序；詳見 [SECURITY](SECURITY.md)。Windows Job Object 的 256 MiB 限制及 Windows Python／OpenSSL 基線屬 Windows 原生封裝，不能視為 Mac 已有相同 OS 記憶體限制。Mac schema 保留輸入／時間／並行預算。既有 Worker 的 queue 修補需另行授權部署；本次 Mac source 更新不自動部署，也不改 endpoint／KEY。

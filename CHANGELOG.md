@@ -1,5 +1,13 @@
 # Changelog
 
+## Windows installer 0.8.1
+
+- Update the Windows runtime to Python 3.14.9, OpenSSL 3.5.9 and certifi 2026.10.19; enforce the security baseline before packaging.
+- Refuse Relay redirects and bound cloud response reads; keep device URL, client keys and metadata unchanged.
+- Send caller Claude instructions and schemas only over stdin, and validate schemas in bounded disposable processes with no payload logs.
+- Reserve Worker queue slots before body I/O; ship the corrected BYO template without deploying any installer's Worker.
+- Pin audited Wrangler/Node prerequisites, hash-lock Python artifacts, pin Windows/shared CI actions and add daily/pre-release dependency gates. No Mac release or Cloud deployment.
+
 ## Windows installer 0.8.0
 
 - Add resumable first-install onboarding for subscription CLI authorization, BYO Cloudflare login, explicit account selection, one-click deployment and AI IDE collaboration.
@@ -18,15 +26,19 @@
 
 ## [Unreleased]
 
-## [0.8.0-mac.1] - 2026-10-23
+## [0.8.1-mac.1] - 2026-10-23
 
-同步 Windows 0.7.3 六頁設計與 0.8.0 候選首次設定，新增 Mac WKWebView、原生剪貼簿／CSV、AC 自動睡眠同意與還原、KEY／HTTPS 交付及安全來源更新。
+同步 Windows 0.7.3 六頁設計、0.8.0 首次設定及 0.8.1 共用安全修補，新增 Mac WKWebView、原生剪貼簿／CSV、AC 自動睡眠同意與還原、KEY／HTTPS 交付及安全來源更新。
 
 ### 升級影響
 - Mac：需更新來源安裝並重啟，保留原 profile、URL、有效 KEY、模型與推論容量；不自動改電源或登入。
 - Windows：只共用設定流程的可覆寫平台方法，不更新其已安裝服務或發布渠道。
 - Cloudflare／呼叫端：協定不變，不因這次本機更新重建 Worker 或重發 KEY。
 - 發布：Mac source 候選，不建立 tag／Release／DMG；驗收範圍見 docs/qa/2026-10-23-macos-parity.md。
+
+## [0.6.7] - 2026-10-23
+
+Shared security fixes for the Windows 0.8.1 release: redirect refusal, bounded schema validation, minimal provider environment, stdin-only caller data for Claude, and an atomic BYO queue template. This core source version does not publish or upgrade macOS or any Cloudflare deployment.
 
 ## [0.6.6-mac.2] - 2026-10-23
 

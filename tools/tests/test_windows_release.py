@@ -2,6 +2,7 @@
 import ast
 import os
 import subprocess
+import shutil
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -40,7 +41,10 @@ def test_mac_candidate_does_not_create_release_or_tag(tmp_path):
         stub = bin_dir/tool
         stub.write_text('#!/bin/sh\necho unexpected publication >&2\nexit 91\n')
         stub.chmod(0o700)
-    result = subprocess.run(['bash', '-eu', '-c', script], cwd=tmp_path,
+    # Windows CreateProcess searches System32 before PATH; avoid its WSL shim.
+    git_bash=Path(os.environ.get('ProgramFiles',''))/'Git/bin/bash.exe'
+    bash=str(git_bash) if os.name=='nt' and git_bash.is_file() else shutil.which('bash')
+    result = subprocess.run([bash, '-eu', '-c', script], cwd=tmp_path,
                             env={**os.environ, 'PATH': str(bin_dir)+os.pathsep+os.environ['PATH']},
                             text=True, capture_output=True)
     assert result.returncode == 0, result.stderr
