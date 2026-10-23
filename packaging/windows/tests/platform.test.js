@@ -5,6 +5,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname,'../../..');
 
+test('integration examples work without recent Object.hasOwn and reject prototype names',()=>{
+  const context=vm.createContext({});
+  vm.runInContext('Object.hasOwn=undefined;'+fs.readFileSync(path.join(root,'desktop_bridge/web/integration.js'),'utf8'),context);
+  const result=vm.runInContext('BridgeExamples.build("https://synthetic.example/api/v1","synthetic","python","decisions")',context);
+  assert.ok(result.includes('https://synthetic.example/api/alpha/decisions'));
+  assert.ok(result.includes('questions'));
+  assert.throws(()=>vm.runInContext('BridgeExamples.build("https://synthetic.example/api/v1","synthetic","python","constructor")',context),/Unknown operation/);
+});
+
 test('browser frontend retains clipboard and CSV download without native dependencies',async()=>{
   let copied, clicked=false;
   const context={window:{},navigator:{clipboard:{writeText:async text=>{copied=text;}}},

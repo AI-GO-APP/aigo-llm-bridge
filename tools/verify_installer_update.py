@@ -82,7 +82,7 @@ def main():
         with socket.socket() as sock:
             sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
         store=Store(data);store.set('port',port);store.set('public_url','https://isolated-device.example.invalid')
-        device=store.get('device_id');store.close()
+        device=store.get('device_id');configured_model=store.get('default_model');store.close()
         created=cli(executable,'byo','key-create','--data-dir',data,'--label','isolated-acceptance','--providers','codex')
         kid,key=created['id'],created['key']
         checks['frozen_cli_key_creation']=True
@@ -104,8 +104,11 @@ def main():
         opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
         def models():
             req=urllib.request.Request('http://127.0.0.1:'+str(port)+'/api/v1/models',headers={'Authorization':'Bearer '+key})
-            with opener.open(req,timeout=5) as response:return json.load(response)
-        checks['a_original_key_authenticates']=bool(wait(models)['data'])
+            with opener.open(req,timeout=25) as response:
+                value=json.load(response)
+                assert value['object']=='list' and isinstance(value['data'],list)
+                return value
+        checks['a_original_key_authenticates']=wait(models)['object']=='list'
         def exclusive_listener(port):
             with socket.socket() as intruder:
                 intruder.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
@@ -128,7 +131,7 @@ def main():
             console_report=json.loads((data/'windows-console-probe.json').read_text())
             assert console_report['success'],console_report['stage']
             checks.update({'console_'+k:v for k,v in console_report['checks'].items()})
-            checks['closed_console_keeps_same_key_service']=bool(models()['data'])
+            checks['closed_console_keeps_same_key_service']=models()['object']=='list'
         # Fixture marks only local lifecycle completion. It does not claim Cloud/login/power acceptance.
         onboarding_path=data/'windows-onboarding.json'
         onboard=json.loads(onboarding_path.read_text());onboard['completed_at']=time.time()
@@ -140,7 +143,7 @@ def main():
         def rejected_update():
             failed=subprocess.run([str(executable),'update','apply','--data-dir',str(data),'--timeout','1'],capture_output=True,timeout=60)
             assert failed.returncode!=0
-            assert models()['data']
+            assert models()['object']=='list'
         tampered={**policy_b,'signature':base64.b64encode(b'0'*64).decode()}
         atomic_json(web/'policy.json',tampered);rejected_update()
         checks['bad_signature_keeps_a_available']=True
@@ -167,7 +170,7 @@ def main():
         checks['mandatory_policy_pauses_new_work']=bool(wait(blocked))
         try:
             req=urllib.request.Request('http://127.0.0.1:'+str(port)+'/api/v1/chat/completions',
-                data=json.dumps({'model':models()['data'][0]['id'],'messages':[{'role':'user','content':'synthetic update gate'}]}).encode(),
+                data=json.dumps({'model':configured_model,'messages':[{'role':'user','content':'synthetic update gate'}]}).encode(),
                 headers={'Authorization':'Bearer '+key,'Content-Type':'application/json'})
             opener.open(req,timeout=5)
             raise AssertionError('Mandatory update accepted inference.')
@@ -178,7 +181,7 @@ def main():
         wait(lambda:not (data/'windows-control.dpapi').exists());time.sleep(1)
         cli(executable,'start','--data-dir',data)
         wait(lambda:(data/'windows-control.dpapi').is_file())
-        checks['mandatory_policy_survives_restart']=bool(wait(blocked)) and bool(models()['data'])
+        checks['mandatory_policy_survives_restart']=bool(wait(blocked)) and models()['object']=='list'
         try:
             marker=json.loads(secret.protect((data/'windows-control.dpapi').read_bytes(),decrypt=True))
             req=urllib.request.Request(marker['origin']+'/manage/accepting',data=b'{"accepting":true}',
@@ -199,7 +202,7 @@ def main():
         if view:
             checks['open_console_exits_for_update']=(view.wait(timeout=30)==0 and
                 json.loads((data/'windows-console.json').read_text())['mode']=='closed')
-        checks['b_same_key_authenticates']=bool(wait(models)['data'])
+        checks['b_same_key_authenticates']=wait(models)['object']=='list'
         checks['updated_api_port_hijack_blocked']=exclusive_listener(port)
         checks['updated_management_port_hijack_blocked']=exclusive_listener(urlsplit(management_owner(data,{'pack_id':package_id})['origin']).port)
         store=Store(data,startup=False)

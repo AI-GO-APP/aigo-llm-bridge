@@ -6,7 +6,7 @@ const BridgeExamples = (() => {
   function build(base, model, format, operation = "chat") {
     const root = base.replace(/\/(?:api\/)?v1\/?$/, "").replace(/\/$/, "");
     const paths = {models:"/models", chat:"/chat/completions", capabilities:"/bridge/v1/model-capabilities", refresh:"/bridge/v1/models/refresh", probe:"/bridge/v1/models/probe", decisions:"/api/alpha/decisions"};
-    if (!Object.hasOwn(paths, operation)) throw new Error("Unknown operation");
+    if (!Object.prototype.hasOwnProperty.call(paths, operation)) throw new Error("Unknown operation");
     const isGet = ["models", "capabilities"].includes(operation);
     const url = (["models", "chat"].includes(operation) ? base.replace(/\/$/, "") : root) + paths[operation];
     const decision = {model, state:"A synthetic customer asks for a quotation.", questions:{needs_response:{type:"noul", instructions:"Does the customer need a response?"}}, provider:{data_collection:"deny"}};
