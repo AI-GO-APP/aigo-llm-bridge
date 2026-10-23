@@ -13,7 +13,7 @@ Windows 的 [安裝 onboarding](ONBOARDING.md) 與 Mac 的 [原生五步設定](
 
 既有安裝保留 device_id、Worker 名稱、固定 URL、API KEY、metadata 與平台配對憑證（Windows DPAPI／Mac 登入 Keychain）。Windows 日常程式更新用 update check／apply／status，不需重佈署 Worker；舊 ZIP 接管依 WINDOWS-INSTALL-UPDATE 的 adopt 流程。不要因重新登入而重建入口或輪替 KEY。Mac 更新依 MACOS-RELEASE 先 pause／wait-idle／停止，再以新來源更新相同 install-root／data-dir，驗原 KEY／URL／模型／容量保留。Mac／Cloud 不屬於 Windows 更新的附帶工作。
 
-Claude／Codex 訂閱由我自行登入，不操作既有視窗、不 logout/login、不改全域設定。預設使用 Codex 做合成推論，不呼叫我正在使用的 Claude。Mac 同機只能一個 runtime，同 profile 重開只喚回視窗；另一 profile 必須先正常停止原服務。按 X 只關管理台，明確結束才停止，mac_service.py stop 可先排空。先用 API／CLI，不重開電腦；需要 UI 驗證再列明範圍。
+Claude／Codex 訂閱由我自行登入（安裝 CLI、可用方案與就緒判定見 SUBSCRIPTION-SETUP），不操作既有視窗、不 logout/login、不改全域設定。預設使用 Codex 做合成推論，不呼叫我正在使用的 Claude。Mac 同機只能一個 runtime，同 profile 重開只喚回視窗；另一 profile 必須先正常停止原服務。按 X 只關管理台，明確結束才停止，mac_service.py stop 可先排空。先用 API／CLI，不重開電腦；需要 UI 驗證再列明範圍。
 
 用專用臨時 KEY 真測 HTTPS models GET、非串流 chat POST、數值 usage.cost、撤銷，以及只重啟 Bridge 後同 URL／同 KEY 仍有效。原始 request／response 與完整 KEY 不落磁碟，僅保留 allowlist metadata。未知結果不盲目重試，依 UUID 查 receipt。測試 KEY 結束撤銷；更新驗收不能重建新 KEY 冒充舊 KEY 保留。
 
