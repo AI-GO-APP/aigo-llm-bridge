@@ -16,7 +16,9 @@ DEFAULT_MODELS = [
     {"id": "anthropic/claude-haiku-4.5", "provider": "claude", "native": "claude-haiku-4-5-20251001"},
     {"id": "openai/gpt-6-astra", "provider": "codex", "native": "gpt-6-astra"},
 ]
-DEFAULTS = {"port": 8920, "accepting": True, "retention_days": 30, "timeout_s": 180, "inference_workers": 1,
+from .capacity import STANDARD_CONCURRENCY, DEFAULT_KEY_RPM
+
+DEFAULTS = {"port": 8920, "accepting": True, "retention_days": 30, "timeout_s": 180, "inference_workers": STANDARD_CONCURRENCY,
             "public_url": "", "default_model": DEFAULT_MODELS[1]["id"], "models": DEFAULT_MODELS,
             "claude_path": "", "codex_path": "", "tunnel_kind": "none", "tunnel_name": "", "relay_enabled":False}
 DEFAULTS.update(device_id="",cloudflare_account_id="",cloudflare_worker_name="")
@@ -83,7 +85,7 @@ class Store:
             self.db.execute("insert or replace into settings values (?,?)", (name, json.dumps(value)))
             self.db.commit()
 
-    def create_key(self, label, providers=("claude", "codex"), rpm=30):
+    def create_key(self, label, providers=("claude", "codex"), rpm=DEFAULT_KEY_RPM):
         label = str(label).strip()
         providers = sorted(set(providers))
         if not label or len(label) > 60 or not providers or set(providers)-{"claude", "codex"} or not 1 <= int(rpm) <= 600:

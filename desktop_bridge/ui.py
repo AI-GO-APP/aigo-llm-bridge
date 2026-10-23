@@ -115,8 +115,8 @@ class App:
         name=ttk.Entry(frame); name.pack(fill="x",pady=(5,15))
         flags={p:tk.BooleanVar(value=True) for p in ("claude","codex")}
         for p in flags: ttk.Checkbutton(frame,text=p,variable=flags[p]).pack(anchor="w")
-        ttk.Label(frame,text="每分鐘最多請求數（全機同時執行一筆）").pack(anchor="w",pady=(12,4))
-        rate=ttk.Spinbox(frame,from_=1,to=600,width=10); rate.set("30"); rate.pack(anchor="w")
+        ttk.Label(frame,text="每分鐘最多請求數（全機標準 64 筆同時推論）").pack(anchor="w",pady=(12,4))
+        rate=ttk.Spinbox(frame,from_=1,to=600,width=10); rate.set("600"); rate.pack(anchor="w")
         def save():
             try: _,token=self.store.create_key(name.get(),[p for p,v in flags.items() if v.get()],int(rate.get()))
             except ValueError as e: messagebox.showerror("無法建立",str(e),parent=window); return

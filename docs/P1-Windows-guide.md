@@ -40,3 +40,6 @@ usage.cost以CLI回報token和實際模型的OpenRouter公開牌價計算，為U
 只持久化[資料字典](SCHEMA.md)中的設定、KEY hash與metadata。原始訊息、附件、回覆、完整KEY、任意metadata與CLI stderr不寫磁碟；RAM結果會過期，重啟不會回放原請求。不是OS pagefile／crash dump或供應商雲端的零留存保證。
 
 關機後固定Worker網址仍存在，推論會離線；恢復同profile即可沿用。未知執行結果先查receipt，勿無限自動重試。遺失完整KEY只能輪替。Windows更新通知／必要更新來自GitHub簽章policy；不需Supabase，詳見[安裝與更新](WINDOWS-INSTALL-UPDATE.md)。
+
+
+標準容量為每裝置 64 筆同時推論，Claude／Codex 與 Chat／Decisions 共用。請以普通同步 API 並行 POST（async/await、Promise.all 或連線池），每筆直接取得結果；串接不需工單或輪詢。新 key 預設 600 RPM，既有 key 頻率另行核對。超過 64 尚待驗證，詳見 [併發規格](CONCURRENCY.md)。

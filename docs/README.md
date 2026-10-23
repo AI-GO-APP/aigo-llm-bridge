@@ -46,3 +46,6 @@ Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [最新 Mac 
 ## 歷史資料
 
 [舊 README](../README-LEGACY.md) 與編號 01–13 的文件已改為停用導引頁，原文保留在 Git 歷史。`hosted/`、`worker/`、`desktop/` 的程式只供歷史相容維護，**不是現行產品的部署目標**；安裝與功能契約以本入口的現行 BYO 文件為準。
+
+
+- [64 併發規格](CONCURRENCY.md)：共用容量、普通 API 呼叫、驗證證據及待驗範圍。

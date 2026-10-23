@@ -59,3 +59,6 @@ python tools/lint_terms.py --require
 Windows installer變更再跑真Setup→A→B與CI。純文件修改不要求重跑供應商推論；UI修改必須render，不能只加照著CSS內容寫的斷言。真LLM驗證使用合成內容、專用測試KEY，未知結果不盲重試。任何公開報告不含完整KEY、管理token、配對secret或原始使用者內容。
 
 Mac的新UI／封裝／更新仍需Mac維護者獨立驗收；本輪不介入其作業。既有Mac報告不等於本次設計已在Mac通過。
+
+
+64 併發的來源、Windows 安裝包及公開 Worker 驗收分層記錄於 [本次收據](qa/2026-10-23-windows-093-concurrency.md)。先前 626 筆本機 Codex 實測不替代新版正式 HTTPS 驗收；Claude 真實 64 負載及 >64 仍待驗證。

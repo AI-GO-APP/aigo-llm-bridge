@@ -96,11 +96,14 @@ def list_codex_models(settings):
                     except ValueError: continue
                     try: messages.put_nowait(message)
                     except queue.Full: overflow.set(); break
+            except (OSError,ValueError): pass  # Own pipes may close during cancellation.
             finally:
                 try: messages.put_nowait({"_eof": True})
                 except queue.Full: pass
         def drain():
-            while child.proc.stderr.read(65536): pass
+            try:
+                while child.proc.stderr.read(65536): pass
+            except (OSError,ValueError): pass
         threading.Thread(target=reader, daemon=True).start()
         threading.Thread(target=drain, daemon=True).start()
         deadline = time.monotonic()+8
@@ -265,11 +268,14 @@ def call_codex(spec,settings,cancel,cwd):
                 except ValueError: continue
                 try: messages.put_nowait(message)
                 except queue.Full: overflow.set(); break
+        except (OSError,ValueError): pass  # Own pipes may close during cancellation.
         finally:
             try: messages.put_nowait({"_eof":True})
             except queue.Full: pass
     def drain():
-        while child.proc.stderr.read(65536): pass
+        try:
+            while child.proc.stderr.read(65536): pass
+        except (OSError,ValueError): pass
     threading.Thread(target=reader,daemon=True).start()
     threading.Thread(target=drain,daemon=True).start()
     deadline=time.monotonic()+settings.get("timeout_s")

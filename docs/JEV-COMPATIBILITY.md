@@ -96,3 +96,6 @@ usage.cost 延續 USD 的 OpenRouter 牌價估算，不是 OpenRouter 扣款，�
 - 上述輸入與回傳僅在記憶體處理，持久證據僅保留 allowlist 中繼資料。0.7.1 同步這些驗收文件與版本常數，推論程式與 0.7.0 相同。
 
 正式 Worker 未部署，新公開 HTTPS 路徑尚未驗證；macOS 實機尚未驗證。模型機率的業務準確度與原有 Jev 門檻仍需依應用資料量測。
+
+
+Decisions 與 Chat 共用每裝置 64 筆同時請求容量；各題仍依原順序獨立推論並加總真實成本。普通同步 API 可並行 POST，詳見 [併發規格](CONCURRENCY.md)。

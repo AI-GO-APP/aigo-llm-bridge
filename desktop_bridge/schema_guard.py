@@ -2,6 +2,7 @@
 import json
 import sys
 import threading
+import time
 
 from .errors import BridgeError
 
@@ -10,6 +11,7 @@ MAX_NODES=8192
 MAX_DEPTH=24
 MAX_PAYLOAD=8_000_000
 VALIDATION_SECONDS=3
+CAPACITY_WAIT_SECONDS=30
 CAPACITY=threading.BoundedSemaphore(4)
 
 
@@ -40,7 +42,12 @@ def run(payload,cancel=None):
     else:command=[sys.executable,'-m','desktop_bridge.schema_guard']
     raw=json.dumps(payload,separators=(',',':')).encode()
     if len(raw)>MAX_PAYLOAD:return 'limit'
-    if not CAPACITY.acquire(blocking=False):return 'busy'
+    # Keep four disposable validators, but absorb normal API concurrency internally.
+    until=time.monotonic()+CAPACITY_WAIT_SECONDS
+    while not CAPACITY.acquire(timeout=.05):
+        if cancel is not None and cancel.is_set():
+            raise BridgeError(499,'cancelled','請求已取消。')
+        if time.monotonic()>=until:return 'busy'
     # Isolated cwd is unnecessary: no file/tool/remote reference is accepted.
     from pathlib import Path
     from .providers import environment

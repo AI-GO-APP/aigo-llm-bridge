@@ -95,3 +95,6 @@ Mac 發布由 `packaging/macos/build.py` 以 tracked 公開來源 allowlist 建�
 `decision_contract` 只接受明確 model 與有限 state／questions，生成不含 caller 自訂引用的 bounded schema；`Runtime` 用既有 queue／RPM／deadline 依題順序執行，每題 payload 只含本題與 state，透過既有 stdin 與無工具 provider。`decisions` 經隔離 validator 後計算答案／confidence；不是 Jev 原模型校準結果。逐次 quote.usage 後聚合，先保存已知計量再驗語意或執行後續題目；receipt 揭露未完整計量，不保存題目或答案。外部新增路徑只在 Worker 範本 allowlist，不隨 Windows 更新部署。
 
 啟動入口以 ExitStack 保管已建立的 Store／Runtime／API／relay／management；中途初始化失敗與正常停止都先清理服務，再釋放 profile／全機鎖，避免已開 HTTP／推論仍活著卻允許第二套接手。
+
+
+推論 Runtime 預設 64 workers／64 未完成名額，兩 provider 共用。Relay 使用 64 推論及 8 控制 worker，Worker 在讀 body 前原子保留對應名額（64／8）；models、preflight、receipt 不被滿載推論阻塞。Schema 驗證維持 4 個隔離程序與原時間／記憶體預算，名額在服務內部最多等待 30 秒。詳見 [併發規格](CONCURRENCY.md)。

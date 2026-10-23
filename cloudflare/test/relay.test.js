@@ -10,12 +10,12 @@ test('queue reserves capacity before asynchronous body reads and releases failur
  relay.keys.add(await digest(key));relay.lastSeen=Date.now();
  const release=[];
  relay.body=async()=>new Promise(resolve=>release.push(resolve));
- const work=Array.from({length:12},()=>relay.fetch(req('/api/v1/chat/completions',{},key)));
+ const work=Array.from({length:67},()=>relay.fetch(req('/api/v1/chat/completions',{},key)));
  await new Promise(resolve=>setTimeout(resolve,20));
- assert.equal(release.length,9);assert.equal(relay.reading,9);
+ assert.equal(release.length,64);assert.equal(relay.reading,64);
  release.forEach(resolve=>resolve('{}'));
  await new Promise(resolve=>setTimeout(resolve,20));
- assert.equal(relay.pending.size,9);assert.equal(relay.reading,0);
+ assert.equal(relay.pending.size,64);assert.equal(relay.reading,0);
  for(const item of relay.pending.values()){clearTimeout(item.timer);item.resolve(new Response('{}'));}
  relay.pending.clear();const responses=await Promise.all(work);
  assert.equal(responses.filter(r=>r.status===429).length,3);
@@ -31,9 +31,27 @@ test('outer build header preserves the original actor identity and response',asy
  }}};
  const res=await worker.fetch(new Request('https://test.workers.dev/health'),env);
  assert.equal(actor,'primary-device');
- assert.equal(res.headers.get('X-Bridge-Relay-Version'),'0.9.0-relay');
+ assert.equal(res.headers.get('X-Bridge-Relay-Version'),'0.9.4-relay');
  assert.equal(res.headers.get('Cache-Control'),'no-store');
  assert.equal((await res.json()).version,'legacy');
+});
+
+test('64 inference requests share chat and decisions capacity with eight independent controls',async()=>{
+ const relay=new DeviceRelay({}, {DEVICE_KEY:device});const key='synthetic-capacity';
+ relay.keys.add(await digest(key));relay.lastSeen=Date.now();
+ const paths=['/api/v1/chat/completions','/api/alpha/decisions'];
+ const work=Array.from({length:64},(_,i)=>relay.fetch(req(paths[i%2],{},key)));
+ await new Promise(resolve=>setTimeout(resolve,20));
+ assert.equal(relay.pending.size,64);
+ assert.equal((await relay.fetch(req(paths[0],{},key))).status,429);
+ const controls=Array.from({length:8},()=>relay.fetch(new Request('https://test.workers.dev/api/v1/models',{headers:{Authorization:'Bearer '+key}})));
+ await new Promise(resolve=>setTimeout(resolve,20));
+ assert.equal(relay.pending.size,72);
+ const health=await (await relay.fetch(new Request('https://test.workers.dev/health'))).json();
+ assert.equal(health.max_concurrent_requests,64);assert.equal(health.shared_provider_capacity,true);
+ for(const item of relay.pending.values()){clearTimeout(item.timer);item.resolve(Response.json({ok:true}));}
+ relay.pending.clear();
+ assert.ok((await Promise.all([...work,...controls])).every(response=>response.status===200));
 });
 
 test('offline and device credentials',async()=>{

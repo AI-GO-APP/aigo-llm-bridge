@@ -25,3 +25,6 @@ Claude／Codex 訂閱由我自行登入，不操作既有視窗、不 logout/log
 ```
 
 工具入口：[Windows Setup／CLI](WINDOWS-INSTALL-UPDATE.md)、[source 安裝](CROSS-PLATFORM-INSTALL.md)、[完整 API](API.md)。不要將歷史報告中的網址或配對資料當成新裝置預設。
+
+
+標準容量為每裝置 64 筆同時推論，Claude／Codex 與 Chat／Decisions 共用。請以普通同步 API 並行 POST（async/await、Promise.all 或連線池），每筆直接取得結果；串接不需工單或輪詢。新 key 預設 600 RPM，既有 key 頻率另行核對。超過 64 尚待驗證，詳見 [併發規格](CONCURRENCY.md)。

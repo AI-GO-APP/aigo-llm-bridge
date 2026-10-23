@@ -216,7 +216,7 @@ def main(argv=None):
     parser.add_argument('--template');parser.add_argument('--wrangler-js');parser.add_argument('--timeout',type=int,default=180)
     parser.add_argument('--label',default='');parser.add_argument('--key-id')
     parser.add_argument('--providers',nargs='+',choices=['claude','codex'],default=['claude','codex'])
-    parser.add_argument('--rpm',type=int,default=30)
+    parser.add_argument('--rpm',type=int,default=600)
     parser.add_argument('--model');parser.add_argument('--handoff',action='store_true',help='Include a one-time integration message containing the new key; do not save stdout.')
     args=parser.parse_args(argv);store=None
     try:

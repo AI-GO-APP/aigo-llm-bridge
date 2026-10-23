@@ -49,6 +49,12 @@
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-10-23
+
+- Windows 0.9.3：每裝置標準 64 併發，Claude／Codex、Chat／Decisions 共用；Relay／Worker 控制名額獨立。
+- Schema 驗證保持隔離資源預算並在服務內等待名額；同步 API 並行提示詞、新 KEY 600 RPM 與容量 health。
+- 本次只發布 Windows；既有 Worker 依本次授權原地更新。Claude 真實 64 負載、>64 與 Mac 新版實機驗收待驗。
+
 ## [0.9.3-mac.1] - 2026-10-23
 
 - 管理台區分本機版本、公開 Worker 版本／路由、真實 Chat／Decisions 驗證及時間；一般路由檢查不傳 Key、不推論、不部署。

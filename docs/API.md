@@ -110,3 +110,6 @@ Windows 0.8.0 候選另加 `state.windows_onboarding` 及 POST `/manage/windows-
 ## 0.8.1 安全限制
 
 Schema aggregate ≤256 KiB／8192 nodes／深度 24，不接受任何 $ref／$dynamicRef，包含 local ref；超限回 unsupported_parameter，不默默忽略。Schema 定義與輸出於自有子程序驗證，單次 3 秒、全機最多 4 個 validator；輸出超時 502，仍保留已發生用量與成本。Claude caller system／developer／schema 由 stdin 包裝，非原生 system role 或 CLI --json-schema；工具提案／structured output 仍須通過驗證。完整邊界見 [SECURITY](SECURITY.md)。
+
+
+每裝置標準 64 筆同時推論，Claude／Codex、Chat／Decisions 共用。直接並行同步 POST；jobs 為可選進階擴充，標準整批呼叫不需要工單或輪詢。`GET /health` 回 `max_concurrent_requests` 與 `shared_provider_capacity:true`；本機反映實際設定，Worker 反映轉接容量。來源仍受 key RPM、訂閱及同步期限限制。詳見 [併發規格](CONCURRENCY.md)。

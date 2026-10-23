@@ -1,5 +1,7 @@
 // No request/response payload is written to Durable Object storage or logs.
 const MAX_BODY = 3_000_000;
+const INFERENCE_CAPACITY=64, CONTROL_CAPACITY=8;
+const inferencePath=(method,path)=>method==="POST"&&["/api/v1/chat/completions","/v1/chat/completions","/api/alpha/decisions","/bridge/v1/jobs","/bridge/v1/models/probe"].includes(path);
 const COST_HEADERS=["X-Bridge-Cost-Source","X-Bridge-Pricing-Model","X-Bridge-Pricing-Fetched-At"];
 const error = (code, type, message) => Response.json({error:{code,message,metadata:{error_type:type}}},
   {status:code,headers:{"Cache-Control":"no-store"}});
@@ -11,7 +13,7 @@ export default {
     const id=env.DEVICE.idFromName("primary-device");
     const response=await env.DEVICE.get(id).fetch(request);
     const headers=new Headers(response.headers);
-    headers.set('X-Bridge-Relay-Version','0.9.0-relay');
+    headers.set('X-Bridge-Relay-Version','0.9.4-relay');
     return new Response(response.body,{status:response.status,headers});
   }
 };
@@ -19,7 +21,7 @@ export default {
 export class DeviceRelay {
   constructor(ctx, env) {
     this.ctx=ctx; this.env=env;
-    this.pending=new Map(); this.reading=0; this.waiter=null; this.lastSeen=0; this.keys=new Set();this.agentSession=null;
+    this.pending=new Map(); this.reading=0; this.readingInference=0; this.readingControl=0; this.waiter=null; this.lastSeen=0; this.keys=new Set();this.agentSession=null;
   }
   async body(request,max=MAX_BODY) {
     const length=Number(request.headers.get("content-length")||0);
@@ -89,7 +91,7 @@ export class DeviceRelay {
         }
         return error(404,"not_found","Unknown agent endpoint.");
       }
-      if(path==="/health")return Response.json({ok:true,device_online:Date.now()-this.lastSeen<35_000,version:"0.9.0-relay"},{headers:{"Cache-Control":"no-store"}});
+      if(path==="/health")return Response.json({ok:true,device_online:Date.now()-this.lastSeen<35_000,version:"0.9.4-relay",max_concurrent_requests:INFERENCE_CAPACITY,shared_provider_capacity:true},{headers:{"Cache-Control":"no-store"}});
       const allowed=(request.method==="POST"&&["/api/v1/chat/completions","/v1/chat/completions","/api/alpha/decisions","/bridge/v1/jobs","/bridge/v1/preflight","/bridge/v1/models/refresh","/bridge/v1/models/probe"].includes(path))
         ||(request.method==="GET"&&(["/api/v1/models","/v1/models","/bridge/v1/model-capabilities"].includes(path)||/^\/bridge\/v1\/jobs\/[a-f0-9]{32}$/.test(path)||/^\/bridge\/v1\/receipts\/[a-f0-9-]{36}$/i.test(path)));
       if(!allowed)return error(404,"not_found","Unknown API endpoint.");
@@ -97,12 +99,15 @@ export class DeviceRelay {
       if(!authorization.startsWith("Bearer ")||authorization.length>263)return error(401,"authentication","Invalid API key.");
       if(Date.now()-this.lastSeen>=35_000)return error(503,"device_offline","Local computer is offline.");
       if(!this.keys.has(await hash(authorization.slice(7))))return error(401,"authentication","Invalid or revoked API key.");
-      if(this.pending.size+this.reading>=9)return error(429,"queue_full","Device queue is full.");
+      const inference=inferencePath(request.method,path);
+      const active=[...this.pending.values()].filter(item=>item.inference===inference).length;
+      const reading=inference?this.readingInference:this.readingControl;
+      if(active+reading>=(inference?INFERENCE_CAPACITY:CONTROL_CAPACITY))return error(429,"queue_full","Device concurrent capacity reached.");
       // Reserve synchronously before yielding to body I/O; count in-flight reads.
-      this.reading++;
+      this.reading++; if(inference)this.readingInference++;else this.readingControl++;
       let body;
       try {body=request.method==="POST"?await this.body(request):"";}
-      finally {this.reading--;}
+      finally {this.reading--;if(inference)this.readingInference--;else this.readingControl--;}
       const id=crypto.randomUUID();
       const deadline=Math.min(Date.now()+90_000,Number(request.headers.get("X-Bridge-Deadline"))||Date.now()+90_000);
       const requestId=request.headers.get("X-AIEA-Request-Id");
@@ -112,9 +117,9 @@ export class DeviceRelay {
         const timer=setTimeout(()=>{
           const item=this.pending.get(id);this.pending.delete(id);
           if(item)item.work=null;
-          resolve(error(408,"timeout","Device response timed out. Use /bridge/v1/jobs for long work."));
+          resolve(error(408,"timeout","Device response timed out."));
         },Math.max(1,deadline-Date.now()+2000));
-        const item={work,resolve,timer,dispatched:false};this.pending.set(id,item);
+        const item={work,resolve,timer,dispatched:false,inference};this.pending.set(id,item);
         if(this.waiter){item.dispatched=true;this.waiter(work);}
       });
     } catch {return error(400,"invalid_request","Invalid or oversized request.");}

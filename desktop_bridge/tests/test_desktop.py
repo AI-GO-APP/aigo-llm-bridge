@@ -142,7 +142,7 @@ def test_opt_in_workers_run_independent_requests_once_with_separate_results(tmp_
     finally:rt.stop();s.close()
 
 
-@pytest.mark.parametrize('value',[0,5,True,'2'])
+@pytest.mark.parametrize('value',[0,65,True,'2'])
 def test_invalid_worker_configuration_fails_closed(tmp_path,value):
     s=Store(tmp_path);s.set('inference_workers',value)
     try:
