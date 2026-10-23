@@ -143,6 +143,7 @@ def main(argv=None):
         from .windows_console import ensure_service, request_owner
         owner = ensure_service(profile(cfg, args.data_dir))
         if args.operation == 'open':
+            request_owner(owner, '/manage/windows-onboarding/open', {})
             value = json.loads(request_owner(owner, '/manage/windows-console/open', {}))
         else:
             value = json.loads(request_owner(owner, '/manage/state'))['windows_onboarding']

@@ -32,7 +32,7 @@
   const setup = document.createElement('button');
   setup.type = 'button'; setup.className = 'secondary compact'; setup.id = 'windows-open-onboarding'; setup.textContent = '安裝設定精靈';
   document.querySelector('.windows-update-card .row-actions').prepend(setup);
-  let step = 0, prompted = false, closeAfterComplete = false, copiedHandoff = false, lastAccounts = '', lastModels = '', handoff = '', pathsFilled = false;
+  let step = 0, prompted = false, closeAfterComplete = false, copiedHandoff = false, lastAccounts = '', lastModels = '', handoff = '', pathsFilled = false, opening = false;
   const el = id => wizard.querySelector('#' + id);
   function showStep(next) {
     step = Math.max(0, Math.min(4, next));
@@ -87,6 +87,11 @@
       prompted = true;
       if (ob.required) { wizard.showModal(); action('refresh').catch(error => toast(error.message)); }
     }
+    if (ob.open_requested && !opening) {
+      opening = true; closeAfterComplete = false;
+      if (!wizard.open) wizard.showModal();
+      api('/manage/windows-onboarding/opened', {}).catch(() => { opening = false; });
+    } else if (!ob.open_requested) opening = false;
     if (closeAfterComplete) return;
     el('ob-close').hidden = ob.required;
     wizard.oncancel = event => { if (state?.windows_onboarding?.required) event.preventDefault(); };

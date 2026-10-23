@@ -112,6 +112,7 @@ class Onboarding:
         self.subscriptions = {}
         self.login_processes = {}
         self.proof = None
+        self.open_requested = False
         self.deployment_identity = (self.store.get('public_url'), self.store.get('relay_enabled'))
         self.installation = installation_id(self.store, owner.release)
         value = self.load()
@@ -135,6 +136,7 @@ class Onboarding:
             except (OSError, ValueError):
                 power = {'enabled': False, 'verified': False, 'code': 'read_failed'}
             return {'required': not bool(value.get('completed_at')), 'completed_at': value.get('completed_at'),
+                    'open_requested': self.open_requested,
                     'job': dict(self.job), 'subscriptions': self.subscriptions, 'accounts': self.accounts,
                     'bound_account': self.store.get('cloudflare_account_id'),
                     'deployment': byo.status(self.store), 'power': power,
@@ -242,6 +244,9 @@ class Onboarding:
         self.deployment_identity = (self.store.get('public_url'), self.store.get('relay_enabled'))
 
     def action(self, action, data):
+        if action in {'open', 'opened'}:
+            self.open_requested = action == 'open'
+            return {'ok': True}
         if action == 'cli-paths':
             for provider in ('codex', 'claude'):
                 path = data.get(provider + '_path', '')

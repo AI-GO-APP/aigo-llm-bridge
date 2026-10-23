@@ -82,6 +82,7 @@ Windows 0.8.0 候選另加 `state.windows_onboarding` 及 POST `/manage/windows-
 | action | 請求／回傳 |
 |---|---|
 | refresh | `{}`；背景重新查詢兩來源登入與 Cloudflare allowlist accounts。 |
+| open／opened | `{}`；CLI 請求手動開啟精靈／前端確認已開啟，一次性 RAM 旗標；不清除完成紀錄或重跑日常設定。 |
 | login | `provider=codex/claude/cloudflare`；只啟動官方授權，ready 者沿用；來源有 active request 時拒絕。 |
 | cli-paths | codex_path／claude_path 字串，空白自動偵測；原生執行檔驗證後只保存 Bridge 設定。 |
 | prompt | `{}`；回傳不含憑證的 AI IDE 協作 prompt，帶原安裝位置／data-dir。 |

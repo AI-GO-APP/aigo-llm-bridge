@@ -298,3 +298,12 @@ def test_externally_deployed_same_profile_restarts_relay_once(wizard, monkeypatc
     assert calls == ['stop', 'start']
     wizard.refresh()
     assert calls == ['stop', 'start']
+
+
+def test_cli_can_reopen_completed_setup_once_without_resetting_install(wizard):
+    value = wizard.load(); value['completed_at'] = 123; wizard.save(value)
+    assert not wizard.state()['required'] and not wizard.state()['open_requested']
+    wizard.action('open', {})
+    assert wizard.state()['open_requested'] and not wizard.state()['required']
+    wizard.action('opened', {})
+    assert not wizard.state()['open_requested'] and wizard.load()['completed_at'] == 123
