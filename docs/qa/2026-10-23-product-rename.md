@@ -15,3 +15,5 @@
 改名 [PR27](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/27) 已合併，來源 `1de50fad55e66f0dcc8d85a5ad930e1d10db01c6`、共用版本 0.9.2；全部 checks 通過，Windows native 54／54、拋棄 runner 電源 8／8。[publish 39906228365](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/39906228365) 成功，Windows 0.9.1 已公開。匿名下載、asset size／hash、包內品牌／文件／runtime、舊客戶端更新發現及原簽章共 22 項通過；policy sequence 9、minimum 0.7.0、公鑰 fingerprint `9682eb28e5ab9020`。
 
 使用者追加 issue #20 後，正式 Windows 暫留 0.9.0，等待整合 Windows 0.9.2 後一次受控更新；不能把公開 0.9.1 說成正式機已安裝。後續結果見 [全機單實例收據](2026-10-23-windows-machine-runtime.md)。未發布或操作 Mac 服務，未部署安裝者 Cloudflare。
+
+**最終交付：Windows 0.9.2 已公開並從原 0.9.0 升級、受控停止及重啟驗證完成。** 實際已安裝 HTML／分頁標題為新品牌，原公開 URL、兩支原有效 KEY、設定／歷史 metadata／配對 DPAPI 與成本計算保留；兩輪 Codex HTTPS 成功，臨時 KEY 已撤銷及移除保護檔。0.9.1 未作為中間正式安裝。完整來源、public hash、policy 與各層結果以 [最終收據](2026-10-23-windows-machine-runtime.md) 為準。GitHub owner namespace 與舊安裝內部技術識別按 BRANDING 契約保留，未搬移組織或更動安裝者 Cloud 專案。
