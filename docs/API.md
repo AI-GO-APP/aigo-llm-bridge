@@ -33,7 +33,7 @@ Decisions／模型查詢完整欄位與範例見 [專用指南](JEV-COMPATIBILIT
 | 欄位 | 必填／型別／規則 |
 |---|---|
 | messages | 必填 array，1–100；一般模式 role／content，工具模式可帶 tool history。詳見下節。 |
-| model | 選填 string，不可 null；須已登錄且 KEY 允許來源。省略、auto、openrouter/auto 使用保存的 default_model，不自動選模型或付費 fallback。 |
+| model | 選填 string，不可 null；須已登錄或由 CLI 發現且 KEY 允許來源，推論前仍需有效牌價。省略、auto、openrouter/auto 使用保存的 default_model，不自動選模型或付費 fallback。 |
 | stream | 選填 boolean，省略／false；true 回 400 unsupported_parameter。 |
 | response_format | 選填 object：text、json_object、object 根 json_schema；校驗定義與實際輸出，格式失敗 502。工具提案模式不可另指定非 null response_format。 |
 | reasoning、reasoning_effort | 選填 effort low／medium／high／xhigh／max；reasoning 只接受 effort。兩者衝突 400；CLI／模型不支援時不保證可用。 |

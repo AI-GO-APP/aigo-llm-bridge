@@ -1,6 +1,6 @@
 # 現行 Windows 安全邊界與更新
 
-適用 Windows 0.8.1 安全修補與 0.8.2 Windows listener 候選。0.8.1 包含核心 0.6.7；0.8.2 沿用整合後 main 的核心識別 0.8.1-mac.1，不另發布 Mac。發布／安裝驗收狀態見 [ACCEPTANCE](ACCEPTANCE.md)。這不是完整 OpenRouter 等價或整台電腦零痕跡保證。
+適用已發布 Windows 0.8.1 安全修補、0.8.2 listener 與 0.9.0 Jev／模型查詢。0.8.1 包含核心 0.6.7；0.8.2 核心識別為整合後 0.8.1-mac.1；0.9.0 核心同號，不另發布 Mac。發布／安裝驗收狀態見 [ACCEPTANCE](ACCEPTANCE.md)。這不是完整 OpenRouter 等價或整台電腦零痕跡保證。
 
 ## 流量與權限
 
