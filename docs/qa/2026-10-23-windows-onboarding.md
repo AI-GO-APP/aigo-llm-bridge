@@ -1,6 +1,8 @@
 # Windows 0.8.0 onboarding 候選驗收
 
-目前階段：實作與隔離驗證中，**尚未發布／未升級正式 Windows**。原正式 0.7.3 與其先前已知 Worker 500/1101 是不同狀態；本輪不修／不部署該 Cloud，也不改正式機電源或既有 Claude Code。
+目前階段：原始碼／CI／隔離安裝驗證通過，**尚未發布／未升級正式 Windows**。原正式 0.7.3 與其先前已知 Worker 500/1101 是不同狀態；本輪不修／不部署該 Cloud，也不改正式機電源或既有 Claude Code。
+
+功能來源 `0e8011d`，[PR #15](https://github.com/AI-GO-APP/aigo-llm-bridge/pull/15)。本機完整 Python **171 passed、2 skipped**，onboarding 專屬 24 案例；relay 7、平台 adapter 2；文件覆蓋、terms、secrets 通過。[一般 CI](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39879853317)、[Windows ZIP／指南](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39879853303)、[Windows installer／原生電源](https://github.com/AI-GO-APP/aigo-llm-bridge/actions/runs/39879853392) 全通過。沒有 Mac release 或自有 Worker 部署。
 
 | 案例 | 狀態／邊界 |
 |---|---|
@@ -11,8 +13,21 @@
 | 缺失／布林／字串／負／NaN／Infinity cost 不通過 | HTTP adapter 回歸通過，包含 GET→POST 順序；不算真供應商 inference |
 | AC-only、DC 原值、鎖定原值、失敗 rollback、組織限制、不覆寫 owner 新計畫 | fake native adapter 回歸通過；owner 工作站無電源寫入 |
 | UAC 同意／取消、alternate admin 的 HKCU 分離 | 未有真人 UAC 操作證據 |
-| 真 Windows runner 電源套用／還原 | 待 CI；只在可拋棄 GitHub-hosted runner 執行 |
-| 真 Setup→A→B、renderer 五步、重啟／更新不重跑、URL／KEY／資料不變 | 待 native acceptance |
+| 真 Windows runner 電源套用／還原 | **6/6 通過**：apply/readback、DC 不變、原計畫不變、原計畫還原、registry 還原及無管理政策；只在可拋棄 GitHub-hosted runner，未改 owner 電腦 |
+| 真 Setup→A→B、renderer 五步、重啟／更新不重跑、URL／KEY／資料不變 | 本機與 CI 均 **48/48 通過**；使用臨時 signer／獨立 pack ID／合成 profile，未向 Cloud 發送 inference |
+| 五步 UI 深淺色、1280×900／390×844 | **20/20 無水平溢出**，電源／部署授權預設不勾；真 IAB renderer、合成只讀資料。修正 inline style 被 CSP 阻擋，改 Windows 同源 CSS，不放寬 CSP |
 | 本人 CLI／Cloudflare OAuth、一鍵新 Worker、真 LLM PONG／cost、實體拔插電／待機 | 未驗；需指定乾淨安裝者環境，不能以 mock 或既有登入代替 |
 
 文件：[ONBOARDING](../ONBOARDING.md)、[CI-CD](../CI-CD.md)、[RELEASE](../RELEASE.md)；需求 R-14～18、決策 D-16～20。發布／正式已安裝需通過相應閘門後另記，不能把候選版號當作完成。
+
+## 證據細節
+
+- CI `windows-installer-acceptance` artifact 內的 `bridge-update-proof/acceptance.json` 與 `bridge-onboarding-power/acceptance.json` 已下載回讀，success=true；不是只看 job 狀態。
+- 隔離 Setup→A→B 使用名義版本 0.7.0／0.7.1，但兩包都是本次功能來源；不能當作正式 0.7.x→0.8.0 已升級。本機第一輪為 dirty LocalProbe；CI 為 `0e8011d` 乾淨來源。
+- A→B 的 completed_at 是明確標記的**合成生命週期 fixture**，用於驗證檔案／日常跳過／備份保留。它沒有繞過正式精靈邏輯，也不算本人已完成新 Worker 授權；後端完整 finish 的條件由 adapter 整合測試驗證。
+- 現有 Windows 的 PowerGetActiveScheme／PowerReadAC/DC 僅唯讀檢查成功；沒有 PowerWrite、切計畫、registry 修改、UAC、logout/login。安裝者的實體 DC 切換、闔蓋／待機與受管理機器仍待實機驗收。
+- 真人 UAC／新 CLI 與 Cloudflare OAuth／首個新 Worker／真 LLM HTTPS 是剩餘安裝者驗收；已向使用者詢問另一台 Windows／測試 VM 或先交付候選，不能為了填滿表格修改正在使用的正式 Windows。
+
+![Worker 自有帳戶與一鍵／AI IDE 路徑，合成資料](assets/windows-0.8.0-worker-onboarding-light.png)
+
+![插電同意與 UAC，窄版深色，未套用任何設定](assets/windows-0.8.0-power-onboarding-narrow-dark.png)
