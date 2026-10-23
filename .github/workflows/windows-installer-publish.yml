@@ -75,7 +75,10 @@ jobs:
             ${{ runner.temp }}/bridge-installer/artifacts.json
             ${{ runner.temp }}/bridge-installer/self-test.json
             ${{ runner.temp }}/bridge-installer/security-runtime.json
-            ${{ runner.temp }}/bridge-dependency-audit.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-dependency-audit
+          path: ${{ runner.temp }}/bridge-dependency-audit.json
   announce:
     needs: package
     if: always() && inputs.announce && github.ref == 'refs/heads/main' && (needs.package.result == 'success' || inputs.published_version != '')

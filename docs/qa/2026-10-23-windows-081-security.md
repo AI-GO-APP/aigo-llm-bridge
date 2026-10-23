@@ -24,3 +24,7 @@
 - 正式 Windows 安全升級與重啟後真 HTTPS，原有資料及 key digest 比對。
 
 Worker 修補只交付範本，不代表既有雲端已修補；未部署、未重配 DEVICE_KEY。Mac 與 Cloud 團隊工作不在本次範圍。
+
+## 宣布前的封裝流程修復
+
+首次 publish run 39894565618 的 package／native gates 成功，announce 在讀 artifacts.json 前失敗：將稽核檔與 installer 檔一起上傳使 artifact 共同根目錄提高一層。尚未建立 Windows 0.8.1 release 或變更 policy，正式仍為 0.7.3。修復將 dependency audit 分成獨立 artifact，加入跨 job common-root 回歸；不換 signer、不覆寫已發布版本，也不盲目重跑舊失敗 job。
