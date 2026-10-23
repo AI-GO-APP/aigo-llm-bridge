@@ -1,5 +1,7 @@
 # 實體 Mac source 安裝與 Codex 訂閱驗收（2026-10-22）
 
+本檔保留歷史階段證據；後續修復／合併／發布／已安裝的完成狀態見 [Mac 0.9.1 發布收據](qa/2026-10-23-macos-release.md)。
+
 此紀錄僅適用本次 Apple Silicon 實機；不是 macOS 通用 release、DMG 或原生 UI 的驗收宣告。沒有修改 AI EA 程式、Windows Worker、裝置資料或 client key。
 
 本輪 source 候選版號為 `0.6.6-mac.1`；依 repo 版本閘門增加版號，未建立 tag 或發布安裝包。

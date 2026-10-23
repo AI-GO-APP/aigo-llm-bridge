@@ -1,5 +1,7 @@
 # Mac 0.8.1 source 同步驗收
 
+本檔保留歷史階段證據；後續修復／合併／發布／已安裝的完成狀態見 [Mac 0.9.1 發布收據](2026-10-23-macos-release.md)。
+
 狀態：本機 source 適配、原生 renderer 及現有 Mac 安裝更新／外部 HTTPS 通過。初輪來源 `4445670`；最終安全整合來源 `d50ab50`，Mac source `0.8.1-mac.1`；未發布 Mac release，未驗項不得當成通過。
 
 ## 來源及範圍

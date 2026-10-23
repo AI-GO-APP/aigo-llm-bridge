@@ -6,6 +6,8 @@
 
 使用功能分支／工作樹提出 PR，不直接推 main。變更功能時在同一 PR 更新受影響的需求、架構、schema、API、設計、決策與驗收。新需求／取捨依序使用未占用的 R／D 編號；主線已有其他平台合併時保留其修補、決策與發布紀錄，整合後重新驗證。
 
+測試使用獨立開發 venv；先安裝 pytest 與對應 desktop_bridge requirements。若在 Mac 執行 Windows signing 的可攜測試，另以 `pip install --require-hashes -r packaging/windows/requirements-signing-lock.txt` 安裝其測試依賴，不修改 owner 已安裝 runtime。
+
 ```sh
 python tools/check_product_docs.py
 python -m pytest desktop_bridge/tests packaging/windows/tests tools/tests -q
