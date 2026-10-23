@@ -16,6 +16,8 @@
 
 目前精靈會顯示 CLI 安裝命令並啟動已安裝 CLI 的官方登入；**不自動安裝 Node/npm 或取得供應商密碼**。需新安裝 CLI 的人可自行依命令安裝，也可交給 AI IDE 完成。登入瀏覽器頁面仍由本人同意授權，一鍵 Worker 部署不代表能略過 OAuth。
 
+可按「暫存進度，前往進階設定」使用完整管理台，調整訂閱可用的模型／原生 ID 或 CLI 路徑，再從安裝精靈按鈕返回；這不會把安裝標示完成，下次啟動仍需續接。若在 Bridge 已啟動後才安裝 Node／CLI，從主畫面「結束 Bridge」正常停止，再由 Windows 捷徑重新開啟，讓新 PATH 生效；關視窗仍常駐，不能用關窗代替停止。Windows PowerShell 若擋 npm／CLI 的 ps1 wrapper，可用同套件的 npm.cmd／wrangler.cmd／codex.cmd，不需要降低 ExecutionPolicy。
+
 ## 訂閱 CLI 授權
 
 Codex：先依 [OpenAI 官方驗證說明](https://developers.openai.com/codex/auth/) 安裝／使用 CLI。

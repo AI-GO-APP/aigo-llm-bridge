@@ -27,7 +27,7 @@
       <label>固定 endpoint<input id="ob-endpoint" readonly spellcheck="false"></label><label>本次 KEY<input id="ob-key" type="password" autocomplete="off" spellcheck="false" maxlength="256"></label>
       <label>實測模型<select id="ob-model"></select></label><button type="button" id="ob-verify" class="primary">發送一筆真 HTTPS 測試（會用少量訂閱額度）</button><p id="ob-verification" role="status">需取得 PONG 與數值型 usage.cost 才算通過；不自動重試。</p>
       <label class="check-label"><input id="ob-key-saved" type="checkbox">我已將 KEY 保存到自己的安全位置。</label><label class="check-label"><input id="ob-handoff-saved" type="checkbox">我已複製完整 endpoint／KEY／模型串接訊息。</label><button type="button" id="ob-finish" class="primary">完成安裝，進入主畫面</button></section>
-    <div class="onboarding-footer row-actions"><button type="button" id="ob-refresh" class="secondary">重新檢查登入及設定</button><button type="button" id="ob-back" class="secondary">上一步</button><button type="button" id="ob-next" class="primary">下一步</button></div></div>`;
+    <div class="onboarding-footer row-actions"><button type="button" id="ob-refresh" class="secondary">重新檢查登入及設定</button><button type="button" id="ob-back" class="secondary">上一步</button><button type="button" id="ob-next" class="primary">下一步</button><button type="button" id="ob-defer" class="secondary">暫存進度，前往進階設定</button></div></div>`;
   document.body.append(wizard);
   const setup = document.createElement('button');
   setup.type = 'button'; setup.className = 'secondary compact'; setup.id = 'windows-open-onboarding'; setup.textContent = '安裝設定精靈';
@@ -51,6 +51,7 @@
   wizard.addEventListener('close', () => { el('ob-key').value = ''; handoff = ''; });
   wizard.querySelectorAll('[data-ob-step]').forEach(button => button.addEventListener('click', () => showStep(Number(button.dataset.obStep))));
   bind('ob-next', () => showStep(step + 1)); bind('ob-back', () => showStep(step - 1));
+  bind('ob-defer', () => { wizard.close(); navigate('settings'); toast('安裝尚未完成，下次啟動會繼續。可先調整模型／CLI，或結束 Bridge 讓新安裝工具的 PATH 生效；請保存 KEY。'); });
   bind('ob-refresh', () => action('refresh'));
   bind('ob-cli-paths', () => action('cli-paths', {codex_path:el('ob-codex-path').value, claude_path:el('ob-claude-path').value}));
   for (const provider of ['codex','claude','cloudflare']) bind('ob-login-' + provider, () => action('login', {provider}));
