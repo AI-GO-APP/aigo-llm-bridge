@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.6-mac.1] - 2026-10-24
+
+- Mac source 安裝器的來源紀錄優先採用 Release ZIP 內的 `source-release.json`；只有來源目錄本身是 git repo 根目錄時才採用其 HEAD，修正 ZIP 解壓在其他 repo 內時誤記外層 commit。驗證失敗在建立版本目錄前即拒絕。
+
 ## [0.9.5-mac.1] - 2026-10-23
 
 - Mac 64 併發：Bridge 啟動時將檔案描述符軟上限由 LaunchAgent 預設 256 提高至 4096，修正 64 筆同時推論只有約 40 筆可執行的問題；新增 256 上限下 64 個真實子程序的 HTTP 回歸。
