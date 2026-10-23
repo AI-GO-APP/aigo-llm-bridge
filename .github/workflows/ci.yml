@@ -124,6 +124,11 @@ jobs:
             echo "只改了 CI、spikes 或測試,不需要發版"
             exit 0
           fi
+          # Product-document receipts do not create a new core/Mac binary release.
+          if ! printf '%s\n' "$changed" | grep -qvE '(\.md$|^docs/qa/assets/[^/]+\.(png|jpg|webp)$)'; then
+            echo "Only product documentation changed; binary versions stay unchanged."
+            exit 0
+          fi
           echo "會送到使用者端的檔案:"
           echo "$changed" | sed 's/^/  /'
           base_version=$(git show "$BASE_SHA:VERSION" | head -n1 | tr -d '\r ')
