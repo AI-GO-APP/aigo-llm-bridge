@@ -58,7 +58,7 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node --test packaging/windows/tests/platform.test.js
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          .desktop-build/venv/Scripts/python tools/verify_installer_update.py --output "$env:RUNNER_TEMP/bridge-update-proof" --vpk "$env:RUNNER_TEMP/bridge-vpk/vpk.exe"
+          .desktop-build/venv/Scripts/python tools/tests/run_native_update.py --output "$env:RUNNER_TEMP/bridge-update-proof" --vpk "$env:RUNNER_TEMP/bridge-vpk/vpk.exe"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           .desktop-build/venv/Scripts/python tools/verify_windows_onboarding.py --output "$env:RUNNER_TEMP/bridge-onboarding-power"
       - name: Build redistributable Windows internal package
@@ -75,7 +75,10 @@ jobs:
             ${{ runner.temp }}/bridge-installer/artifacts.json
             ${{ runner.temp }}/bridge-installer/self-test.json
             ${{ runner.temp }}/bridge-installer/security-runtime.json
-            ${{ runner.temp }}/bridge-dependency-audit.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-dependency-audit
+          path: ${{ runner.temp }}/bridge-dependency-audit.json
   announce:
     needs: package
     if: always() && inputs.announce && github.ref == 'refs/heads/main' && (needs.package.result == 'success' || inputs.published_version != '')
