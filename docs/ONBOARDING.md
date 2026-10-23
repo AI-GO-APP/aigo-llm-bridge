@@ -4,11 +4,11 @@
 
 ## 安裝者的完整路徑
 
-1. 先依 [BYO 準備事項](BYO-QUICKSTART.md) 備妥 Node.js 22+，在新開啟的終端機確認 `node --version`，再下載並啟動 Windows Setup；先安裝前置工具可避免背景程式沿用舊 PATH。核對 [Release](RELEASE.md) 的公開附件、大小／SHA256。現階段未有 Authenticode，依自己裝置政策確認未知發布者；不要停用系統防護。
+1. 先依 [BYO 準備事項](BYO-QUICKSTART.md) 備妥 Node.js 24.22.1+（或 22.23.4+），在新開啟的終端機確認 `node --version`，再下載並啟動 Windows Setup；先安裝前置工具可避免背景程式沿用舊 PATH。核對 [Release](RELEASE.md) 的公開附件、大小／SHA256。現階段未有 Authenticode，依自己裝置政策確認未知發布者；不要停用系統防護。
 2. 執行 Setup，首次開啟管理視窗進入五步精靈。可關閉整個視窗稍後續接；已完成安裝後正常啟動不再彈出，可從「連線與設定 → 安裝設定精靈」手動重開。
 3. 明確同意此電腦只調整插電自動睡眠／休眠，再按套用。鎖定、螢幕及實體按鍵設定保留。程式先保存原值、建立專用計畫、只改 AC 索引，逐項讀回；不會因單純開啟安裝包就修改電源。
 4. 檢查本地 LLM CLI。預設 Codex／ChatGPT 訂閱；Claude 選用，至少一來源可用。不需要將供應商憑證輸入 Bridge。
-5. 安裝 Node.js 22+、Wrangler 4.95.0，以自己的瀏覽器完成 Cloudflare OAuth。明確選定自有 account ID。
+5. 安裝 Node.js 24.22.1+（或 22.23.4+）、Wrangler 4.152.0，以自己的瀏覽器完成 Cloudflare OAuth。明確選定自有 account ID。
 6. 選「一鍵部署並綁定」，或把「AI IDE 協作 prompt」貼給自己的 AI IDE。完成後重新檢查，確認固定 workers.dev endpoint、裝置已配對與 Relay 在線。
 7. 建立長效 KEY（預設 Claude／Codex 模型全開），保存到自己的服務端 secret，複製含 endpoint、KEY、model 與相容限制的第三方串接訊息。不要保存到公開 repo 或前端 bundle。
 8. 選擇自己訂閱可用的模型，明確發出一次合成 HTTPS 測試。先 GET models，再 POST chat/completions；需回 PONG 且 `usage.cost` 是有限、非負數值。使用少量訂閱額度，未知結果不自動重試。失敗時留在精靈排錯，不能宣稱完成。
@@ -46,7 +46,7 @@ CLI 不在 PATH 時，在精靈步驟 2 的進階區指定原生 `.exe`。腳本
 依 [Wrangler 官方 OAuth／whoami 說明](https://developers.cloudflare.com/workers/wrangler/commands/general/)：
 
 ```powershell
-npm install -g wrangler@4.95.0
+npm install -g wrangler@4.152.0
 wrangler login
 wrangler whoami --json
 ```

@@ -16,6 +16,7 @@ spec.loader.exec_module(scan)
 FILL = "A1b2C3d4E5f6G7h8J9k0" * 3
 
 SHOULD_HIT = [
+    'sk-'+'br-'+'a'*8+'-'+'B'*43,
     "sk-" + "or-v1-" + FILL,
     "sk-" + "ant-api03-" + FILL,
     "gh" + "p_" + FILL,

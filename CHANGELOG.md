@@ -1,5 +1,13 @@
 # Changelog
 
+## Windows installer 0.8.1
+
+- Update the Windows runtime to Python 3.14.9, OpenSSL 3.5.9 and certifi 2026.10.19; enforce the security baseline before packaging.
+- Refuse Relay redirects and bound cloud response reads; keep device URL, client keys and metadata unchanged.
+- Send caller Claude instructions and schemas only over stdin, and validate schemas in bounded disposable processes with no payload logs.
+- Reserve Worker queue slots before body I/O; ship the corrected BYO template without deploying any installer's Worker.
+- Pin audited Wrangler/Node prerequisites, hash-lock Python artifacts, pin Windows/shared CI actions and add daily/pre-release dependency gates. No Mac release or Cloud deployment.
+
 ## Windows installer 0.8.0
 
 - Add resumable first-install onboarding for subscription CLI authorization, BYO Cloudflare login, explicit account selection, one-click deployment and AI IDE collaboration.
@@ -17,6 +25,10 @@
 0.x 期間 API 可能變動,每次變動都會寫在這裡。
 
 ## [Unreleased]
+
+## [0.6.7] - 2026-10-23
+
+Shared security fixes for the Windows 0.8.1 release: redirect refusal, bounded schema validation, minimal provider environment, stdin-only caller data for Claude, and an atomic BYO queue template. This core source version does not publish or upgrade macOS or any Cloudflare deployment.
 
 ## [0.6.6-mac.2] - 2026-10-23
 

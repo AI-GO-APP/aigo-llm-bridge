@@ -29,6 +29,8 @@ from . import providers
 class SetupError(Exception):
     pass
 
+WRANGLER_VERSION='4.152.0'
+
 
 def template_directory():
     if getattr(sys,'frozen',False):return Path(sys.executable).parent.parent/'cloudflare'
@@ -77,6 +79,13 @@ def configure(store,account_id=None,worker_name=None,template=None):
 def wrangler_command(explicit=None):
     node=shutil.which('node')
     if not node:raise SetupError('請先安裝 Node.js，再安裝 Wrangler；不需將 Cloudflare 憑證提供給發布方。')
+    try:
+        result=subprocess.run([node,'--version'],capture_output=True,timeout=10,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+        current=tuple(map(int,result.stdout.decode().strip().lstrip('v').split('.')))
+        minimum={22:(22,23,4),24:(24,22,1),26:(26,12,1)}.get(current[0])
+        if result.returncode or minimum is None or current<minimum:raise ValueError()
+    except (OSError,ValueError,IndexError,subprocess.SubprocessError):
+        raise SetupError('請更新 Node.js 至安全基線：22.23.4+、24.22.1+ 或 26.12.1+；不修改 Cloudflare 登入或裝置資料。') from None
     candidates=[Path(explicit)] if explicit else []
     candidates.extend([template_directory()/'node_modules/wrangler/bin/wrangler.js',
                        Path(os.environ.get('APPDATA',''))/'npm/node_modules/wrangler/bin/wrangler.js'])
@@ -85,8 +94,13 @@ def wrangler_command(explicit=None):
         resolved=Path(found).resolve()
         candidates.extend([resolved,resolved.parent/'node_modules/wrangler/bin/wrangler.js'])
     for path in candidates:
-        if path.suffix=='.js' and path.is_file():return [node,str(path.resolve())]
-    raise SetupError('找不到 Wrangler；可執行 npm install -g wrangler@4.95.0，或使用 --wrangler-js 指定其 JS 入口。')
+        if path.suffix=='.js' and path.is_file():
+            try:version=json.loads((path.parent.parent/'package.json').read_text(encoding='utf-8'))['version']
+            except (OSError,ValueError,KeyError):continue
+            if version!=WRANGLER_VERSION:
+                raise SetupError('請安裝經鎖檔與資安驗證的 Wrangler '+WRANGLER_VERSION+'；保留原 Cloudflare 登入與裝置設定。')
+            return [node,str(path.resolve())]
+    raise SetupError('找不到 Wrangler；可執行 npm install -g wrangler@'+WRANGLER_VERSION+'，或使用 --wrangler-js 指定其 JS 入口。')
 
 
 class Cloudflare:

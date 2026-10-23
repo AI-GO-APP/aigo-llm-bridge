@@ -9,7 +9,7 @@ Windows 新安裝優先使用 [PyInstaller＋Velopack Setup](WINDOWS-INSTALL-UPD
 ## 準備
 
 - 安裝 Windows 版，或取得完整 repo、安裝 `desktop_bridge/requirements.txt`。
-- 安裝 Node.js 與 Wrangler，例如 `npm.cmd install -g wrangler@4.95.0`。可指定 `--wrangler-js <完整JS入口>`；執行採 Node 原生入口，不以 shell 插入參數。
+- 安裝 Node.js 與 Wrangler，例如 `npm.cmd install -g wrangler@4.152.0`。可指定 `--wrangler-js <完整JS入口>`；執行採 Node 原生入口，不以 shell 插入參數。
 - 使用自己的 `wrangler.cmd login` 完成官方授權，再用 `wrangler.cmd whoami` 在本機查看目標帳戶。不要把 token、Global API key 或 `auth.json` 提供給發布方／聊天。
 - 全新 Cloudflare 帳戶還需完成免費 workers.dev 子網域的首次選名。若自動 deploy 失敗且帳戶從未啟用 Workers，先完成下方 plan，再於互動終端執行 `wrangler.cmd deploy --config (Join-Path $data 'byo-worker\wrangler.json')`，讓 Wrangler 官方提示註冊該帳戶的 workers.dev 子網域，再回來執行 `& $setup deploy --data-dir $data` 配對。不要改用臨時網址、其他人的帳戶或刪除原裝置資料；子網域選定後不要任意更名。BYO helper 的非互動部署不代答帳戶註冊問答。
 - Windows 指令使用 npm.cmd／wrangler.cmd，避免 PowerShell 把同名 .ps1 擋下；不需改全域 ExecutionPolicy。

@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from desktop_bridge.windows_updates import version, transport
 from build_resources import stage_documents
+from security_baseline import check as check_security_runtime
 
 
 def main(argv=None):
@@ -29,6 +30,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if sys.platform != 'win32':
         parser.error('Build this installer on Windows.')
+    runtime=check_security_runtime()
     version(args.version)
     if args.pack_id and (not args.local_probe or not args.pack_id.startswith('AIGO.LLMBridge.Probe.')):
         parser.error('Only local probes may override package identity.')
@@ -56,6 +58,7 @@ def main(argv=None):
     (out / '.bridge-windows-build').write_text('Windows installer build', encoding='utf-8')
     stage = out / 'stage'; stage.mkdir(exist_ok=True)
     (stage / 'windows-release.json').write_text(json.dumps(cfg), encoding='utf-8')
+    (out / 'security-runtime.json').write_text(json.dumps(runtime),encoding='utf-8')
     stage_documents(ROOT, stage, cfg['commit'])
     shutil.copytree(ROOT / 'desktop_bridge/web', stage / 'web', dirs_exist_ok=True)
     with (stage / 'web/style.css').open('a', encoding='utf-8') as stream:
@@ -71,6 +74,7 @@ def main(argv=None):
     test = subprocess.check_output([str(app / 'aigo-bridge.exe'), '--self-test'], cwd=out, text=True)
     report = json.loads(test.strip().splitlines()[-1])
     assert report['version'] == cfg['version'] and report['resources'] and report['ca_bundle']
+    assert report['security_runtime']==runtime, 'Frozen runtime differs from the verified security baseline.'
     (out / 'self-test.json').write_text(json.dumps(report), encoding='utf-8')
     vpk = ['dotnet', args.vpk] if args.vpk.endswith('.dll') else [args.vpk]
     subprocess.run(vpk + ['--skip-updates', '--yes', 'pack', '--packId', cfg['pack_id'],

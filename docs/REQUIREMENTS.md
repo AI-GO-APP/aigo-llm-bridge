@@ -40,3 +40,5 @@
 ## 變更流程
 
 新增需求附 R 編號與驗收案例。涉及資料、API、UI、身分或更新的變更同時更新相應文件；取捨加 D 編號。完成必須區分 source、CI、安裝包、已發布及正式已安裝，禁止以測試成功代替交付。
+
+Windows 0.8.1 的安全邊界、依賴與 Schema／CLI 傳輸限制見 [SECURITY](SECURITY.md)；更新不重新授權 CLI、不重建 endpoint 或 KEY，也不自動部署 Worker。

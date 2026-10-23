@@ -12,7 +12,7 @@ from .errors import BridgeError
 
 
 class Child:
-    def __init__(self, command, cwd, env):
+    def __init__(self, command, cwd, env, *, memory_limit=None):
         self.job=None
         flags=0
         if os.name=="nt":
@@ -38,6 +38,9 @@ class Child:
             kernel.CloseHandle.argtypes=[w.HANDLE]
             job=kernel.CreateJobObjectW(None,None)
             limits=Extended(); limits.Basic.Flags=0x2000  # KILL_ON_JOB_CLOSE
+            if memory_limit is not None:
+                limits.Basic.Flags |= 0x100  # JOB_OBJECT_LIMIT_PROCESS_MEMORY
+                limits.ProcessMemory=memory_limit
             if not job or not kernel.SetInformationJobObject(job,9,ctypes.byref(limits),ctypes.sizeof(limits)) or not kernel.AssignProcessToJobObject(job,w.HANDLE(int(self.proc._handle))):
                 if job: kernel.CloseHandle(job)
                 self.proc.terminate(); self.proc.wait(timeout=10)

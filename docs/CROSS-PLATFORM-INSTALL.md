@@ -4,8 +4,8 @@
 
 ## 前置條件
 
-- Python 3.12+（含 venv/pip）、Node.js 22+、網路，以及安裝者自己的 Cloudflare 帳戶。
-- 安裝 Wrangler：Windows `npm.cmd install -g wrangler@4.95.0`；macOS `npm install -g wrangler@4.95.0`。若沒有全域安裝權限，可在 repo 的 cloudflare 目錄安裝相同版本，helper 會找本機 node_modules。
+- Python 3.12+（含 venv/pip）、Node.js 24.22.1+（或 22.23.4+）、網路，以及安裝者自己的 Cloudflare 帳戶。
+- 安裝 Wrangler：Windows `npm.cmd install -g wrangler@4.152.0`；macOS `npm install -g wrangler@4.152.0`。若沒有全域安裝權限，可在 repo 的 cloudflare 目錄安裝相同版本，helper 會找本機 node_modules。
 - 安裝者自行完成 `wrangler login`、`wrangler whoami`。Windows 使用 `wrangler.cmd`。全新帳戶還需依官方互動提示註冊 workers.dev 子網域；部署不需要購買網域，亦不會代為升級帳單方案。
 - 安裝者自行安裝 Codex CLI，並以自己的 ChatGPT 訂閱登入；預設串接示範選擇 Codex 模型。Claude 是選用來源；不要登出、切換或操作已在使用的 Claude Code。`doctor` 只讀取登入狀態。
 - macOS 的登入鑰匙圈需要可用；首次存取可能顯示系統授權提示，由使用者處理。SSH 的未解鎖 Keychain 不能視為可完成首次部署。程式不改用明文檔繞過此限制。

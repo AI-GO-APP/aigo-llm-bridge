@@ -3,6 +3,10 @@ import sys
 
 
 def main():
+    if sys.argv[1:]==['--schema-validate']:
+        from desktop_bridge.schema_guard import main as validate
+        validate()
+        return 0
     import velopack
     from desktop_bridge.windows_onboarding import record_install
     velopack.App().set_auto_apply_on_startup(False).on_after_install_fast_callback(record_install).run()
@@ -22,6 +26,11 @@ def main():
         result = {'version': cfg['version'], 'pack_id': cfg['pack_id'],
                   'resources': (Path(sys._MEIPASS) / 'desktop_bridge/web/index.html').is_file(),
                   'ca_bundle': Path(certifi.where()).is_file()}
+        import ssl
+        import hashlib
+        result['security_runtime']={'python':'.'.join(map(str,sys.version_info[:3])),
+            'openssl':ssl.OPENSSL_VERSION,'certifi':certifi.__version__,
+            'ca_sha256':hashlib.sha256(Path(certifi.where()).read_bytes()).hexdigest()}
         root = Path(sys._MEIPASS)
         documents = list((root/'docs').rglob('*.md')) + [root/'AGENTS.md', root/'CLAUDE.md', root/'skills/byo-cloudflare/SKILL.md']
         missing = []

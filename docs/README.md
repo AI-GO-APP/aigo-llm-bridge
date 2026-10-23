@@ -16,6 +16,7 @@
 | [ONBOARDING](ONBOARDING.md) | 每台 Windows 的首次設定、CLI 授權、Worker、KEY、電源同意與還原 |
 | [CI-CD](CI-CD.md) | 分平台 workflows、測試與發布閘門、權限及可重現建置 |
 | [RELEASE](RELEASE.md) | 發布者操作、更新公告、強制更新、續期、故障處理及收據 |
+| [SECURITY](SECURITY.md) | 現行信任邊界、原文不落地限制、schema 預算、依賴與安全更新 |
 
 需求說明「應該做到什麼」；架構、資料與 API 文件說明實作契約；決策說明原因；驗收說明實際做到哪裡。衝突時不能自動把文件當成執行結果，也不能默默改需求來配合程式，須修正並留下紀錄。
 

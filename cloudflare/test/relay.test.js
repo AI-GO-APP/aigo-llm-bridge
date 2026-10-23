@@ -5,6 +5,25 @@ const device='x'.repeat(48);
 const digest=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(v=>v.toString(16).padStart(2,'0')).join('');
 const req=(path,body,token=device)=>new Request('https://test.workers.dev'+path,{method:'POST',headers:{Authorization:'Bearer '+token},body:JSON.stringify(body)});
 
+test('queue reserves capacity before asynchronous body reads and releases failures',async()=>{
+ const relay=new DeviceRelay({}, {DEVICE_KEY:device});const key='synthetic-queue-key';
+ relay.keys.add(await digest(key));relay.lastSeen=Date.now();
+ const release=[];
+ relay.body=async()=>new Promise(resolve=>release.push(resolve));
+ const work=Array.from({length:12},()=>relay.fetch(req('/api/v1/chat/completions',{},key)));
+ await new Promise(resolve=>setTimeout(resolve,20));
+ assert.equal(release.length,9);assert.equal(relay.reading,9);
+ release.forEach(resolve=>resolve('{}'));
+ await new Promise(resolve=>setTimeout(resolve,20));
+ assert.equal(relay.pending.size,9);assert.equal(relay.reading,0);
+ for(const item of relay.pending.values()){clearTimeout(item.timer);item.resolve(new Response('{}'));}
+ relay.pending.clear();const responses=await Promise.all(work);
+ assert.equal(responses.filter(r=>r.status===429).length,3);
+ relay.body=async()=>{throw Error('synthetic body failure')};
+ assert.equal((await relay.fetch(req('/api/v1/chat/completions',{},key))).status,400);
+ assert.equal(relay.reading,0);assert.equal(relay.pending.size,0);
+});
+
 test('outer build header preserves the original actor identity and response',async()=>{
  let actor;
  const env={DEVICE_KEY:device,DEVICE:{idFromName(name){actor=name;return 'existing-id';},get(id){
@@ -12,7 +31,7 @@ test('outer build header preserves the original actor identity and response',asy
  }}};
  const res=await worker.fetch(new Request('https://test.workers.dev/health'),env);
  assert.equal(actor,'primary-device');
- assert.equal(res.headers.get('X-Bridge-Relay-Version'),'0.3.4-relay');
+ assert.equal(res.headers.get('X-Bridge-Relay-Version'),'0.3.5-relay');
  assert.equal(res.headers.get('Cache-Control'),'no-store');
  assert.equal((await res.json()).version,'legacy');
 });
