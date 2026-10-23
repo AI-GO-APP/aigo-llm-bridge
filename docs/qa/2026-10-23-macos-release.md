@@ -15,3 +15,6 @@
 - 本機 `pytest desktop_bridge/tests packaging/windows/tests tools/tests desktop_platform/macos/tests -q`：264 passed／5 skipped；新 package 測試驗 allowlist、現行來源、checksum／commit／可執行入口，以及 dirty 包不能宣布。
 - 真 Cocoa `tools/verify_macos_console.py`：48 個 light／dark × 1200／480px 版面變體，六頁與五步精靈無全頁橫向溢出；真剪貼簿讀回後還原、CSV 真 NSSavePanel Cancel／自動選中文檔名 Save、導覽界線、KEY 清空、關 viewer 後 HTTP 仍 200 全通過。
 - Node relay 8、Windows platform 2；產品文件、版本一致、secret scan、diff check 全通過。private terms 由 repo-secret CI 放行，不偽造本機清單。
+
+- clean commit `5649afa` 的現行 ZIP 已在本機從解壓的 Install.command 真安裝到獨立目錄；安裝 manifest 保留原 Release SHA，真 HTTP 新版、固定全機鎖、第二 profile 無 DB、正常停止後 API 關閉全通過。
+- 原生畫面檢視找出 Mac 更新卡仍稱沒有公開包，已改為 Release source ZIP／手動下載說明；重跑完整 48 畫面及原生操作全通過。
