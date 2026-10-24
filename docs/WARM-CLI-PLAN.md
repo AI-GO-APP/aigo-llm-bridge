@@ -47,3 +47,5 @@ python tools/benchmark_warm_cli.py --apply --idle-seconds 600 --requests 3 --res
 正式 Chat 與 Decisions 共用 Runtime pool，每題各用新程序。取消、逾時、登出世代變更或程序失效均不重送推論；空目錄／管線清理完成才釋放名額，失敗保留 quarantined 並停止補池／拒絕新租用。暫停停止補池並清 idle；已受理工作可排空，停止時取消並關閉全部自有程序。TTL 120 秒，初始化期限 3 秒，補池退避 0.1–5 秒。
 
 公開端對照用同版程式、同模型短輸入，以 resident=0 與 2 各做三筆 Chat、三筆 Decisions。每筆核對 receipt.execution、實際模型、成本及完整計量；warm arm 每筆前確認 idle=2。工具 `benchmark_api_latency.py --provider codex` 不重送推論；不支援任意 token 上限，CLI 固定指令／reasoning 用量全數列入。公開 HTTPS 延遲含網路／Relay，另記 Bridge 分段，不能從六筆單一模型宣稱 64 burst 收益或推廣至 Claude。最終保留 owner 指定 2/64，供後續外部使用者獨立基準。
+
+0.9.9 已發布、從公開 ZIP 更新原機並完成上述小量正式 API 對照；測後保留 2/64，詳見 [實測與來源收據](qa/2026-10-24-macos-runtime-warm-pool.md)。warm 命中 6/6，不以此取代本文件一般放行門檻。

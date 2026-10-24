@@ -129,3 +129,5 @@ Schema aggregate ≤256 KiB／8192 nodes／深度 24，不接受任何 $ref／$d
 0.9.9-mac.1 新增 loopback `/health` 的 `warm_pool`：resident_target、idle、starting、active、closing、quarantined、total、limit、peak、warm_hits、cold_starts、refill_failures、paused、unavailable、waiting_leases；只含數值／狀態，`warm_supported_providers` 目前 Mac 為 codex。每個 API receipt 的 `execution` 含本請求 warm_hits／cold_starts（多題 Decisions 加總），成功與失敗都保留，與 billing_status 分開；舊列當作未觀測零值，不代表歷史冷啟動已量測。
 
 本機管理認證的 `/manage/settings` 可專用提交 `{inference_resident:2,inference_workers:64,inference_pending:64}`；必須 paused＋idle，整數 `0 ≤ resident ≤ workers ≤ pending ≤ 64`，workers 至少 1。省略 resident 的舊雙欄位請求保留原常駐數量；若新 workers 太小即拒絕，不暗中裁切。UI 使用同一 API。這不是公開推論參數，不增加 Worker 路由；一般 Chat／Decisions body 不變。
+
+`warm_pool.created` 是 Codex 資源成功完成初始化的累計數；cold_starts 是租用冷啟動名額次數（也含 Claude），兩者均不是供應商 RPC 數或整棵程序樹程序數。

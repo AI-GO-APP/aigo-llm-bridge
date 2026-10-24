@@ -1,6 +1,6 @@
 # Mac BYO source Release：安裝、更新與發布
 
-最新已發布並正式安裝驗證的版本為 [0.9.8-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.8-mac.1)。公開附件／來源 hash、原 profile 更新、公開小量 Chat／Decisions 延遲與 Key 保留見 [0.9.8 收據](qa/2026-10-24-macos-warm-cli-release.md)。warm CLI 工具預設關閉，正式 Runtime 不建立常駐池；管理 UI 與完整效能放行仍待 #39。0.9.7 的 64 HTTPS／階段 0–2 歷史驗收見 [前版收據](qa/2026-10-24-macos-queue-release.md)。本機更新仍不會自動部署任何安裝者 Worker。
+最新已發布並正式安裝驗證為 [0.9.9-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.9-mac.1)。公開附件、原 profile 更新與正式 API 常駐 0／2 對照見 [0.9.9 收據](qa/2026-10-24-macos-runtime-warm-pool.md)。Mac owner 明確選擇 2/64 operator 試驗；其他新安裝預設常駐 0，Claude cold，完整尖峰／跨平台放行仍追蹤 issue 39。前版 [0.9.8 收據](qa/2026-10-24-macos-warm-cli-release.md)為工具與冷啟動歷史基線。本機更新不自動部署 Worker。
 
 0.9.4-mac.1 候選整合 PR #32 的 64 併發；本輪先驗基本流程；owner 後續授權本機 Claude 64 併發測試。交付狀態見 [Mac 併發收據](qa/2026-10-23-macos-concurrency.md)。
 

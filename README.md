@@ -61,3 +61,5 @@ python tools/lint_terms.py --require
 
 
 標準 API 容量為每裝置 64 筆同時推論，Claude／Codex 與 Chat／Jev Decisions 共用；可直接並行 POST。詳見 [併發規格及驗證邊界](docs/CONCURRENCY.md)。
+
+Mac 0.9.9 已發布並更新原安裝；Codex 可明確選擇單次使用常駐，預設 0，管理台設定 resident 不得超過執行併發。owner 的 2/64 公開 Chat／Decisions 對照與未驗邊界見 [收據](docs/qa/2026-10-24-macos-runtime-warm-pool.md)。Claude 仍 cold。
