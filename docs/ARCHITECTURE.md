@@ -106,3 +106,7 @@ Runtime 擁有 StatusReads 與 LaunchPacer：前者僅合併時間重疊的唯�
 ## #39 單次使用 CLI
 
 0.9.9 Runtime 擁有 `warm_pool.py`／`warm_runtime.py`，預設 target=0。Mac 可明確設定 Codex initialize／initialized 常駐，caller 模型／內容只在租用後的 ephemeral thread／turn 進入；一程序只供一題，完成即銷毀。兩 provider 的 active＋idle＋starting＋closing 共用 inference_workers；Claude 取得 cold 名額，滿載先移除 idle Codex。waiting lease 優先於補池。pause 清 idle 並停止補池，stop 清理全部；auth generation／TTL／健康檢查不符則淘汰，清理失敗隔離並 fail closed。Budget 累計每請求 warm_hits／cold_starts，終態寫 metadata 並由 receipt.execution 揭露。管理 API／UI／Mac CLI 依 paused＋idle 原子設定三值；數量不代表完整效能門檻通過。詳見 [warm CLI 計畫](WARM-CLI-PLAN.md)。
+
+## Codex 推論專用上下文（0.9.10-mac.1）
+
+`codex_command` 僅對 Bridge 子程序停用 goals，不改個人 config／登入。冷啟動與 warm lease 都在 claim 前，以同一 app-server 對空 cwd 執行一次唯讀 `skills/list(forceReload=true)`，用有界、經驗證的完整 path 清單產生 `thread/start.config["skills.config"]` 停用項。每個 thread 都重新查詢，不沿用常駐建立時的技能快取；不另開 metadata CLI、不使用 `skills/config/write`，不傳入 caller 內容。清單異常在 thread／turn 前失敗，查詢納入 provider_setup_ms 及原 request deadline／cancel。warm 補池仍只做 initialize／initialized。每程序一題、ephemeral／空 cwd／用量核對及清理契約不變。此設定只精簡已驗證的 goals／技能注入，尚有 Codex 內建工具、權限與環境上下文；不宣稱完整零工具 token。[D-41](DECISIONS.md)、[驗收](qa/2026-10-24-macos-codex-context.md)。

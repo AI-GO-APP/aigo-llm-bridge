@@ -80,3 +80,6 @@ D-29（2026-10-23）：公開 API 的交付證據分為本機支援、無 Key �
 
 
 **D-40 Mac operator 試驗 2026-10-24：正式 API 可明確啟用 2/64。** owner 在 0.9.8 發布後要求實際常駐開關對照，故將 Codex initialize-only pool 接入 Runtime；新安裝維持零，不以小樣本取代 D-39 完整放行。兩 provider 推論 root 共用容量，Claude 無已驗 ready 邊界，維持 cold；不足名額時先清 idle，補池不超額。三設定由 paused／idle 專用 API 原子套用，管理台與 Mac CLI 同步，receipt 記真正 warm／cold 次數。分開記錄實作、owner 原機試驗與未通過的跨平台／尖峰門檻，後續外部測速可使用同一入口／原 Key。
+
+
+**D-41 採用 2026-10-24：只在 Bridge 推論程序精簡 goals／技能。** issue 46 的短 Chat 約 4.2k 輸入主要包含 Codex harness；Mac 受控 loopback 已驗證 goals=false 與依 `skills/list` path 停用可移除對應宣告。每題使用同一 app-server 在 claim 前重新唯讀查詢，再以 thread/start typed dotted config 覆寫技能，避免第二程序、常駐舊清單與寫入個人設定；未知清單 fail closed，等待沿用原期限與取消。保留訂閱登入、每程序一題、ephemeral、無本機工具執行與完整計量。剩餘內建工具／權限／環境仍有固定成本；不更改管理員 requirements、不呼叫私有 provider endpoint、不跨 caller 重用 thread、不以未驗證旗標宣稱全部移除。後續若需純推論工具集合，另驗官方支援或上游變更；Decisions 合題另訂契約。Mac 實機與發布狀態見 [收據](qa/2026-10-24-macos-codex-context.md)，Windows 尚無此輪原生訂閱驗收。

@@ -131,3 +131,7 @@ Schema aggregate ≤256 KiB／8192 nodes／深度 24，不接受任何 $ref／$d
 本機管理認證的 `/manage/settings` 可專用提交 `{inference_resident:2,inference_workers:64,inference_pending:64}`；必須 paused＋idle，整數 `0 ≤ resident ≤ workers ≤ pending ≤ 64`，workers 至少 1。省略 resident 的舊雙欄位請求保留原常駐數量；若新 workers 太小即拒絕，不暗中裁切。UI 使用同一 API。這不是公開推論參數，不增加 Worker 路由；一般 Chat／Decisions body 不變。
 
 `warm_pool.created` 是 Codex 資源成功完成初始化的累計數；cold_starts 是租用冷啟動名額次數（也含 Claude），兩者均不是供應商 RPC 數或整棵程序樹程序數。
+
+## Codex 輸入上下文（0.9.10-mac.1）
+
+Chat／Decisions 的外部 body、模型、schema 與 receipt 計量不變。Bridge 專用 Codex 子程序停用 goals，並在每題 ephemeral thread 停用唯讀列出的技能，不改個人 CLI 設定；此查詢不是推論，納入 provider_setup_ms。技能清單結構無法確認時回 503 `codex_context_unavailable`，在 thread／turn 前停止；取消、逾時及 provider RPC 錯誤沿用既有分類。warm 仍只省初始化，不攤薄每題上下文。usage.prompt_tokens／input_tokens 包含 CLI 真實回報的全部輸入；剩餘工具／環境上下文尚未消除，cached_tokens 是其中子集，不可再加回總輸入。多題 Decisions 仍逐題、逐程序計量，不能當作單次推論或共享 thread。小樣本延遲與 mock token 估算的限制見 [驗收](qa/2026-10-24-macos-codex-context.md)。

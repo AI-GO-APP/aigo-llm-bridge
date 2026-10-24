@@ -44,3 +44,5 @@ BRIDGE_APP="$("$BRIDGE_PY" -c 'import json,sys; print(json.load(open(sys.argv[1]
 發布權限只限 Mac GitHub Release，不部署任何安裝者 Worker、不變更 Windows 更新政策、不操作其他 Cloud 專案。根 release.yml 持續略過 Mac 版號，避免把歷史 worker 附件當作現行 Mac 安裝包。
 
 0.9.7-mac.1 已完成 #36 階段 0–2、公開發布及原安裝升級。[效能門檻](PERFORMANCE-PLAN.md)、[實作與負面結果](qa/2026-10-24-macos-queue-decisions.md)及[發布收據](qa/2026-10-24-macos-queue-release.md)分層記錄，warm CLI 不隨本批啟用。
+
+0.9.10-mac.1 候選依 issue 46 精簡 Bridge Codex goals／技能上下文；此節尚非公開發布證明。完整診斷、負面測試與後續發布／原安裝同題對照見 [上下文收據](qa/2026-10-24-macos-codex-context.md)。原 Worker 與 2/64 profile 不因上下文修補重建。

@@ -1,5 +1,6 @@
 """One app-server connection, one inference; pipes and events remain in RAM."""
 import json
+from pathlib import Path
 import queue
 import threading
 import time
@@ -27,7 +28,7 @@ class CodexSession:
         self.closed = False
         self.closing = False
         self.close_lock = threading.Lock()
-        self.sent = {'initialize': 0, 'initialized': 0, 'thread/start': 0, 'turn/start': 0}
+        self.sent = {'initialize': 0, 'initialized': 0, 'skills/list': 0, 'thread/start': 0, 'turn/start': 0}
         self.idle_work_events = 0
         self.readers = [threading.Thread(target=self._reader, daemon=True),
                         threading.Thread(target=self._drain, daemon=True)]
@@ -97,9 +98,44 @@ class CodexSession:
                 raise BridgeError(503, 'session_isolation', 'CLI 程序不可重用或移至其他工作目錄。')
             self.claimed = True
 
+    def inference_config(self, cancel, deadline):
+        """Read this empty cwd's current catalog once; never write personal config.
+
+        Do this immediately before claim, including for a resident process, so
+        newly installed skills are included. Only metadata crosses this RPC;
+        caller content is sent later to the single ephemeral thread.
+        """
+        listing = self.response(self.send('skills/list',
+            {'cwds': [self.cwd], 'forceReload': True}, cancel, deadline), cancel, deadline)
+        def invalid():
+            raise BridgeError(503, 'codex_context_unavailable', '無法確認 Codex 推論專用技能設定，未啟動推論。')
+        if not isinstance(listing, dict) or not isinstance(listing.get('data'), list) or len(listing['data']) != 1:
+            invalid()
+        group = listing['data'][0]
+        if (not isinstance(group, dict) or group.get('cwd') != self.cwd
+                or group.get('errors') != [] or not isinstance(group.get('skills'), list)
+                or len(group['skills']) > 512):
+            invalid()
+        paths = set()
+        for skill in group['skills']:
+            if not isinstance(skill, dict) or type(skill.get('enabled')) is not bool:
+                invalid()
+            path = skill.get('path')
+            if (not isinstance(path, str) or not 1 <= len(path) <= 4096 or '\x00' in path
+                    or not Path(path).is_absolute()):
+                invalid()
+            paths.add(path)
+        # thread/start accepts dotted TOML overrides as typed JSON values.
+        # skills/config/write would persist changes and must never be used.
+        return {'project_doc_max_bytes': 0, 'features.goals': False,
+                'skills.config': [{'path': path, 'enabled': False} for path in sorted(paths)]}
+
     def send(self, method, params, cancel, deadline, *, notification=False):
         check_cancel(cancel, deadline)
-        if not self.claimed and method not in {'initialize', 'initialized'}:
+        if method == 'skills/list' and (self.claimed or self.sent[method]
+                or params != {'cwds': [self.cwd], 'forceReload': True} or notification):
+            raise BridgeError(503, 'session_isolation', '技能查詢只可在本次空工作目錄啟動推論前執行一次。')
+        if not self.claimed and method not in {'initialize', 'initialized', 'skills/list'}:
             raise BridgeError(503, 'session_isolation', '待命 CLI 不可建立工作。')
         if method in self.sent:
             self.sent[method] += 1
