@@ -5,6 +5,8 @@ import threading
 import time
 
 import pytest
+import json
+from types import SimpleNamespace
 
 from desktop_bridge import providers
 from desktop_bridge.errors import BridgeError
@@ -12,6 +14,47 @@ from desktop_bridge.execution_budget import Budget, scope
 from desktop_bridge.process import Child
 
 SETTINGS={'timeout_s':3}
+
+
+@pytest.mark.parametrize('mode', ['negative_then_ready','generation_then_stable','always_negative','always_changing'])
+def test_cold_claude_revalidates_metadata_once_and_starts_at_most_one_inference(monkeypatch,tmp_path,mode):
+    generation=[0];queries=[];children=[]
+    monkeypatch.setattr(providers,'auth_generation',lambda *_:str(generation[0]))
+    def status(*args,**kwargs):
+        queries.append(True)
+        if mode=='always_changing' or (mode=='generation_then_stable' and len(queries)==1):generation[0]+=1
+        return {'ready':mode!='always_negative' and not (mode=='negative_then_ready' and len(queries)==1)}
+    monkeypatch.setattr(providers,'status',status)
+    monkeypatch.setattr(providers,'executable',lambda *_:'synthetic-cli')
+    class FakeChild:
+        proc=SimpleNamespace(returncode=0)
+        def __init__(self,*args):children.append(True)
+        def communicate(self,*args):return json.dumps({'type':'result','result':'PONG','usage':{'input_tokens':3,'output_tokens':2},'modelUsage':{'fixture':{}}}).encode()
+        def close(self):pass
+    monkeypatch.setattr(providers,'Child',FakeChild)
+    class Settings(dict):pass
+    settings=Settings(timeout_s=3);settings.status_reads=providers.StatusReads()
+    spec=SimpleNamespace(model={'native':'fixture'},system='',schema=None,effort=None,messages=[{'parts':[{'type':'text','text':'Synthetic'}]}])
+    succeeds=mode in {'negative_then_ready','generation_then_stable'}
+    if succeeds:assert providers.call_claude(spec,settings,threading.Event(),tmp_path)[0]=='PONG'
+    else:
+        with pytest.raises(BridgeError) as error:providers.call_claude(spec,settings,threading.Event(),tmp_path)
+        assert error.value.category=='provider_authentication'
+    assert len(queries)==2 and len(children)==int(succeeds)
+    assert sum(settings.status_reads.snapshot().values())==1
+
+
+def test_cold_claude_cancel_before_recheck_and_codex_never_rechecks(monkeypatch,tmp_path):
+    monkeypatch.setattr(providers,'auth_generation',lambda *_:'same')
+    for provider in ('claude','codex'):
+        cancel=threading.Event();calls=[]
+        def status(*args,**kwargs):calls.append(True);cancel.set();return {'ready':False}
+        monkeypatch.setattr(providers,'status',status)
+        if provider=='claude':
+            with pytest.raises(BridgeError) as error:providers.inference_status(provider,SETTINGS,cancel,tmp_path)
+            assert error.value.category=='cancelled'
+        else:assert not providers.inference_status(provider,SETTINGS,cancel,tmp_path)['ready']
+        assert len(calls)==1
 
 
 def test_64_overlapping_reads_share_one_check_and_next_read_is_fresh(monkeypatch,tmp_path):

@@ -76,11 +76,23 @@ def status(provider,settings,timeout=20,*,cancel=None,cwd=None):
         return {"provider":provider,"ready":False,"method":"CLI 不可用／未登入"}
 
 
+class GenerationChanged(BridgeError):
+    def __init__(self):
+        super().__init__(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
+
+
 class StatusReads:
     """Share only overlapping read-only auth checks; no TTL, credentials or warm CLI."""
     def __init__(self):
         self.lock=threading.Lock()
         self.inflight={}
+        self.rechecks={'not_ready':0,'generation_changed':0}
+
+    def rechecked(self,reason):
+        with self.lock:self.rechecks[reason]+=1
+
+    def snapshot(self):
+        with self.lock:return dict(self.rechecks)
 
     def read(self,provider,settings,cancel,cwd):
         def alive():
@@ -101,7 +113,7 @@ class StatusReads:
                 value=status(provider,settings,timeout=min(20,settings.get('timeout_s')),cancel=cancel,cwd=cwd)
                 alive()
                 if generation!=auth_generation(provider,settings):
-                    raise BridgeError(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
+                    raise GenerationChanged()
                 entry['value']=value
                 return dict(value)
             finally:
@@ -112,14 +124,14 @@ class StatusReads:
         while not entry['done'].wait(.05):alive()
         alive()
         if generation!=auth_generation(provider,settings):
-            raise BridgeError(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
+            raise GenerationChanged()
         if entry['value'] is None:
             # Another caller's cancellation must not cancel this request. This is
             # a fresh metadata read, never a retry of an inference call.
             value=status(provider,settings,timeout=min(20,settings.get('timeout_s')),cancel=cancel,cwd=cwd)
             alive()
             if generation!=auth_generation(provider,settings):
-                raise BridgeError(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
+                raise GenerationChanged()
             return value
         return dict(entry['value'])
 
@@ -145,16 +157,32 @@ class LaunchPacer:
 
 
 def inference_status(provider,settings,cancel,cwd,*,pace=False):
-    generation=auth_generation(provider,settings)
     reads=getattr(settings,'status_reads',None)
-    value=(reads.read(provider,settings,cancel,cwd) if reads is not None else
-        status(provider,settings,timeout=min(20,settings.get('timeout_s')),cancel=cancel,cwd=cwd))
+    attempts=2 if provider=='claude' else 1
+    reason=None
+    for attempt in range(attempts):
+        check()
+        if cancel is not None and cancel.is_set():raise BridgeError(499,'cancelled','請求已取消。')
+        if attempt and reads is not None:reads.rechecked(reason)
+        generation=auth_generation(provider,settings)
+        try:
+            value=(reads.read(provider,settings,cancel,cwd) if reads is not None else
+                status(provider,settings,timeout=min(20,settings.get('timeout_s')),cancel=cancel,cwd=cwd))
+        except GenerationChanged:
+            if attempt+1==attempts:raise
+            reason='generation_changed'
+            continue
+        if value.get('ready') or attempt+1==attempts:break
+        # Cold Claude has not received caller content or started its inference
+        # CLI. Discard a negative metadata verdict and read once more, never
+        # bypassing auth, retrying a model, or reusing a stale warm session.
+        reason='not_ready'
     if value.get('ready'):
         pacer=getattr(settings,'launch_pacer',None)
         if pace and pacer is not None:pacer.wait(cancel)
         check()
         if generation!=auth_generation(provider,settings):
-            raise BridgeError(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
+            raise GenerationChanged()
     return value
 
 
