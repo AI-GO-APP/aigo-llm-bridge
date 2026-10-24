@@ -8,6 +8,8 @@ from desktop_bridge import providers
 from desktop_bridge.decision_contract import DecisionSpec
 from desktop_bridge.decisions import answer
 from desktop_bridge.errors import BridgeError
+from desktop_bridge.service import Runtime
+from desktop_bridge.store import Store
 
 
 @pytest.mark.parametrize('kind,criteria,value',[
@@ -43,5 +45,19 @@ def test_generated_schema_requires_native_structured_output(monkeypatch,tmp_path
     monkeypatch.setattr(providers,'status',lambda *_,**kwargs:{'ready':True})
     monkeypatch.setattr(providers,'executable',lambda *_:'synthetic-cli')
     monkeypatch.setattr(providers,'Child',lambda *_:SimpleNamespace(proc=SimpleNamespace(returncode=0),communicate=lambda *_:raw,close=lambda:None))
-    with pytest.raises(BridgeError) as error:providers.call_claude(spec,{'timeout_s':2},threading.Event(),tmp_path)
+    text,usage,*_=providers.call_claude(spec,{'timeout_s':2},threading.Event(),tmp_path)
+    assert text=='' and usage['prompt_tokens']==usage['completion_tokens']==1
+    with pytest.raises(BridgeError) as error:answer(text,question,spec.schema)
     assert error.value.status==502 and error.value.category=='invalid_structured_output'
+    store=Store(tmp_path/'profile')
+    model=next(m for m in store.get('models') if m['provider']=='claude')
+    raw=json.dumps({'type':'result','result':'{"noul":0.9}','usage':{'input_tokens':1,'output_tokens':1},'modelUsage':{model['native']:{}}}).encode()
+    store.set('models',[model]);kid,key=store.create_key('synthetic')
+    runtime=Runtime(store,runner=lambda spec,settings,cancel:providers.call_claude(spec,settings,cancel,tmp_path))
+    try:
+        task=runtime.submit({'model':model['id'],'state':'synthetic','questions':{'q':question}},store.authenticate(key),100,protocol='decisions')
+        assert task.done.wait(2) and task.error.category=='invalid_structured_output'
+        row=store.request(task.id,kid)
+        assert row['calls_started']==row['calls_completed']==row['billing_complete']==1
+        assert row['cost_usd']>0
+    finally:runtime.stop();store.close()

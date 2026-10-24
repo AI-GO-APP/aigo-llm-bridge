@@ -329,9 +329,9 @@ def call_claude(spec,settings,cancel,cwd):
             raise BridgeError(502,"invalid_provider_response","CLI 回應不是合法 JSON。") from None
         if child.proc.returncode or result.get("is_error"):
             raise classify(str(result.get("result", "")))
-        if generated_schema and result.get('structured_output') is None:
-            raise BridgeError(502,'invalid_structured_output','CLI 未返回原生固定結構輸出。')
-        text=result.get("result") or ""
+        # Preserve verified usage before Runtime rejects a missing native output.
+        # Empty text fails the fixed parser; plaintext is never a native fallback.
+        text="" if generated_schema and result.get('structured_output') is None else result.get("result") or ""
         if "structured_output" in result and result["structured_output"] is not None:
             text=json.dumps(result["structured_output"],ensure_ascii=False,separators=(",",":"))
         elif spec.schema:
