@@ -96,8 +96,10 @@ def test_real_tls_reuse_and_untrusted_certificate_rejected(server, tmp_path, mon
     try:
         for _ in range(3): assert pool.json(base, '/', {}, 'synthetic') == {}
         assert pool.snapshot()['connections_created'] == 1 and pool.snapshot()['reused_requests'] == 2
+        large = ('合成'*400_000).encode()
+        assert pool.exchange(base, '/', {}, large, limit=len(large))[1] == large
         with pytest.raises(TransportError, match='^io$'): untrusted.json(base, '/', {}, 'synthetic')
-        assert len(http.received) == 3
+        assert len(http.received) == 4
     finally:
         pool.close(); untrusted.close(); http.shutdown(); http.server_close(); thread.join(2)
 
@@ -160,6 +162,21 @@ def test_slow_headers_cannot_extend_total_deadline(server):
         assert time.monotonic() - began < .6
         assert len(server.http.received) == 1
     finally: pool.close()
+
+
+def test_partial_write_is_cooperatively_cancelled_without_shutdown():
+    sender, receiver = socket.socketpair()
+    sender.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 4096)
+    stop = threading.Event(); pool = Connections(1, stop, local=True)
+    wire = Wire(sender); wire.bind(pool.check, time.monotonic()+3); errors = []
+    def write():
+        try: wire.sendall(b'x'*3_000_000)
+        except TransportError as error: errors.append(str(error))
+    thread = threading.Thread(target=write); thread.start()
+    try:
+        time.sleep(.05); stop.set(); thread.join(1)
+        assert not thread.is_alive() and errors == ['stopped']
+    finally: stop.set(); wire.close(); receiver.close(); pool.close(); thread.join(2)
 
 
 def test_stale_idle_connection_is_not_automatically_reconnected(server):
