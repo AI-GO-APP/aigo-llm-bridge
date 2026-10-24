@@ -63,3 +63,17 @@ def timed(name):
     finally:
         if budget := current():
             budget.timings[name] = budget.timings.get(name, 0) + time.monotonic() - started
+
+
+@contextmanager
+def locked(lock):
+    """Shared metadata locks must not outlive the caller's request budget."""
+    budget=current()
+    if budget:
+        while not lock.acquire(timeout=min(.05,budget.remaining())):
+            budget.check()
+    else:lock.acquire()
+    try:
+        check()
+        yield
+    finally:lock.release()

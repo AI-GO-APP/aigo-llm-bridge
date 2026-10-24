@@ -146,7 +146,7 @@ def main():
             'platform':platform.system(),'machine':platform.machine(),'python':platform.python_version(),
             'delay_s':args.delay,'cpu_percent_scale':'100% = one logical core; ps lifetime-average samples, not instantaneous peak',
             'source_hashes':{name:hashlib.sha256((args.source/'desktop_bridge'/name).read_bytes()).hexdigest()
-                for name in ('service.py','schema_guard.py','decision_contract.py','decisions.py','process.py','providers.py','store.py','execution_budget.py')
+                for name in ('service.py','schema_guard.py','decision_contract.py','decisions.py','process.py','providers.py','store.py','execution_budget.py','model_catalog.py','pricing.py')
                 if (args.source/'desktop_bridge'/name).is_file()},'results':results}
     if args.output:args.output.write_text(json.dumps(report,indent=2)+'\n')
 

@@ -7,6 +7,8 @@ import threading
 import time
 
 from . import providers
+from .execution_budget import locked, check
+from .errors import BridgeError
 
 TTL = 30
 REFRESH_MIN_INTERVAL = 5
@@ -27,14 +29,16 @@ class ModelCatalog:
     def _snapshot(self, provider, refresh):
         generation = self.generation(provider, self.store)
         now = self.clock()
-        with self.lock:
+        with locked(self.lock):
             cached = self.snapshots.get(provider)
             if cached and cached[0] == generation and 0 <= now-cached[1] < (REFRESH_MIN_INTERVAL if refresh else TTL):
                 return cached
             try:
                 snapshot = self.discover(provider, self.store)
             except Exception:
+                check()
                 snapshot = {"ready": None, "models": None, "source": "discovery_unavailable"}
+            check()
             current_generation = self.generation(provider, self.store)
             if generation != current_generation:
                 snapshot = {"ready": None, "models": None, "source": "account_changed"}
@@ -48,9 +52,13 @@ class ModelCatalog:
             return
         if error and error.category not in {"model_not_found", "provider_authentication"}:
             return
-        with self.lock:
-            self.evidence[(model["provider"], model["native"], protocol)] = (
-                generation, self.clock(), error.category if error else None)
+        try:
+            with locked(self.lock):
+                self.evidence[(model["provider"], model["native"], protocol)] = (
+                    generation, self.clock(), error.category if error else None)
+        except BridgeError:
+            # Optional RAM evidence must not hide the original error on expiry.
+            return
 
     def capabilities(self, caller, *, refresh=False):
         registered = self.store.get("models")
@@ -71,7 +79,7 @@ class ModelCatalog:
                 if snapshot.get("ready") is False:
                     state, reason = "unavailable", "provider_authentication"
                 # A bundled picker catalog's absence is not a model permission denial.
-                with self.lock:
+                with locked(self.lock):
                     proofs = [(p, self.evidence.get((provider, model["native"], p))) for p in ("chat", "decisions")]
                 current = [(p, v) for p, v in proofs if v and v[0] == generation and 0 <= self.clock()-v[1] < EVIDENCE_TTL]
                 if current and snapshot.get("ready") is not False:

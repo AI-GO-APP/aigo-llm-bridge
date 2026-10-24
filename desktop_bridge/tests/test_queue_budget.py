@@ -231,6 +231,38 @@ def test_schema_capacity_wait_and_process_use_remaining_request_budget(monkeypat
     assert error.value.status==408 and time.monotonic()-started<1.4
 
 
+@pytest.mark.parametrize('metadata',['models','pricing'])
+def test_shared_metadata_lock_wait_obeys_request_deadline_without_inference(tmp_path,metadata):
+    store=Store(tmp_path);_,key=store.create_key('synthetic');caller=store.authenticate(key)
+    rt=Runtime(store,lambda *_:pytest.fail('Expired metadata wait must not infer.'))
+    lock=rt.models.lock if metadata=='models' else rt.pricing.lock
+    lock.acquire()
+    body={**CHAT,'model':'openai/synthetic-unregistered'} if metadata=='models' else CHAT
+    began=time.monotonic()
+    try:
+        with ThreadPoolExecutor(max_workers=1) as clients:
+            task=clients.submit(rt.submit,body,caller,20,deadline=time.time()+.12).result(1)
+            assert task.done.wait(.9) and task.error.status==408
+            assert time.monotonic()-began<1
+            assert store.request(task.id,caller['id'])['calls_started']==0
+    finally:lock.release();rt.stop();store.close()
+
+
+def test_auth_status_timeout_does_not_hide_expired_request_budget(monkeypatch):
+    import subprocess
+    import sys
+    from desktop_bridge import providers
+    monkeypatch.setattr(providers,'executable',lambda *_:sys.executable)
+    def timeout(command,**kwargs):
+        assert kwargs['timeout']<=.12
+        time.sleep(kwargs['timeout']+.01)
+        raise subprocess.TimeoutExpired(command,kwargs['timeout'])
+    monkeypatch.setattr(providers.subprocess,'run',timeout)
+    with scope(Budget(time.monotonic()+.12,threading.Event())),pytest.raises(BridgeError) as error:
+        providers.status('claude',{})
+    assert error.value.status==408
+
+
 def test_capacity_migration_and_atomic_reconfiguration(tmp_path):
     store=Store(tmp_path);store.set('inference_workers',2)
     assert store.get('inference_pending')==2

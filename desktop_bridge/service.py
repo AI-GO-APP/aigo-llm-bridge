@@ -337,6 +337,7 @@ class Runtime:
                     "system_fingerprint":None,"choices":[{"index":0,"message":message,"finish_reason":finish}],"usage":usage}
             self.check_execution(task,deadline)
             self.models.observe(spec.model,task.protocol,generation)
+            self.check_execution(task,deadline)
             terminal=dict(status="completed",http_status=200,finished_ts=time.time(),
                 duration_ms=round((time.monotonic()-start)*1000),output_bytes=len(text.encode()),prompt_tokens=prompt,completion_tokens=completion,
                 cost_usd=usage['cost'],pricing_model=quote.model,pricing_fetched_ts=quote.fetched_at,

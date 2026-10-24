@@ -49,6 +49,7 @@ def executable(provider,settings):
 
 def status(provider,settings,timeout=20):
     try:
+        if budget:=current():timeout=min(timeout,budget.remaining())
         cmd=[executable(provider,settings)]+(["auth","status"] if provider=="claude" else ["login","status"])
         proc=subprocess.run(cmd,capture_output=True,env=environment(),timeout=timeout,
                             creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
@@ -59,6 +60,7 @@ def status(provider,settings,timeout=20):
                     "method":data.get("authMethod"),"plan":data.get("subscriptionType")}
         return {"provider":provider,"ready":proc.returncode==0 and "ChatGPT" in raw,"method":"ChatGPT" if "ChatGPT" in raw else "其他／未登入"}
     except (OSError,ValueError,subprocess.SubprocessError,BridgeError):
+        check()
         return {"provider":provider,"ready":False,"method":"CLI 不可用／未登入"}
 
 
@@ -83,6 +85,8 @@ def auth_generation(provider, settings):
 def list_codex_models(settings):
     """Read-only app-server handshake; no thread, turn, or model inference."""
     with tempfile.TemporaryDirectory(prefix="aigo-models-") as cwd:
+        budget=current()
+        deadline=time.monotonic()+min(8,budget.remaining()) if budget else time.monotonic()+8
         child = Child(codex_command(settings), cwd, environment())
         messages = queue.Queue(maxsize=128)
         overflow = threading.Event()
@@ -107,7 +111,6 @@ def list_codex_models(settings):
             except (OSError,ValueError): pass
         threading.Thread(target=reader, daemon=True).start()
         threading.Thread(target=drain, daemon=True).start()
-        deadline = time.monotonic()+8
         next_id = 0
         def request(method, params):
             nonlocal next_id
@@ -115,12 +118,14 @@ def list_codex_models(settings):
             child.proc.stdin.write((json.dumps({"id": next_id, "method": method, "params": params})+"\n").encode())
             child.proc.stdin.flush()
             while time.monotonic() < deadline and not overflow.is_set():
+                check()
                 try: msg = messages.get(timeout=.1)
                 except queue.Empty: continue
                 if msg.get("_eof") or ("method" in msg and "id" in msg): break
                 if msg.get("id") == next_id:
                     if "error" in msg: break
                     return msg["result"]
+            check()
             raise BridgeError(503, "model_discovery_unavailable", "CLI 模型目錄暫時不可用。")
         try:
             request("initialize", {"clientInfo": {"name": "aigo_model_discovery", "version": "1.0"}})
@@ -147,7 +152,9 @@ def model_snapshot(provider, settings):
         # Claude subscription CLI has no reliable equivalent of an API-key model list.
         return {"ready": True, "models": None, "source": "registration"}
     try: return {"ready": True, "models": list_codex_models(settings), "source": "cli_catalog"}
-    except Exception: return {"ready": True, "models": None, "source": "discovery_unavailable"}
+    except Exception:
+        check()
+        return {"ready": True, "models": None, "source": "discovery_unavailable"}
 
 
 def classify(text):
