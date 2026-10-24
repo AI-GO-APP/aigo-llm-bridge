@@ -39,7 +39,7 @@ class StartupCancel:
 
 
 class SingleUsePool:
-    def __init__(self, factory, generation, *, target=2, limit=8, ttl=120, backoff=.1):
+    def __init__(self, factory, generation, *, target=0, limit=8, ttl=120, backoff=.1):
         if type(target) is not int or type(limit) is not int or not 0 <= target <= limit <= 64 or limit < 1:
             raise ValueError('Require 0 <= target <= limit <= 64 and limit >= 1.')
         if not 0 < ttl <= 600 or not .01 <= backoff <= 5:

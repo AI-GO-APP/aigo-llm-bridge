@@ -302,10 +302,15 @@ def test_multiquestion_runtime_receipts_preserve_known_usage_across_fresh_leases
         'a':{'type':'noul','instructions':'blue?'},
         'b':{'type':'choice','instructions':'choose','criteria':{'a':'one','b':'two'}}}}
     with pool_fixture(target=2,limit=4) as (pool,resources):
+        runner_errors=[]
         def runner(spec,settings,cancel):
             from desktop_bridge.execution_budget import current
-            with pool.lease(cancel,current().until) as resource:
-                return providers.call_codex(spec,settings,cancel,resource.cwd,session=resource.session)
+            try:
+                with pool.lease(cancel,current().until) as resource:
+                    return providers.call_codex(spec,settings,cancel,resource.cwd,session=resource.session)
+            except Exception as error:
+                runner_errors.append(type(error).__name__)
+                raise
         runtime=Runtime(store,runner=runner,max_workers=2,max_pending=4)
         try:
             rid=str(uuid.uuid4())
@@ -317,7 +322,7 @@ def test_multiquestion_runtime_receipts_preserve_known_usage_across_fresh_leases
             assert receipt['billing']['usage']['cost']>0
             assert sum(r.session.sent['turn/start'] for r in resources)==2
             if crash_second:
-                assert task.error and task.error.category=='provider_error' and 'result' not in receipt
+                assert task.error and task.error.category=='provider_error' and 'result' not in receipt, runner_errors
             else:
                 assert task.error is None and set(task.result['answers'])=={'a','b'}
                 assert task.result['answers']['a']['noul']==.75
@@ -401,3 +406,11 @@ def test_waiting_request_takes_free_capacity_before_background_refill():
             release.set();future.result(timeout=2)
     finally:
         release.set();pool.close()
+
+
+def test_pool_default_is_zero_resident():
+    pool=SingleUsePool(lambda *_:pytest.fail('must opt into prewarming'),lambda:'a')
+    try:
+        time.sleep(.1)
+        assert pool.snapshot()['total']==0 and pool.target==0
+    finally:pool.close()
