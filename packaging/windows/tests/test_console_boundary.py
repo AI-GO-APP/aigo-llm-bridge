@@ -37,6 +37,35 @@ def test_clipboard_rejects_invalid_inputs_before_touching_os(value):
     with pytest.raises(ValueError):clipboard_text(value)
 
 
+@pytest.mark.parametrize('failure',[None,'allocate','write'])
+def test_clipboard_uses_owned_window_and_releases_only_untransferred_memory(monkeypatch,failure):
+    import ctypes
+    from types import SimpleNamespace
+    from desktop_bridge import windows_console as console
+    calls=[];buffer=ctypes.create_string_buffer(1024)
+    class Function:
+        def __init__(self,name,fn):self.name,self.fn=name,fn
+        def __call__(self,*args):calls.append((self.name,args));return self.fn(*args)
+    def function(name,fn=lambda *_:1):return Function(name,fn)
+    user=SimpleNamespace(CreateWindowExW=function('create',lambda *_:12345),
+        DestroyWindow=function('destroy'),OpenClipboard=function('open'),
+        EmptyClipboard=function('empty'),CloseClipboard=function('close'),
+        SetClipboardData=function('write',lambda *_:0 if failure=='write' else 99))
+    kernel=SimpleNamespace(GlobalAlloc=function('allocate',lambda *_:0 if failure=='allocate' else 99),
+        GlobalLock=function('lock',lambda *_:ctypes.addressof(buffer)),GlobalUnlock=function('unlock'),
+        GlobalFree=function('free'))
+    monkeypatch.setattr(console.ctypes,'WinDLL',lambda name,**_:user if name=='user32' else kernel,raising=False)
+    if failure:
+        with pytest.raises(OSError):clipboard_text('synthetic 中文')
+    else:
+        clipboard_text('synthetic 中文')
+        assert buffer.raw[:len('synthetic 中文\0'.encode('utf-16-le'))]=='synthetic 中文\0'.encode('utf-16-le')
+    assert calls[-1]==('destroy',(12345,))
+    if failure!='allocate':
+        assert ('open',(12345,)) in calls and any(name=='close' for name,_ in calls)
+    assert any(name=='free' for name,_ in calls)==(failure=='write')
+
+
 def test_missing_runtime_uses_owner_browser_session_without_desktop_input(tmp_path,monkeypatch):
     import json
     from types import SimpleNamespace

@@ -59,3 +59,5 @@ Windows 全依賴及 announce signer 子集使用 published artifact SHA256 鎖�
 ## #39 實驗邊界
 
 單次 Codex transport 的 stdout 以 4 MB 單行、8 MB 待處理 bytes 與 4096 筆限制；stderr 丟棄。預熱不建立 thread／turn，不接收 Key、model、system 或 request；領用後不可歸還重用。generation 失效、取消、pause、TTL 及 stop 清理自有程序與空 cwd；清理失敗保留 counted slot、停止補池。實驗工具不加入正式服務，無新的 KEY／憑證檔；Mac 尚無全裝置 RSS／CPU hard limit，相關預算未放行。[完整契約](WARM-CLI-PLAN.md)。
+
+Windows 原生文字複製使用同一呼叫執行緒建立的 message-only window 作為 OpenClipboard／EmptyClipboard owner，不借用其他 app 的前景視窗。成功後 Windows 接管記憶體，失敗時本程序釋放；兩種情況均清理隱藏視窗。來源與外部導覽檢查保留。

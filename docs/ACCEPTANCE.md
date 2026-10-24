@@ -74,3 +74,7 @@ Mac 0.9.5-mac.1：在 256 描述符上限下 64 個真實子程序經 HTTP 全�
 ## #39 warm CLI 原型（未放行）
 
 [Mac 原型收據](qa/2026-10-24-macos-warm-cli-pilot.md)區分 fake CLI 隔離、真 Codex 待命與小量對照，以及仍待完成的全量門檻。正式服務保持 0.9.7-mac.1 cold CLI；沒有管理 UI／常駐設定或 Windows 驗收。owner 的常駐零關閉及不得超過併發上限規則見 [計畫](WARM-CLI-PLAN.md)。
+
+## Mac 0.9.8 發布與少量 API 延遲
+
+owner 授權合併／發布 cold transport 與預設關閉的原型工具。交付與公開 LLM／Decisions 實測見 [本輪收據](qa/2026-10-24-macos-warm-cli-release.md)；這不表示 warm pool 或管理 UI 已放行。Windows installer 回歸保留真 clipboard 讀回，NULL owner 改用自有隱藏視窗；不發布 Windows 安裝包。

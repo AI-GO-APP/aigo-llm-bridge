@@ -1,6 +1,6 @@
 # #39：單次使用 warm CLI 原型
 
-2026-10-24 owner 授權開始試作。這是獨立實驗，正式安裝仍為 0.9.7-mac.1；沒有建立產品常駐池、修改設定或發布候選。原型只納入 Codex initialize／initialized 握手，請求到達後才建立 ephemeral thread 及 turn，完成即銷毀程序。Claude restricted print 的同等可觀測 ready 邊界仍待驗，不將「程序還活著／stdin 尚未關閉」視為 ready。
+2026-10-24 owner 授權開始試作。初次試作以 0.9.7-mac.1 為正式基線，沒有建立產品常駐池。owner 後續明確授權合併、發布 Mac 0.9.8 與小量公開 API 實測；本次交付包含預設關閉的實驗工具與 cold transport，production Runtime 仍不建立 warm pool，正式啟用與後台控制項繼續受本文件門檻限制。原型只納入 Codex initialize／initialized 握手，請求到達後才建立 ephemeral thread 及 turn，完成即銷毀程序。Claude restricted print 的同等可觀測 ready 邊界仍待驗，不將「程序還活著／stdin 尚未關閉」視為 ready。
 
 ## 後台設定契約
 
@@ -37,3 +37,7 @@ python tools/benchmark_warm_cli.py --apply --idle-seconds 600 --requests 3 --res
 原型的 100 對 fake CLI transport 測試不是上述真訂閱放行證明。不要用 mock、單筆 p95、未收到 usage event 或程序存活代替對應門檻。[本輪收據](qa/2026-10-24-macos-warm-cli-pilot.md)區分已驗與待驗。
 
 協定依據：[Codex app-server](https://learn.chatgpt.com/docs/app-server) 的 initialize／initialized 與 thread／turn lifecycle；[Claude CLI](https://code.claude.com/docs/en/cli-reference) 的 restricted print／stream-json。沒有使用私有供應商端點或共用對話 session。
+
+## 已授權的 Mac 0.9.8 發布
+
+發布收據見 [Mac 0.9.8](qa/2026-10-24-macos-warm-cli-release.md)。小量端到端工具為 `python tools/benchmark_api_latency.py --apply --label after --rounds 3 --output /tmp/api-latency.json`；每輪 Codex／Claude 各一筆 Chat 與一題 noul，序列執行、短輸出、零推論重送，公開 HTTPS 時間含 Relay／網路。數字 usage 可能包含 CLI 固定指令開銷，不宣稱全部輸入只有使用者提示長度。此測試不是 warm/cold 或尖峰效能放行。

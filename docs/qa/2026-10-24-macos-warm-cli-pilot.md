@@ -31,13 +31,13 @@
 
 兩組皆未證明 15% burst p95 或持續吞吐收益，且現有單筆 metrics 未顯示可預熱部分為主要瓶頸。因此本輪停留獨立試作、不放大為 64 常駐／完整推論矩陣，不啟用後台或正式服務。保留全部結果供後續針對尖峰啟動成本的測試判斷，不能推論所有負載都沒有收益。
 
-仍待完整真跨 Key／model／system 隔離、每 provider 64 burst／三波持續各三輪、全裝置 RSS／CPU／fd budget、Claude ready 邊界、Windows 獨立驗收與後台 UI。未通過上述門檻前維持關閉，不合併為已完成 #39、不發布或替換正式服務。
+仍待完整真跨 Key／model／system 隔離、每 provider 64 burst／三波持續各三輪、全裝置 RSS／CPU／fd budget、Claude ready 邊界、Windows 獨立驗收與後台 UI。未通過上述門檻前維持關閉，不將 #39 宣稱完成。owner 後續授權合併／發布的是預設關閉的工具及 cold transport，發布與原安裝更新另見 [Mac 0.9.8 收據](2026-10-24-macos-warm-cli-release.md)。
 
 
 ## 回歸與限制
 
 本機最終完整回歸 **434 passed、23 skipped**，原型／opt-in tests 29 項；Worker 13 項通過，branding／product docs／version／secret scan／diff 通過。主 CI [40058167721](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/40058167721) 在確認組 commit 通過，含本機缺私有清單的 `lint_terms --require`；Mac／Windows CI 不等於 warm live gate。
 
-一次較早的同時回歸中，fake 第二題 crash 的 receipt 正確保留 known/unknown，但分類曾為 generic server；後續獨立 100 次重複未重現，已加僅含例外類型的 test 診斷以定位。這個未解分類也是不放行整合的限制，不以重跑成功宣稱已修復。
+一次較早的同時回歸中，fake 第二題 crash 的 receipt 正確保留 known/unknown，但分類曾為 generic server；後續獨立 100 次重複未重現，已加僅含例外類型的 test 診斷以定位。這個未解分類仍是 warm pool 正式啟用的限制，不以重跑成功宣稱已修復。
 
-[草稿 PR #42](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/42) 保持 open，#39 未結案；未發布 0.9.8 候選，正式 0.9.7-mac.1 health=ok、accepting=true、64/64、queued/running=0。工具對原 profile 僅使用 read-only SQLite，未建立測試 Key、修改設定、替換服務或操作 Worker。
+[PR #42](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/42) 試作時為 draft，#39 未結案；以下為當時基線：0.9.7-mac.1 health=ok、accepting=true、64/64、queued/running=0。工具對原 profile 僅使用 read-only SQLite，未建立測試 Key、修改設定、替換服務或操作 Worker。
