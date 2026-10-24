@@ -70,3 +70,5 @@ warm 成功批次的 CLI turn 約 3984–4164 ms、provider setup 約 88–131 m
 ## 剩餘範圍
 
 本輪完成 goals／技能精簡並正式上線，仍有約 3.1k Chat 固定輸入；Codex 其餘內建工具／權限／環境尚未移除。issue 46 保持追蹤後續官方純推論工具集合或上游變更；Decisions 多題合併另訂隔離／schema／計量契約。外部使用者的獨立時間基準由 owner 後續發動，本輪未代替其測試。
+
+使用者後續授權的 [CLI 續測](2026-10-24-macos-cli-context-followup.md)找到 namespace 局部精簡候選，並確認 Claude Decisions 的原生結構多回合；候選未套用，本文的已發布 runtime 與原批次數值不回寫。

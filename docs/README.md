@@ -62,3 +62,5 @@ Mac 0.9.9 已發布並將 Codex 常駐接入正式 Chat／Decisions，提供容�
 issue 46 的 Mac Codex 固定輸入調查與 0.9.10-mac.1 goals／技能精簡，見 [上下文驗收](qa/2026-10-24-macos-codex-context.md)。受控 mock、實際計量與發布狀態分開記錄。
 
 Mac 0.9.10 已發布並更新原 profile，goals／技能精簡的真實 token 對照與剩餘成本見 [收據](qa/2026-10-24-macos-codex-context.md)；延遲小樣本未改善，2/64 設定保留。
+
+Codex namespace／exec 與 Claude CLI、原生 StructuredOutput 多回合的進一步拆解見 [CLI 上下文續測](qa/2026-10-24-macos-cli-context-followup.md)。本輪只測試、未部署候選，正式仍為 0.9.10／2/64。
