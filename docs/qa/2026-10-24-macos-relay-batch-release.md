@@ -18,7 +18,7 @@
 
 CI負面結果：441f635的Windows兩條回歸均在stop active read案例失敗（1秒後讀取執行緒仍活著），因此沒有合併／部署。不能將Mac的socket shutdown喚醒行為推及Windows。修正為連線建立後nonblocking HTTP讀寫，每≤50ms檢查停止與總deadline，HTTPResponse持有的Connection:close reader仍安全延後釋放；取消測試刻意令shutdown無效，並同時驗證header等待與close-response body等待。新增後共有17項transport案例（另驗partial write取消及2.4MB真TLS讀寫）；最終CI與完整回歸結果另補，不靠放寬1秒門檻繞過。
 
-1402e67的Windows讀取停止測試已通過，但新增partial-write測試使用AF_UNIX socketpair時，Windows能把整份3MB立即緩衝而沒有進入backpressure，故沒有取消例外（1 failed／437 passed／14 skipped）。這是fixture未建立必要前提；改以與產品一致的IPv4 TCP，先縮小接收window及傳送buffer，不改取消時間／驗收條件。
+1402e67與3f7068e的Windows讀取停止測試均已通過，但新增partial-write測試以固定3MB＋sleep猜測backpressure，在socketpair及TCP上都可能先完成送出，故沒有取消例外（各1 failed／437 passed／14 skipped）。不能將前者直接歸因AF_UNIX。最終fixture在實際TCP寫入16 bytes後受控注入would-block，等事件確認進入等待後才stop，再核對prefix確實只寫一次；保留1秒門檻，不改產品程式、不使用更大資料量猜測OS buffer。真TLS 2.4MB讀寫與兩種真HTTP讀取取消仍分開驗證。
 
 取消範圍：上述測試驗已建立連線的HTTP讀寫；尚在DNS／TLS建立或系統代理urllib中的等待仍依既有網路timeout，不聲稱所有平台／所有網路狀態均能50ms退出。模型開始後的未知結果仍不重送。
 

@@ -165,23 +165,38 @@ def test_slow_headers_cannot_extend_total_deadline(server):
 
 
 def test_partial_write_is_cooperatively_cancelled_without_shutdown():
-    # Use TCP, matching the transport. Windows AF_UNIX socketpair can buffer the
-    # entire test payload without backpressure despite SO_SNDBUF, unlike TCP.
+    # OS buffer sizes do not guarantee that a fixed payload blocks. Deliver a
+    # real TCP prefix, inject would-block, then wait for that condition before stop.
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4096)
         listener.bind(('127.0.0.1', 0)); listener.listen(1)
         sender = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sender.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 4096)
         sender.connect(listener.getsockname()); receiver, _ = listener.accept()
+    blocked = threading.Event()
+    class Backpressure:
+        sent = False
+        def setblocking(self, value): sender.setblocking(value)
+        def fileno(self): return sender.fileno()
+        def close(self): sender.close()
+        def send(self, data):
+            if not self.sent:
+                self.sent = True
+                return sender.send(data[:16])
+            blocked.set()
+            raise BlockingIOError()
     stop = threading.Event(); pool = Connections(1, stop, local=True)
-    wire = Wire(sender); wire.bind(pool.check, time.monotonic()+3); errors = []
+    wire = Wire(Backpressure()); wire.bind(pool.check, time.monotonic()+3); errors = []
     def write():
         try: wire.sendall(b'x'*3_000_000)
         except TransportError as error: errors.append(str(error))
     thread = threading.Thread(target=write); thread.start()
     try:
-        time.sleep(.05); stop.set(); thread.join(1)
+        assert blocked.wait(1)
+        stop.set(); thread.join(1)
         assert not thread.is_alive() and errors == ['stopped']
+        receiver.settimeout(1)
+        assert receiver.recv(16) == b'x'*16
     finally: stop.set(); wire.close(); receiver.close(); pool.close(); thread.join(2)
 
 
