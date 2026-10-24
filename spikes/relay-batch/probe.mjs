@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {writeFile} from 'node:fs/promises';
 import {setTimeout as delay} from 'node:timers/promises';
-import {DeviceRelay as Baseline} from '../../cloudflare/src/worker.js';
+import {DeviceRelay as Baseline} from './baseline-worker.mjs';
 import {candidateClass, decode} from './candidate.mjs';
 
 const device = 'synthetic-device-not-a-real-secret';

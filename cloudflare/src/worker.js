@@ -1,11 +1,17 @@
 // No request/response payload is written to Durable Object storage or logs.
 const MAX_BODY = 3_000_000;
 const INFERENCE_CAPACITY=64, CONTROL_CAPACITY=8;
+const BATCH_LIMIT=8, BATCH_BYTES=6_100_000;
 const inferencePath=(method,path)=>method==="POST"&&["/api/v1/chat/completions","/v1/chat/completions","/api/alpha/decisions","/bridge/v1/jobs","/bridge/v1/models/probe"].includes(path);
 const COST_HEADERS=["X-Bridge-Cost-Source","X-Bridge-Pricing-Model","X-Bridge-Pricing-Fetched-At"];
 const error = (code, type, message) => Response.json({error:{code,message,metadata:{error_type:type}}},
   {status:code,headers:{"Cache-Control":"no-store"}});
 const hash = async text => [...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text)))].map(b=>b.toString(16).padStart(2,"0")).join("");
+const envelope=(batch,works)=>{
+  const raw=JSON.stringify(batch?{requests:works}:{request:works[0]||null});
+  if(new TextEncoder().encode(raw).byteLength>BATCH_BYTES)return error(502,"response_too_large","Relay envelope too large.");
+  return new Response(raw,{headers:{'Content-Type':'application/json'}});
+};
 
 export default {
   async fetch(request, env) {
@@ -13,7 +19,7 @@ export default {
     const id=env.DEVICE.idFromName("primary-device");
     const response=await env.DEVICE.get(id).fetch(request);
     const headers=new Headers(response.headers);
-    headers.set('X-Bridge-Relay-Version','0.9.4-relay');
+    headers.set('X-Bridge-Relay-Version','0.9.5-relay');
     return new Response(response.body,{status:response.status,headers});
   }
 };
@@ -50,6 +56,9 @@ export class DeviceRelay {
         if(request.method!=="POST")return error(405,"invalid_request","POST required.");
         const data=JSON.parse(await this.body(request,4_100_000));
         if(path==="/agent/poll") {
+          const batch=Object.hasOwn(data,'batch_size');
+          if(batch&&(!Number.isInteger(data.batch_size)||data.batch_size<1||data.batch_size>BATCH_LIMIT))
+            return error(400,"invalid_request","Invalid batch size.");
           if(!Array.isArray(data.key_digests)||data.key_digests.length>1000||data.key_digests.some(k=>typeof k!=="string"||!/^[a-f0-9]{64}$/.test(k)))return error(400,"invalid_request","Invalid key metadata.");
           if(data.agent_session!==undefined&&(typeof data.agent_session!=="string"||!/^[a-f0-9]{32}$/.test(data.agent_session)))return error(400,"invalid_request","Invalid agent session.");
           // A closed local process can leave an HTTP poll alive at the edge. Never
@@ -65,17 +74,38 @@ export class DeviceRelay {
           }
           this.agentSession=session;
           this.keys=new Set(data.key_digests); this.lastSeen=Date.now();
-          const next=[...this.pending.values()].find(p=>!p.dispatched);
-          if(next){next.dispatched=true;return Response.json({request:next.work});}
+          const selected=[];
+          const limit=batch?data.batch_size:1;
+          let bytes=new TextEncoder().encode(batch?'{"requests":[]}':'{"request":null}').byteLength;
+          for(const item of this.pending.values()){
+            if(item.dispatched)continue;
+            const size=new TextEncoder().encode(JSON.stringify(item.work)).byteLength;
+            if(selected.length&&bytes+size+1>BATCH_BYTES)break;
+            if(bytes+size+1>BATCH_BYTES)return error(502,"response_too_large","Relay envelope too large.");
+            selected.push(item);bytes+=size+1;
+            if(selected.length>=limit)break;
+          }
+          if(selected.length){
+            const works=selected.map(item=>item.work);
+            const response=envelope(batch,works);
+            if(!response.ok)return response;
+            for(const item of selected)item.dispatched=true;
+            return response;
+          }
           // One device, one long poll. Never use timers as durable storage.
-          const work=await new Promise(resolve=>{
+          const response=await new Promise(resolve=>{
             let completed=false;
-            const finish=value=>{if(completed)return;completed=true;clearTimeout(timer);this.waiter=null;resolve(value);};
+            const finish=value=>{
+              if(completed)return;
+              const response=envelope(batch,value?[value]:[]);
+              if(value&&response.ok){const item=this.pending.get(value.id);if(item)item.dispatched=true;}
+              completed=true;clearTimeout(timer);this.waiter=null;resolve(response);
+            };
             const timer=setTimeout(()=>finish(null),20_000);
             this.waiter=finish;
           });
           this.lastSeen=Date.now();
-          return Response.json({request:work});
+          return response;
         }
         if(path==="/agent/result") {
           this.lastSeen=Date.now();
@@ -91,7 +121,7 @@ export class DeviceRelay {
         }
         return error(404,"not_found","Unknown agent endpoint.");
       }
-      if(path==="/health")return Response.json({ok:true,device_online:Date.now()-this.lastSeen<35_000,version:"0.9.4-relay",max_concurrent_requests:INFERENCE_CAPACITY,shared_provider_capacity:true},{headers:{"Cache-Control":"no-store"}});
+      if(path==="/health")return Response.json({ok:true,device_online:Date.now()-this.lastSeen<35_000,version:"0.9.5-relay",max_concurrent_requests:INFERENCE_CAPACITY,shared_provider_capacity:true,relay_protocol:'batch8-v1',max_batch_size:BATCH_LIMIT,max_batch_bytes:BATCH_BYTES},{headers:{"Cache-Control":"no-store"}});
       const allowed=(request.method==="POST"&&["/api/v1/chat/completions","/v1/chat/completions","/api/alpha/decisions","/bridge/v1/jobs","/bridge/v1/preflight","/bridge/v1/models/refresh","/bridge/v1/models/probe"].includes(path))
         ||(request.method==="GET"&&(["/api/v1/models","/v1/models","/bridge/v1/model-capabilities"].includes(path)||/^\/bridge\/v1\/jobs\/[a-f0-9]{32}$/.test(path)||/^\/bridge\/v1\/receipts\/[a-f0-9-]{36}$/i.test(path)));
       if(!allowed)return error(404,"not_found","Unknown API endpoint.");
@@ -120,7 +150,7 @@ export class DeviceRelay {
           resolve(error(408,"timeout","Device response timed out."));
         },Math.max(1,deadline-Date.now()+2000));
         const item={work,resolve,timer,dispatched:false,inference};this.pending.set(id,item);
-        if(this.waiter){item.dispatched=true;this.waiter(work);}
+        if(this.waiter)this.waiter(work);
       });
     } catch {return error(400,"invalid_request","Invalid or oversized request.");}
   }

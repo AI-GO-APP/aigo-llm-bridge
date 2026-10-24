@@ -91,6 +91,7 @@ def serve(args, instance, lifetime):
     lifetime.callback(api.stop)
     from .relay import Relay
     relay=Relay(store,api.port)
+    runtime.relay=relay
     lifetime.callback(relay.stop)
     if store.get("relay_enabled"):
         try: relay.start()

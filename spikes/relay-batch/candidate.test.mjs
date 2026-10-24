@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {setTimeout as delay} from 'node:timers/promises';
-import {DeviceRelay as Baseline} from '../../cloudflare/src/worker.js';
+import {DeviceRelay as Baseline} from './baseline-worker.mjs';
 import {candidateClass,decode,BYTE_LIMIT} from './candidate.mjs';
 
 const Candidate=await candidateClass();

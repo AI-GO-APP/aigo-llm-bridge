@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.9.13-mac.1] - 2026-10-24
+
+- Relay 直連 HTTPS 使用有界 keep-alive，長輪詢與結果回傳分離；保留 certifi、既有系統代理與拒絕 redirect，不對已送出的 HTTP／推論自動重試。
+- Worker 0.9.5-relay 支援可選 1–8 筆 FIFO 批次、6.1 MB 編碼上限與舊單筆協定；本機已派送與等待總數有界為 64＋8，停止關閉自有連線並隔離舊 session。Worker 需擁有者另授權原地部署。
+- health／管理狀態新增數值 Relay transport metadata；不變更 prompt、Decisions StructuredOutput、常駐／容量、裝置或 Key。Mac 實機及公開對照見本輪 QA，Windows 原生訂閱與完整 warm 放行仍獨立。
+
 ## [0.9.12-mac.1] - 2026-10-24
 
 - Mac 已驗 Codex 0.163.0-alpha.11／gpt-6.1-sol 的普通文字 Chat 使用純推論 profile，完整保留 caller 指令與歷史，移除無關 agent 工具／環境及 Bridge 固定提示；CLI／catalog 指紋不符先走 standard，收據明示原因。

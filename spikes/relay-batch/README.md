@@ -1,8 +1,8 @@
 # Bounded batch polling research
 
-Research only; does not modify, install or deploy the production Worker／Python Relay. No real device credentials or models are used. [Mac findings and limits](../../docs/qa/2026-10-24-macos-optimization-probes.md).
+Research harness; invoking it never installs or deploys the Worker／Python Relay. The production integration is tracked separately in D-46. No real device credentials or models are used. [Mac findings and limits](../../docs/qa/2026-10-24-macos-optimization-probes.md).
 
-`candidate.mjs` reads the current Worker source and applies three asserted in-memory changes: opt-in `batch_size` 1–8, FIFO extraction under 6,100,000 encoded bytes, and a compatible batch envelope. Old agents still get `request`; the proposed decoder also accepts old Workers. A source-shape mismatch fails instead of silently producing a different candidate. Python Relay integration, a reusable HTTPS transport and real Cloudflare deployment are not implemented here.
+`candidate.mjs` reads the current Worker source and applies three asserted in-memory changes: opt-in `batch_size` 1–8, FIFO extraction under 6,100,000 encoded bytes, and a compatible batch envelope. Old agents still get `request`; the proposed decoder also accepts old Workers. A source-shape mismatch fails instead of silently producing a different candidate. When the current source already includes the batch protocol, the harness tests that implementation directly. `baseline-worker.mjs` freezes the original 0.9.4 Worker, so later source changes cannot silently change the comparison baseline. Release and actual deployment evidence belong to the D-46 QA receipt.
 
 ```sh
 node --test spikes/relay-batch/candidate.test.mjs spikes/relay-batch/candidate.regression.test.mjs
