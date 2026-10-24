@@ -1,6 +1,6 @@
 # Mac BYO source Release：安裝、更新與發布
 
-最新已發布並正式安裝驗證為 [0.9.9-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.9-mac.1)。公開附件、原 profile 更新與正式 API 常駐 0／2 對照見 [0.9.9 收據](qa/2026-10-24-macos-runtime-warm-pool.md)。Mac owner 明確選擇 2/64 operator 試驗；其他新安裝預設常駐 0，Claude cold，完整尖峰／跨平台放行仍追蹤 issue 39。前版 [0.9.8 收據](qa/2026-10-24-macos-warm-cli-release.md)為工具與冷啟動歷史基線。本機更新不自動部署 Worker。
+最新已發布並正式安裝驗證為 [0.9.10-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.10-mac.1)。Codex goals／技能精簡、公開附件、原 profile 更新及同題 token／延遲對照見 [0.9.10 收據](qa/2026-10-24-macos-codex-context.md)。owner 保留 2/64 operator 試驗；新安裝預設常駐 0，Claude cold，完整放行仍追蹤 issue 39。本機更新不自動部署 Worker。前版常駐開關比較見 [0.9.9 收據](qa/2026-10-24-macos-runtime-warm-pool.md)。
 
 0.9.4-mac.1 候選整合 PR #32 的 64 併發；本輪先驗基本流程；owner 後續授權本機 Claude 64 併發測試。交付狀態見 [Mac 併發收據](qa/2026-10-23-macos-concurrency.md)。
 
@@ -45,4 +45,4 @@ BRIDGE_APP="$("$BRIDGE_PY" -c 'import json,sys; print(json.load(open(sys.argv[1]
 
 0.9.7-mac.1 已完成 #36 階段 0–2、公開發布及原安裝升級。[效能門檻](PERFORMANCE-PLAN.md)、[實作與負面結果](qa/2026-10-24-macos-queue-decisions.md)及[發布收據](qa/2026-10-24-macos-queue-release.md)分層記錄，warm CLI 不隨本批啟用。
 
-0.9.10-mac.1 候選依 issue 46 精簡 Bridge Codex goals／技能上下文；此節尚非公開發布證明。完整診斷、負面測試與後續發布／原安裝同題對照見 [上下文收據](qa/2026-10-24-macos-codex-context.md)。原 Worker 與 2/64 profile 不因上下文修補重建。
+0.9.10-mac.1 已依 issue 46 精簡 Bridge Codex goals／技能上下文；完整診斷、負面測試與公開發布／原安裝同題對照見 [上下文收據](qa/2026-10-24-macos-codex-context.md)。原 Worker 與 2/64 profile 不因上下文修補重建。

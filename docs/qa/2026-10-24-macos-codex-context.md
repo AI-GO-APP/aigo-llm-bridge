@@ -1,6 +1,6 @@
 # Mac Codex 上下文調查與精簡（issue 46）
 
-2026-10-24；產品 Local Token Buffet Bridge。使用者在分析完成後明確「同意開工」，本輪實作 D-41 goals／技能精簡。候選 0.9.10-mac.1，尚未由本文件宣告公開發布／原 profile 更新完成。Windows 原生訂閱與完整 issue 39 放行不由本輪替代。
+2026-10-24；產品 Local Token Buffet Bridge。使用者在分析完成後明確「同意開工」，本輪實作 D-41 goals／技能精簡。已合併 [PR #47](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/47)，發布 [0.9.10-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.10-mac.1)，匿名下載驗證並更新原 Mac。現在接單、Codex 常駐 2／workers=pending=64、idle=2。Windows 原生訂閱與完整 issue 39 放行不由本輪替代。
 
 ## 原問題與本機核對
 
@@ -39,6 +39,34 @@ warm 成功批次的 CLI turn 約 3984–4164 ms、provider setup 約 88–131 m
 
 本機完整 `desktop_bridge/tests tools/tests packaging/windows/tests`：469 passed、23 skipped；Worker relay：13 passed。Mac 原生 Cocoa 六頁／五步／深淺／窄版／容量卡等共 64 個畫面，剪貼簿、真 NSSavePanel 取消／保存、CSV、關窗留服務均通過。branding、product docs、version 與 diff 檢查通過。`lint_terms --require` 本機缺 private 清單，仍須由有 repo secret 的 CI 驗證，不將此項當作本機已通過。新增測試覆蓋清單異常、無額外本機檔案、個人 config 保留、錯 cwd／設定寫入 RPC 拒絕、一次性查詢、取消／逾時及 thread/turn=0。
 
-公開發布／更新待完成；metadata-only 證據保存在本機 gitignored `.desktop-build/issue46-context`，正式發布後把必要 numeric receipt 附於 repo，避免依賴聊天或不可存取的路徑。
+完整發布、逐筆 usage／耗時／cache 與保留檢查已收錄 [數字證據](../concurrency-evidence/macos-0910-codex-context-2026-10-24.md)。本機 gitignored 診斷不作唯一交接來源。
 
 新版前的固定短題公開基線（0.9.9-mac.1、resident=2、gpt-6.1-sol）：Chat 4191／4193 input，中位 5.0285 秒；Decisions 4333／4335 input，中位 6.0185 秒。四筆均 warm=1、cold=0、完整 1/1，兩筆 cache=3072、另兩筆=0。這是本輪獨立基線，題目與 Cloud issue 的原批次不同，不能混算。
+
+
+## 公開發布與原安裝
+
+來源 `26ab468b157747f1de6ea5dc3e934874b2f6bedf`，ZIP SHA256 `122b6e1f1fd2fcee433c1521f71febb56dd59367ad14e50d13ea6a56d5689f8c`。[Mac 發布 workflow](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/40067596369) 與 PR 核心／私有 terms、Mac source／native／ZIP、Windows source／installer 更新均全綠。四附件匿名下載、manifest clean／commit／hash、所有 runtime Python 與測速工具來源一致；公開 ZIP 實際安裝、全機互斥、停止驗收通過。
+
+原 0.9.9 profile 升至 0.9.10，同一臨時 Key 跨升級驗 models、Chat／成本、去重、JSON schema、工具提案、預期 unsupported_parameter 400 與交接，全部通過。工具仍由 caller 執行。原設定、49 筆升級前 Key rows（含本輪已撤銷的基線測試 Key）、3 把原有效 owner Key、個人 Codex config hash 全保留；三把本輪臨時 Key 均撤銷。Worker／URL／裝置／登入未重建，無 Cloud 部署／Windows 發布／電源鎖定變更。
+
+實際常駐 2 時 stop=1.1648 秒，觀測到的 3 個自有程序與 2 個空 cwd 均清空；重啟回 accepting=true、running=queued=0、idle=2、2/64/64。上一版 0.9.9 manifest／app 與同一 DB 保留供回復。這是小量生命週期驗收，不替代 issue 39 全量尖峰／資源門檻。
+
+## 真實輸入與時間前後比較
+
+同一固定短題、gpt-6.1-sol、公開 HTTPS、每版每 API 各兩筆、resident=2、併發 1、無推論重試。8/8 成功、warm=1/cold=0、receipt 完整 1/1，模型／格式／成本一致。不是 off/on，也不與 Cloud 東京批次混算。
+
+| API | 原 input tokens | 新 input tokens | 中位 input 減少 | 原時間中位 | 新時間中位 |
+|---|---|---|---:|---:|---:|
+| LLM Chat | 4191 / 4193 | 3121 / 3119 | 25.57% | 5.0285s | 5.4937s |
+| 單題 Decisions | 4333 / 4335 | 3263 / 3259 | 24.76% | 6.0185s | 6.0245s |
+
+輸入中位數分別下降 1072／1073 tokens；**這組延遲未見改善**，Chat 中位慢 9.25%、Decisions 約持平。樣本少、前後分時、網路／CLI turn／reasoning 與 cache 不同，不能推論純上下文因果、p95 或 SLA。Chat cache 原 0/3072、新 0/2432；Decisions 原 3072/0、新 0/0。cache 是 input 的子集，不再加總；不能用 gross input 降幅宣稱訂閱扣額必定同比下降。
+
+診斷工具 0.9.10 的 cache／reasoning 欄位讀取 compact receipt 而得到 null；該 receipt 只有總 tokens／cost，程式註解所稱完整 subsets 不成立。**本輪已按逐筆 UUID 從本機 SQLite allowlist metadata 補核對上述 cache／reasoning**，不是將 null 當零；核心 API、計量與時間沒有重跑／改值。工具後續應從已查詢的本機 request row 補欄位，修補前不能只依該工具的 null 判定無 cache。此限制不影響本輪實際輸入降幅或正式 runtime。
+
+本輪基線 4 次＋升級 3 次＋新版對照 4 次，共 11 次完整計量 CLI 呼叫，39,451 input／218 output tokens，牌價等值 USD 0.0601668；另有預期 400、零 CLI。沒有為改善數字增加樣本或重試失敗推論。原始內容、events、stderr、憑證均未保存。
+
+## 剩餘範圍
+
+本輪完成 goals／技能精簡並正式上線，仍有約 3.1k Chat 固定輸入；Codex 其餘內建工具／權限／環境尚未移除。issue 46 保持追蹤後續官方純推論工具集合或上游變更；Decisions 多題合併另訂隔離／schema／計量契約。外部使用者的獨立時間基準由 owner 後續發動，本輪未代替其測試。
