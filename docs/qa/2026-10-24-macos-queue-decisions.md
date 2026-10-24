@@ -70,3 +70,7 @@ PR 保持 Draft。真訂閱三輪、公開 HTTPS 64、Mac release／正式安裝
 [原生驗證 metadata](assets/mac-queue-ui-result.json)、[六頁淺色寬版](assets/mac-queue-light-wide.png)、[六頁深色窄版](assets/mac-queue-dark-narrow.png)、[Windows 深色窄版適配卡](assets/mac-queue-windows-card.png)。圖片全為合成資料，不含 owner Key／設定。這些是 renderer／adapter 證據，不替代 Windows 原生安裝。
 
 最後硬化將 request budget 傳入 model discovery／auth status／牌價載入 timeout 與共用 metadata lock。新增短期限 cold-model／pricing lock 測試與 status timeout 測試，全部 408／零推論；可選 RAM availability evidence 不得蓋掉原錯誤。Windows adapter JavaScript tests 3 passed；handoff／前端文字修正後的完整本機回歸仍為 316 passed／18 skipped。
+
+## 發布前相依修補
+
+Mac 與 Windows source CI 均通過後，Windows installer 的既有 OSV 閘門仍擋住 undici 7.29.1。維持 Wrangler 4.152.0，以 npm override 精確鎖定同一 major 的 undici 7.30.1，重新產生 lockfile；這是上游三份公告共同的修補版本（[EventSource memory](https://github.com/nodejs/undici/security/advisories/GHSA-4qv8-2p9j-2685)、[SRI](https://github.com/nodejs/undici/security/advisories/GHSA-f72v-6w45-q472)、[content-encoding](https://github.com/nodejs/undici/security/advisories/GHSA-xjj6-f33q-929c)）。未略過或放寬掃描。`audit_dependencies.py` 120 個鎖定版本查詢零公告，npm audit 零漏洞。此修補不發布 Windows 套件。
