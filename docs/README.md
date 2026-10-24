@@ -28,7 +28,6 @@ Mac 公開 Decisions／模型探索上線及本機／Worker／真實推論證據
 
 - [Windows 安裝與簽章更新](WINDOWS-INSTALL-UPDATE.md)、[管理台操作](P1-Windows-guide.md)。
 - [Windows 首次安裝精靈](ONBOARDING.md) 將訂閱授權、Cloudflare CLI、一鍵／AI IDE 部署及插電權限納入安裝；通過狀態另看 QA。
-- [自備 AI 方案接上 Bridge](SUBSCRIPTION-SETUP.md)：買完或兌換 Claude／ChatGPT 方案後，安裝 CLI、訂閱登入、確認就緒及 AI 助手提示詞。
 - [BYO 首次部署](BYO-QUICKSTART.md)、[裝置／帳號生命週期](DEVICE-IDENTITY.md)、[安裝 agent prompt](AI-AGENT-SETUP.md)。
 - [第三方串接訊息](THIRD-PARTY-INTEGRATION.md)、[牌價換算](OPENROUTER-PRICING.md)、[Cloud 呼叫端整合](AI-EA-CLOUD-BEST-PRACTICE.md)。
 - [跨平台原始碼安裝](CROSS-PLATFORM-INSTALL.md)、[Mac 安裝／操作](MACOS-SETUP.md)、[Mac Release／更新](MACOS-RELEASE.md)。Windows Setup 與 Mac source ZIP 分流，驗收及發布各自負責。
