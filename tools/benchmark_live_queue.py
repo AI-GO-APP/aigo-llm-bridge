@@ -127,9 +127,17 @@ def main():
                                  for p in sorted((Path(manifest['app']) / 'desktop_bridge').glob('*.py'))}}
     try:
         status, health = http('/health')
+        report['health_http'] = status
         assert status == 200 and health.get('ok') and health.get('max_concurrent_requests') == 64
         # Discovery GET does not infer; establish route and current model availability.
-        status, catalog = http('/api/v1/models')
+        until = time.monotonic() + 40
+        while True:
+            status, catalog = http('/api/v1/models')
+            if not args.public or status != 401 or time.monotonic() >= until:
+                break
+            # New key digests propagate on Relay polls. This GET never infers.
+            time.sleep(.5)
+        report['models_get_http'] = status
         assert status == 200 and any(m['id'] == model for m in catalog.get('data', []))
         if args.sample_resources:
             resources = MacResources(store.get('port'))

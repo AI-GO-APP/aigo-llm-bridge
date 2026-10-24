@@ -9,10 +9,10 @@
 | 層次 | 本輪證據 |
 |---|---|
 | Source | 已實作可取消 FIFO、受理預算、容量設定、numeric timings、固定 Decisions 驗證；原始碼候選 |
-| 回歸／維護 | 最終本機 Bridge＋tools 316 passed／18 skipped；Worker 13 passed；version／branding／product docs／secret scan 通過 |
+| 回歸／維護 | 最終本機 Bridge＋tools＋Windows package source 404 passed／23 skipped；Worker 13 passed；version／branding／product docs／secret scan 通過 |
 | 合成基準 | 完整矩陣＋最終 64 配置＋三波持續負載，共 7,296/7,296 正確；HTTP／真 schema 子程序／替身 runner，未啟動訂閱 CLI |
-| 真訂閱 3 輪混合 64 | 初版兩組已測，未達放行；D-36–38 修補後另驗，不將合成數字當訂閱收益 |
-| 公開 HTTPS 64 | 未驗；不以 health／401／本機成功替代 |
+| 真訂閱 3 輪混合 64 | e637cfa 三輪 192/192 正確，全部數值門檻通過；收益限於固定 factual probe |
+| 公開 HTTPS 64 | 原 Worker／URL 真實 64/64 正確，完整收據且均在 38 秒內；不是 health／401 代認 |
 | Mac Release／正式更新 | 未執行；保留原正式 profile／URL／KEY／CLI 登入 |
 | Windows | 僅共用 source 回歸；沒有原生安裝／發布證據 |
 
@@ -59,7 +59,7 @@ Runtime commit `3749f90320189cbb369d94dd1317198285dff2cd`；選定與持續報�
 - 本機 `lint_terms.py --require` 因缺私有清單失敗；前一 source commit 769d0bc 的 [CI](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/40047968385) 中 lint-terms（--require）、secret／version／docs 檢查成功；不複製私有清單到工作樹。最終 PR head 另依實際 CI 結果更新。
 - [Windows installer regression](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/40047968384) 在核心測試前的鎖定依賴掃描失敗：未改動的 cloudflare/package-lock.json 含 undici 7.29.1，scanner 回報 GHSA-4qv8-2p9j-2685、GHSA-f72v-6w45-q472、GHSA-xjj6-f33q-929c。沒有移除 scanner、放寬門檻或更改 Windows 依賴；它是獨立的 CI 阻擋，不宣稱整體 CI 全綠。
 
-PR 保持 Draft。真訂閱三輪、公開 HTTPS 64、Mac release／正式安裝仍未完成，不把本輪 source 實作當作正式交付，也不關閉 #36。
+以上為早期來源的分層狀態；後續完整放行結果見下方。Mac release／公開下載／正式安裝尚待發布流程，不把候選測試當作正式交付，也不提前關閉 #36。
 
 ## 本機原生 UI 與第三方容量文案
 
@@ -113,3 +113,21 @@ D-37 限定自有 Decisions 使用 Claude CLI 原生固定結構輸出，依 [�
 完整本機回歸於 943b789 為 403 passed／23 skipped；後續 native turn／pacer 參數的針對性回歸 22 passed。格式缺失可拒絕，但已核對的模型用量／成本須先保存；另有回歸確認 502 的 calls_started=calls_completed=1、billing_complete=1、cost>0。benchmark 成本改從 receipt 加總，包含已知成本的失敗，不把失敗當作零費用。
 
 01e8596 的 native turn=2、所有請求共用 20 ms 間距已達三輪 192/192 正確、收據完整，RSS 6,190,480 KiB（低於 baseline）；但 Chat p95 中位數 11.2189 s、Decisions 15.0653 s，仍未放行。[全部 metadata](../concurrency-evidence/macos-live-native2-allpaced-2026-10-24.json)。因此將啟動節流限於因固定 schema 快速路徑而集中啟動的 Claude Decisions；一般 Chat 與 Codex 沿用原啟動方式，沒有更改 queue FIFO 或 64/64 容量。CLI 原生結構模式會增加部分輸入／終結步驟用量，本組每輪已知 cost 約 0.202–0.206 USD 等值，較 baseline 後兩輪約 0.144 高；這是 CLI token 的公開牌價估值，不是另收 API 費用，也不隱藏於 calls_completed=1（其單位為 CLI 呼叫）。調整後另驗，保留負面結果。
+
+## 最終實機放行：e637cfa
+
+Runtime `e637cfabc7e0a8f0057da3e46a9049d2ab5064bd`。全部 desktop_bridge 模組 SHA256、每輪 p50/p95/max、38 秒、tokens／cost／receipts、完整資源與早期 readiness metadata 見 [最終收據](../concurrency-evidence/macos-final-runtime-2026-10-24.json)。同一原 profile、CLI、Haiku 4.5、固定 factual 輸入、64 workers／64 pending；baseline 三輪均保留，未刪除首輪 18 個驗證拒絕。候選三輪各 64/64，192 筆模型／格式／cost／單次 CLI 收據全部一致，沒有推論重試。
+
+| 三輪中位數 | baseline | 最終候選 | 變化／門檻 |
+|---|---|---|---|
+| Decisions p95 | 17.0286 s | 13.1559 s | -22.74%，通過 -20% |
+| Chat p95 | 9.1072 s | 5.0809 s | -44.21%，通過 +10% |
+| good RPM | 215.565 | 275.565 | +27.83%，通過 -5% |
+| 38 秒正確完成數 | 64/64 | 64/64 | 不下降 |
+| 程序樹 peak RSS | 9,268,592 KiB | 11,013,168 KiB | +18.82%，通過 +25% |
+
+最終候選三輪牆鐘 13.935／15.6595／12.2365 s，均 64/64；本機 regression 404 passed／23 skipped。最終 runtime 另補 deterministic 單／三題各三輪（384/384）及各三波連續（384/384），metadata 內保留 source hashes，不能以舊來源合成報告當新 hash。32／48 未取代新預設，原 profile 及新 profile 均維持 64/64；沒有 warm CLI 池。
+
+公開 HTTPS：原 Worker／URL，32 Chat＋32 Decisions 真實 burst，64/64 HTTP 200、model／合法答案／cost／完整單次 CLI 收據一致；牆鐘 33.227 s、p50 19.5748 s、p95 30.1186 s、max 33.2171 s，64/64 在 38 秒內，已知 cost 合計 0.209489 USD 等值。初次只讀 readiness 因新 Key digest 尚未傳播而中止、未推論；工具改以 GET models 等待（不推論），ready 後只發一輪 64、沒有推論重送。測試 Key 全數撤銷，owner 原長效 Key 保留。
+
+本機實測與 HTTPS 不是同一延遲分布；改善只描述固定 factual probe，numeric-directive 負面結果與 native turn 的較高 token 使用量仍保留。Worker 程式／路徑未改，因此此輪沒有重新部署 Worker 或改 endpoint／配對 secret。正式 Release、匿名下載及原安裝升級另於發布收據補齊。
