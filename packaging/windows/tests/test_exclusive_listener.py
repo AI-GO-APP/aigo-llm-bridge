@@ -39,7 +39,7 @@ def test_native_api_and_management_refuse_port_hijacking(tmp_path, monkeypatch):
     finally:
         manager.server.server_close()
         api.server.server_close()
-        runtime.pool.shutdown()
+        runtime.stop()
         store.close()
 
 

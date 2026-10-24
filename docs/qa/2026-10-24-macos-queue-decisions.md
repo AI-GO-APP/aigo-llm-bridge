@@ -75,6 +75,8 @@ PR 保持 Draft。真訂閱三輪、公開 HTTPS 64、Mac release／正式安裝
 
 Mac 與 Windows source CI 均通過後，Windows installer 的既有 OSV 閘門仍擋住 undici 7.29.1。維持 Wrangler 4.152.0，以 npm override 精確鎖定同一 major 的 undici 7.30.1，重新產生 lockfile；這是上游三份公告共同的修補版本（[EventSource memory](https://github.com/nodejs/undici/security/advisories/GHSA-4qv8-2p9j-2685)、[SRI](https://github.com/nodejs/undici/security/advisories/GHSA-f72v-6w45-q472)、[content-encoding](https://github.com/nodejs/undici/security/advisories/GHSA-xjj6-f33q-929c)）。未略過或放寬掃描。`audit_dependencies.py` 120 個鎖定版本查詢零公告，npm audit 零漏洞。此修補不發布 Windows 套件。
 
+掃描通過後的 Windows installer 回歸暴露一處測試清理仍呼叫已移除的 `runtime.pool.shutdown()`；排他 socket 斷言本身通過。改用正式 `runtime.stop()` 清理 queue／monitor／workers，保留全部 Winsock 測試與安全斷言，不以 skip 避開。
+
 ## 近 3 MB 滿額排隊
 
 `tools/benchmark_queue_memory.py` 以獨立合成 profile、1 running＋63 queued，連續三輪各 64 筆 2,999,080-byte JSON；第 65 筆皆在推論前回 429。每輪 63 個 queued spec 的 weak references 均釋放，calls_started=0，取消耗時 25.1／26.0／59.7 ms；停止後 queue／owned workers 均零。RSS 取樣峰值約 278／323／339 MiB；Python／macOS allocator 保留已釋放頁面，drain 後 RSS 不立即回落，不能聲稱清空後回到初始 RSS。內容未落盤，僅 aggregate metadata。
