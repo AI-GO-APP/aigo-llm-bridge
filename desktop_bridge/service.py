@@ -78,9 +78,13 @@ class Runtime:
         if runner is None:
             from .warm_pool import SingleUsePool
             from .warm_runtime import CodexResource
+            from .inference_profile import resident_profiles
             self.cli_pool=SingleUsePool(lambda cancel,deadline: CodexResource(store,cancel,deadline),
                 lambda:providers.auth_generation('codex',store),target=resident,limit=workers,
-                paused=not store.get('accepting'),refill_allowed=self._can_refill)
+                paused=not store.get('accepting'),refill_allowed=self._can_refill,
+                profile_factory=lambda cancel,deadline,profile: (CodexResource(store,cancel,deadline)
+                    if profile == 'standard' else CodexResource(store,cancel,deadline,profile=profile)),
+                resident_profiles=lambda:resident_profiles(store,self.stop_event))
         self.monitor=threading.Thread(target=self._monitor,daemon=True,name='bridge-queue-monitor')
         self.monitor.start()
 
@@ -440,6 +444,8 @@ class Runtime:
             # Billing and state must use the same snapshot, even if the task just finished.
             result['status']=row['status'];result.pop('result',None)
         result['execution']={name:row[name] or 0 for name in ('warm_hits','cold_starts')}
+        result['execution'].update({name:row[name] for name in ('inference_profile','profile_reason')
+                                    if row[name] is not None})
         result['billing_status']={'complete':bool(row['billing_complete']) and terminal,
                                   'calls_started':row['calls_started'],'calls_completed':row['calls_completed']}
         if row['cost_usd'] is not None:

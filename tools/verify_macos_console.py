@@ -218,7 +218,8 @@ def main():
                 results['real_save_panel_save'] = native_dialog_export(native, output, True)
                 window.run_js('document.querySelector("#macos-open-onboarding").click()')
                 window.run_js('document.querySelector("#ob-key").value="SYNTHETIC_KEY_ONLY"; document.querySelector("#ob-defer").click()')
-                results['key_cleared_on_close'] = window.run_js('document.querySelector("#ob-key").value === ""')
+                wait_js(window, 'document.querySelector("#ob-key").value === ""')
+                results['key_cleared_on_close'] = True
                 # External navigation must be rejected before loading another origin.
                 window.run_js('location.href="https://example.invalid/"')
                 time.sleep(.3)

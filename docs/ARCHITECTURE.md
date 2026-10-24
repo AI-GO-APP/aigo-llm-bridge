@@ -112,3 +112,9 @@ Runtime 擁有 StatusReads 與 LaunchPacer：前者僅合併時間重疊的唯�
 `codex_command` 僅對 Bridge 子程序停用 goals，不改個人 config／登入。冷啟動與 warm lease 都在 claim 前，以同一 app-server 對空 cwd 執行一次唯讀 `skills/list(forceReload=true)`，用有界、經驗證的完整 path 清單產生 `thread/start.config["skills.config"]` 停用項。每個 thread 都重新查詢，不沿用常駐建立時的技能快取；不另開 metadata CLI、不使用 `skills/config/write`，不傳入 caller 內容。清單異常在 thread／turn 前失敗，查詢納入 provider_setup_ms 及原 request deadline／cancel。warm 補池仍只做 initialize／initialized。每程序一題、ephemeral／空 cwd／用量核對及清理契約不變。此設定只精簡已驗證的 goals／技能注入，尚有 Codex 內建工具、權限與環境上下文；不宣稱完整零工具 token。[D-41](DECISIONS.md)、[驗收](qa/2026-10-24-macos-codex-context.md)。
 
 0.9.11-mac.1 依 D-42，`codex_command` 的 code_mode 改用 disabled table 並排除 functions／clock 內層 namespace，cold 與 initialize-only warm 共用同一 command；不改 skills/list 或 thread 隔離流程。Claude generated_schema 改固定 system prompt，直接呼叫原生 StructuredOutput；其餘 Chat 保留原無工具提示，外部 schema 仍走 stdin。max-turns=2、單次 CLI、typed parsing、模型／完整 usage 核對維持。`benchmark_api_latency.py` 以臨時 Key＋UUID 查同一本機 request row 取得 cache／reasoning，不從省略這些欄位的公開 compact receipt 推定零。[驗收](qa/2026-10-24-macos-cli-token-release.md)。
+
+## 純 Chat profile（0.9.12-mac.1）
+
+`inference_profile.py` 以平台、request 形狀、模型及 native binary／catalog SHA256 選 profile；hash 以 stat identity 失效、序列化且最多快取 16 筆，避免每請求重讀大型 CLI。公開 catalog 的來源、衍生欄位與授權隨 desktop_bridge/data 交付；不複製個人 models cache 或憑證、不抓動態網路 JSON。文字 gpt-6.1-sol 才用 direct／零工具 metadata 與 caller-only baseInstructions；其他 standard。模型發現仍用原有唯讀 native 目錄。
+
+CodexSession.profile 與 Entry.profile 對應 startup model manager；不靠 thread/start 更換 catalog。同一 SingleUsePool 分配總 resident target，租用只取相符資源；滿額先關閉不符 idle，active／starting／closing 都仍占原共用名額。純 Chat ready 加一次無 caller 的 config/read，領取前再唯讀核對一次；不以模型推論補池。確認 effective catalog、context、工具／MCP 禁用與 ask override 來源，異常 fail closed。技能仍在 claim 前 fresh skills/list，一題一程序，原文只在 RAM／管線。收據兩個 profile 欄位均為固定 allowlist。[D-44](DECISIONS.md)、[QA](qa/2026-10-24-macos-chat-minimal-release.md)。

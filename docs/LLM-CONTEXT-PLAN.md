@@ -52,3 +52,7 @@ Claude 2.1.306 在 tools／MCP 皆空、替換 system prompt 後，仍加入環�
 優先尋找／要求上游提供**保留訂閱原生登入**、可明確關閉 context reminder 與所有 agent 工具的 headless inference 模式；先在 repo 留重現與需求，沒有授權不代使用者對外發訊息。SDK 若共用相同 harness，須先證明 wire 有差異，再花訂閱測試。
 
 可選的官方 API-key adapter 能提供更直接的 API 輸入，但它需要使用者自有 API KEY 與獨立帳務；不是現有訂閱的零成本替代，也不作自動 fallback。Codex 若日後官方設定失效，再評估公開原始碼的最小 CLI／上游修改、可重現建置與授權相容；本輪不需要 fork。兩者皆不採憑證抽取、私接訂閱 endpoint、修補個人 CLI、攔截正式 OAuth 或跨 caller 共用 thread。
+
+## 後續實作狀態
+
+D-44／0.9.12 已將本研究候選接入 Mac 共用 profile 池，加入 binary／catalog fingerprint、有效設定核對與收據模式欄位。模型名單先限 gpt-6.1-sol；Claude／Decisions 保持原樣。實機及發布狀態以 [新收據](qa/2026-10-24-macos-chat-minimal-release.md)為準；本文件前段的 0.9.11 與數字為研究基線。未取得真 OpenRouter receipt，near-parity gate 仍未完成。

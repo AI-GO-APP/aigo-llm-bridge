@@ -14,8 +14,10 @@ class CodexSession:
     MAX_LINE = 4_000_000
     MAX_BUFFER = 8_000_000
 
-    def __init__(self, command, cwd, env, cancel, timeout, *, generation=None):
+    def __init__(self, command, cwd, env, cancel, timeout, *, generation=None, profile='standard'):
         self.cwd = str(cwd)
+        self.profile = profile
+        self.profile_verified = False
         with timed('cli_spawn_ms'):
             self.child = Child(command, cwd, env)
         self.messages = queue.Queue(maxsize=4096)
@@ -29,6 +31,8 @@ class CodexSession:
         self.closing = False
         self.close_lock = threading.Lock()
         self.sent = {'initialize': 0, 'initialized': 0, 'skills/list': 0, 'thread/start': 0, 'turn/start': 0}
+        if profile == 'codex-chat-minimal-v1':
+            self.sent['config/read'] = 0
         self.idle_work_events = 0
         self.readers = [threading.Thread(target=self._reader, daemon=True),
                         threading.Thread(target=self._drain, daemon=True)]
@@ -130,12 +134,26 @@ class CodexSession:
         return {'project_doc_max_bytes': 0, 'features.goals': False,
                 'skills.config': [{'path': path, 'enabled': False} for path in sorted(paths)]}
 
+    def verify_profile(self, cancel, deadline, *, fresh=False):
+        if self.profile == 'standard' or (self.profile_verified and not fresh):
+            return
+        from .inference_profile import MINIMAL, verify_config, unavailable
+        if self.profile != MINIMAL:
+            raise unavailable()
+        config = self.response(self.send('config/read',{'includeLayers':False},cancel,deadline),cancel,deadline)
+        if not verify_config(config):
+            raise unavailable()
+        self.profile_verified = True
+
     def send(self, method, params, cancel, deadline, *, notification=False):
         check_cancel(cancel, deadline)
+        if method == 'config/read' and (self.profile != 'codex-chat-minimal-v1'
+                or self.claimed or self.sent.get(method,0) >= 2 or notification or params != {'includeLayers':False}):
+            raise BridgeError(503,'session_isolation','純推論設定只可在 ready 與領取前各唯讀確認一次。')
         if method == 'skills/list' and (self.claimed or self.sent[method]
                 or params != {'cwds': [self.cwd], 'forceReload': True} or notification):
             raise BridgeError(503, 'session_isolation', '技能查詢只可在本次空工作目錄啟動推論前執行一次。')
-        if not self.claimed and method not in {'initialize', 'initialized', 'skills/list'}:
+        if not self.claimed and method not in {'initialize', 'initialized', 'skills/list', 'config/read'}:
             raise BridgeError(503, 'session_isolation', '待命 CLI 不可建立工作。')
         if method in self.sent:
             self.sent[method] += 1

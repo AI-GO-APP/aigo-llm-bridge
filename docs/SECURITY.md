@@ -73,3 +73,11 @@ Codex 常駐只做 initialize／initialized；沒有 caller key、模型、promp
 Bridge 子程序及 ephemeral thread 覆寫 goals=false；每題於 claim 前重新取得同空 cwd 的技能 metadata，驗證單一 cwd、無 discovery errors、最多 512 筆、每筆明確 enabled bool 與最長 4096 字元的絕對 path，再於該 thread 停用全清單。清單、路徑與原始事件僅 RAM，不寫個人 config、不讀 auth.json 內容、不執行 skill。metadata 查詢可取消／逾時且只允許一次，其他 preclaim RPC 仍拒絕；異常不建立 thread／turn，不自動回退為帶技能推論。`codex_context_unavailable` 表示清單結構未通過，並非已執行模型。原 provider 通道錯誤及取消沿用既有分類。上游仍可能宣告部分內建工具；不可由 dynamicTools=[] 或停用執行推論宣告全部消失，也不可因看到定義宣稱曾實際執行。既有只讀 sandbox／approval=never、工具事件拒絕與一次性清理繼續適用。[證據](qa/2026-10-24-macos-codex-context.md)。
 
 0.9.11-mac.1 的 namespace 排除是上下文精簡，不能代替執行限制。Claude 的 StructuredOutput 唯一例外只存在於自有 generated_schema 固定提示，caller state／instructions 無法新增權限；本機工具空、MCP 空、restricted／無持久會話仍強制。保留缺少 native structured_output 拒絕且完整計量、數值／分布驗證與失敗不重送。所有研究只存 allowlist metadata，不儲存原始 request／response／events 或憑證；不採用會略過訂閱登入的 --bare。[D-42](DECISIONS.md)、[驗收](qa/2026-10-24-macos-cli-token-release.md)。
+
+## Mac 純 Chat profile（0.9.12-mac.1）
+
+只有已驗 Mac CLI binary SHA256、模型與有來源／授權／固定 hash 的公開 catalog 可用純 Chat；其他組合先選 standard 並標原因，不自動替換模型或私接訂閱 transport。catalog 不含 caller／登入資料；caller system／developer／歷史全經 stdin／RAM。移除固定 agent 提示不改 sandbox=read-only、approvalPolicy=never、dynamicTools 空、工具事件拒絕或管理員 requirements。Decisions formatter／thinking／schema 不變。
+
+純 Chat 的 preclaim RPC 額外只准兩次 `config/read(includeLayers=false)`，分別對 ready 與租用前的有效設定核對；config 與 origins 僅 RAM，檢查後不保留、不進 log。有效 catalog、context、工具、MCP 或 ask override 來源不符時，在 thread／turn 前拒絕。版本變動、pool profile 不符亦停止；開始後不另送 standard 重試。hash 等待與讀取有取消／期限，最多 16 筆 stat-keyed 快取，不讀取 auth.json 內容；與其他同 OS 使用者取得寫權後的攻擊不是相同威脅邊界。
+
+常駐 profile 交替共用一份 resident 及 workers 帳本，沒有額外繞過預算的池；pause/drain、auth generation、TTL、closing quarantine 保留。新增可持久化資料僅 SCHEMA 的兩個固定 profile 字串，不能存任意 CLI config／flag／prompt。[驗收](qa/2026-10-24-macos-chat-minimal-release.md)。

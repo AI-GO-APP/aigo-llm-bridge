@@ -13,6 +13,7 @@ TIMING_COLUMNS = (
     'output_validation_ms', 'total_ms',
 )
 LEASE_COLUMNS = ('warm_hits', 'cold_starts')
+PROFILE_COLUMNS = ('inference_profile', 'profile_reason')
 _current = ContextVar('bridge_execution_budget', default=None)
 
 
@@ -23,6 +24,7 @@ class Budget:
     started: float = field(default_factory=time.monotonic)
     timings: dict = field(default_factory=dict)
     leases: dict = field(default_factory=dict)
+    profile: dict = field(default_factory=dict)
 
     def check(self):
         if self.cancel.is_set():
@@ -35,8 +37,12 @@ class Budget:
         return self.until - time.monotonic()
 
     def metadata(self):
+        from .inference_profile import STANDARD, MINIMAL, PROFILE_REASONS
         return {name: round(value * 1000) for name, value in self.timings.items()
-                if name in TIMING_COLUMNS} | {name: self.leases.get(name, 0) for name in LEASE_COLUMNS}
+                if name in TIMING_COLUMNS} | {name: self.leases.get(name, 0) for name in LEASE_COLUMNS} | {
+                name:value for name,value in self.profile.items()
+                if (name == 'inference_profile' and value in {STANDARD,MINIMAL})
+                or (name == 'profile_reason' and value in PROFILE_REASONS)}
 
 
 def current():

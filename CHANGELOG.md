@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.9.12-mac.1] - 2026-10-24
+
+- Mac 已驗 Codex 0.163.0-alpha.11／gpt-6.1-sol 的普通文字 Chat 使用純推論 profile，完整保留 caller 指令與歷史，移除無關 agent 工具／環境及 Bridge 固定提示；CLI／catalog 指紋不符先走 standard，收據明示原因。
+- 兩 profile 租用相符的單次使用 CLI，共用原常駐總額與執行容量；2 常駐分為各1，0可關閉。Decisions StructuredOutput／Claude／外部 schema／工具提案／圖片保留 standard，不重送或改 owner 設定。
+- 新增 nullable profile metadata 與公開 catalog provenance／license；native config 衝突在推論前拒絕。修正 Mac console probe 的關閉事件時序，等待 Key 真正清除再驗收。
+
 ## [0.9.11-mac.1] - 2026-10-24
 
 - Codex Bridge 子程序排除 functions／clock 內層工具說明；使用 code_mode table，維持 disabled、單題 ephemeral 與工具事件拒絕，不修改個人 CLI。

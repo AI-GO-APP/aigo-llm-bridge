@@ -358,7 +358,7 @@ def call_claude(spec,settings,cancel,cwd):
     finally: child.close()
 
 
-def codex_command(settings):
+def codex_command(settings, *, profile='standard', cancel=None):
     command=[executable("codex",settings),"app-server","--listen","stdio://"]
     config={"web_search":"disabled","analytics.enabled":False,"feedback.enabled":False,"notify":[],
             "agents.enabled":False,"project_doc_max_bytes":0,"service_tier":"default",
@@ -377,11 +377,25 @@ def codex_command(settings):
         for name in personal.get("mcp_servers",{}):
             if re.fullmatch(r"[A-Za-z0-9_-]+",name): config[f"mcp_servers.{name}.enabled"]=False
     except (OSError,ValueError): pass
+    if profile != 'standard':
+        from .inference_profile import MINIMAL, availability, flags, unavailable
+        if profile != MINIMAL or availability(settings,cancel) != 'verified':
+            raise unavailable()
+        config.update(flags())
     for key,value in config.items(): command += ["-c",key+"="+json.dumps(value,separators=(",",":"))]
     return command
 
 
-def call_codex(spec,settings,cancel,cwd,*,session=None):
+def call_codex(spec,settings,cancel,cwd,*,session=None,profile=None):
+    from .inference_profile import Profile, MINIMAL, select, unavailable
+    profile = profile or Profile()
+    if profile.name == MINIMAL:
+        try:
+            if select(spec,settings,cancel).name != MINIMAL:
+                raise unavailable()
+        except BaseException:
+            if session is not None:session.close()
+            raise
     with timed('provider_setup_ms'):
         ready=inference_status('codex',settings,cancel,cwd)['ready']
     check()
@@ -390,22 +404,26 @@ def call_codex(spec,settings,cancel,cwd,*,session=None):
     from .codex_session import CodexSession
     deadline=time.monotonic()+settings.get("timeout_s")
     if session is None:
-        session=CodexSession(codex_command(settings),cwd,environment(),cancel,
-                             max(.001,deadline-time.monotonic()))
+        command = codex_command(settings,profile=profile.name,cancel=cancel) if profile.name == MINIMAL else codex_command(settings)
+        session=CodexSession(command,cwd,environment(),cancel,
+                             max(.001,deadline-time.monotonic()),profile=profile.name)
     def send(method,params=None,notification=False):
         return session.send(method,params or {},cancel,deadline,notification=notification)
     def receive():return session.receive(cancel,deadline)
     def response(rid):return session.response(rid,cancel,deadline)
     try:
+        if session.profile != profile.name:
+            raise unavailable()
         with timed('provider_setup_ms'):
+            session.verify_profile(cancel,deadline,fresh=True)
             thread_config=session.inference_config(cancel,deadline)
         if session.generation is not None and session.generation!=auth_generation('codex',settings):
             raise BridgeError(503,'provider_authentication','待命 CLI 的登入或設定世代已變更。')
         session.claim(cwd)
         start=response(send("thread/start",{"cwd":cwd,"ephemeral":True,"model":spec.model["native"],
             "approvalPolicy":"never","sandbox":"read-only",
-            "baseInstructions":"You are an LLM inference assistant. Never use tools, access files, execute commands, or create sessions.\n"+spec.system,
-            "developerInstructions":"Only return the requested answer. No tools are available.",
+            "baseInstructions":spec.system if profile.name == MINIMAL else "You are an LLM inference assistant. Never use tools, access files, execute commands, or create sessions.\n"+spec.system,
+            "developerInstructions":"" if profile.name == MINIMAL else "Only return the requested answer. No tools are available.",
             "config":thread_config,"dynamicTools":[]}))
         if start.get("model")!=spec.model["native"]:
             raise BridgeError(502,"model_mismatch","CLI 使用的模型與請求不同。")
@@ -459,17 +477,26 @@ def call_codex(spec,settings,cancel,cwd,*,session=None):
 
 
 def infer(spec,settings,cancel):
+    from .inference_profile import select, Profile, MINIMAL
+    with timed('provider_setup_ms'):
+        profile = select(spec,settings,cancel)
     pool = getattr(settings, 'cli_pool', None)
+    if pool is not None and profile.name == MINIMAL and not getattr(pool,'profile_factory',None):
+        profile = Profile(reason='pool_standard')
+    if budget := current():
+        budget.profile = {'inference_profile':profile.name,'profile_reason':profile.reason}
     if pool is not None:
         deadline = time.monotonic() + settings.get('timeout_s')
-        with pool.lease(cancel, deadline, cold_only=spec.model['provider'] != 'codex', allow_paused=True) as resource:
+        with pool.lease(cancel, deadline, cold_only=spec.model['provider'] != 'codex',
+                        allow_paused=True,profile=profile.name) as resource:
             if budget := current():
                 name = 'warm_hits' if getattr(resource, 'warm_hit', False) else 'cold_starts'
                 budget.leases[name] = budget.leases.get(name, 0) + 1
             if spec.model['provider'] == 'codex':
-                return call_codex(spec, settings, cancel, resource.cwd, session=resource.session)
+                return call_codex(spec, settings, cancel, resource.cwd, session=resource.session,profile=profile)
             with tempfile.TemporaryDirectory(prefix='aigo-inference-') as cwd:
                 return call_claude(spec, settings, cancel, cwd)
     # Only empty working directories touch disk. Request content stays in pipes/RAM.
     with tempfile.TemporaryDirectory(prefix="aigo-inference-") as cwd:
-        return (call_claude if spec.model["provider"]=="claude" else call_codex)(spec,settings,cancel,cwd)
+        return (call_claude(spec,settings,cancel,cwd) if spec.model['provider']=='claude'
+                else call_codex(spec,settings,cancel,cwd,profile=profile))

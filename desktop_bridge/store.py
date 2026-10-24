@@ -17,7 +17,7 @@ DEFAULT_MODELS = [
     {"id": "openai/gpt-6-astra", "provider": "codex", "native": "gpt-6-astra"},
 ]
 from .capacity import STANDARD_CONCURRENCY, DEFAULT_KEY_RPM
-from .execution_budget import TIMING_COLUMNS, LEASE_COLUMNS
+from .execution_budget import TIMING_COLUMNS, LEASE_COLUMNS, PROFILE_COLUMNS
 
 DEFAULTS = {"port": 8920, "accepting": True, "retention_days": 30, "timeout_s": 180, "inference_workers": STANDARD_CONCURRENCY,
             "inference_pending": STANDARD_CONCURRENCY, "inference_resident": 0,
@@ -28,7 +28,7 @@ LOG_COLUMNS = ("id", "key_id", "model", "provider", "created_ts", "started_ts", 
                "status", "http_status", "error_code", "duration_ms", "input_bytes", "output_bytes",
                "prompt_tokens", "completion_tokens", "cost_usd", "pricing_model", "pricing_fetched_ts", "cached_tokens", "cache_write_tokens", "reasoning_tokens",
                "protocol", "question_count", "calls_started", "calls_completed", "billing_complete")
-LOG_COLUMNS += TIMING_COLUMNS + LEASE_COLUMNS
+LOG_COLUMNS += TIMING_COLUMNS + LEASE_COLUMNS + PROFILE_COLUMNS
 
 
 def keep_default(models,current):
@@ -66,7 +66,8 @@ class Store:
         columns={row[1] for row in self.db.execute('pragma table_info(requests)')}
         for name,kind in (('cost_usd','real'),('pricing_model','text'),('pricing_fetched_ts','real'),('client_request_id','text'),('request_digest','text'),('cached_tokens','integer'),('cache_write_tokens','integer'),('reasoning_tokens','integer'),
                           ('protocol','text'),('question_count','integer'),('calls_started','integer'),('calls_completed','integer'),('billing_complete','integer'),
-                          *((name,'integer') for name in TIMING_COLUMNS + LEASE_COLUMNS)):
+                          *((name,'integer') for name in TIMING_COLUMNS + LEASE_COLUMNS),
+                          *((name,'text') for name in PROFILE_COLUMNS)):
             if name not in columns:self.db.execute(f'alter table requests add column {name} {kind}')
         self.db.execute("create unique index if not exists request_dedupe on requests(key_id,client_request_id) where client_request_id is not null")
         # Installation identity belongs to this device profile, never to a CLI login.

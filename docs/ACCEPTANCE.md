@@ -88,3 +88,5 @@ Mac 0.9.10-mac.1 已合併、公開發布、匿名下載／ZIP 安裝並更新�
 Mac 0.9.11-mac.1 的 D-42 已合併／公開發布／匿名下載 ZIP 安裝／原 profile 更新，16筆同題 HTTPS 對照全通過；input減少與延遲、cache／牌價折算差異分開揭露，2/64/64與owner Key保留。31次低量真推論含型別／工具注入、升級與續測；schema去重／thinking-off仍是研究候選，未正式採用。發布首次 close事件時序驗收失敗與同來源重跑、完整數據見 [本輪收據](qa/2026-10-24-macos-cli-token-release.md)。
 
 D-43 的 [一般 LLM 結構性研究](qa/2026-10-24-macos-llm-structural-context.md)完成 12 次 credential-free mock 與 16 次小量原生訂閱測試；Codex 候選移除無關 agent 工具／context，500 caller-token 估算題 input 3,127→506。未整合、未發布、未取得同題 OpenRouter receipt；profile／共用容量／catalog 版本／完整品質與 API 門檻見 [計畫](LLM-CONTEXT-PLAN.md)。Decisions StructuredOutput 原樣保留，不能以本輪 Chat 成效冒稱已改正式服務或完成 near-parity。
+
+R-25／D-44 的 Mac 0.9.12 純 Chat 整合、profile 共用容量、native config／wire／完整 caller 驗證及公開 ZIP／原安裝／API 分層狀態見 [收據](qa/2026-10-24-macos-chat-minimal-release.md)。Decisions StructuredOutput 不變；本項不代替完整 issue 39 效能放行或真 OpenRouter 同題對照。
