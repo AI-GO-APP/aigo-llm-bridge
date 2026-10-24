@@ -1,5 +1,7 @@
 # 驗收與交付矩陣
 
+Mac **0.9.16已合併／發布／原profile更新，4＋4／32／32零推論簡易驗收通過**；模型推論／併發未測，不能當#60已修復或完整32穩定度。四附件、真ZIP安裝、同Key metadata／四preflight及資料保留見 [本輪收據](qa/2026-10-24-macos-32-operator-release.md)。下列先前回復0.9.12為歷史狀態。
+
 Mac0.9.15程式／CI／公開ZIP／原機更新通過，但真API總99/116，64波47/64、RSS／FD亦未達；已回復0.9.12，4＋4／64／64與owner資料保留。不可視為正式放行；完整失敗／108筆已知用量及8筆unknown、結構風險#60見 [本輪收據](qa/2026-10-24-macos-auth-preflight.md)。
 
 Mac後續 [優化研究](qa/2026-10-24-macos-optimization-probes.md)：24次原生Claude語意／格式通過、12次完整stream usage吻合、17次公開health通過、批次原型20項通過。去重候選total未改善，連線重用與batch尚未整合／部署；不把研究當成新版或完整#39放行。

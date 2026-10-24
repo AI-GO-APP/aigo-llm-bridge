@@ -1,8 +1,10 @@
 # Mac BYO source Release：安裝、更新與發布
 
-0.9.13／14／15皆已發布並完成原機更新測試，但後測有失敗，Release標prerelease並保留原附件；目前正式服務回復0.9.12，owner為minimal4＋standard4／64／64。0.9.15的99/116與回復收據見 [最新QA](qa/2026-10-24-macos-auth-preflight.md)，後續交付可靠性追蹤#60。下文0.9.12發布當時的常駐2是歷史配置，更新不覆寫owner指定的4＋4。
+目前原機正式使用 [0.9.16-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.16-mac.1)，按owner明確授權的4＋4／32／32與零推論簡易驗收交付；公開包／原profile更新／保留原Key與資料見 [本輪收據](qa/2026-10-24-macos-32-operator-release.md)。未做32真推論穩定性或新壓測，#60未宣稱修復。下列0.9.12回復狀態是先前歷史，0.9.13–15失敗原件保留。
 
-最新已發布並正式安裝驗證為 [0.9.12-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.12-mac.1)。Codex純文字Chat profile、公開四附件、ZIP真安裝、原profile更新與同Key真API對照見 [本輪收據](qa/2026-10-24-macos-chat-minimal-release.md)。0.9.12發版當時owner常駐合計2（minimal／standard各1）及64/64；新安裝預設常駐0，Claude cold，Decisions StructuredOutput保留。完整warm放行仍追蹤issue39，本輪沒有Worker部署或Windows發布。先前 [0.9.11收據](qa/2026-10-24-macos-cli-token-release.md)留作歷史。
+0.9.13／14／15皆已發布並完成原機更新測試，但後測有失敗，Release標prerelease並保留原附件；當時正式服務回復0.9.12，owner為minimal4＋standard4／64／64。0.9.15的99/116與回復收據見 [最新QA](qa/2026-10-24-macos-auth-preflight.md)，後續交付可靠性追蹤#60。下文0.9.12發布當時的常駐2是歷史配置，更新不覆寫owner指定的4＋4。
+
+先前完整推論驗收的正式版本為 [0.9.12-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.12-mac.1)。Codex純文字Chat profile、公開四附件、ZIP真安裝、原profile更新與同Key真API對照見 [本輪收據](qa/2026-10-24-macos-chat-minimal-release.md)。0.9.12發版當時owner常駐合計2（minimal／standard各1）及64/64；新安裝預設常駐0，Claude cold，Decisions StructuredOutput保留。完整warm放行仍追蹤issue39，本輪沒有Worker部署或Windows發布。先前 [0.9.11收據](qa/2026-10-24-macos-cli-token-release.md)留作歷史。
 
 0.9.4-mac.1 候選整合 PR #32 的 64 併發；本輪先驗基本流程；owner 後續授權本機 Claude 64 併發測試。交付狀態見 [Mac 併發收據](qa/2026-10-23-macos-concurrency.md)。
 
@@ -51,4 +53,4 @@ BRIDGE_APP="$("$BRIDGE_PY" -c 'import json,sys; print(json.load(open(sys.argv[1]
 
 0.9.11-mac.1 已完成 D-42 的合併、發布、公開下載安裝與原 profile 更新。後續 schema 去重／thinking-off 只列研究候選，未加入此已發布程式；狀態見 [本輪收據](qa/2026-10-24-macos-cli-token-release.md)。
 
-Mac0.9.13-mac.1候選加入D-46連線重用／batch8；目前交付階段見 [本輪收據](qa/2026-10-24-macos-relay-batch-release.md)，不能以source測試代替已發布／正式安裝。原機owner目前為4＋4／64／64，下列0.9.12的2常駐是當時歷史配置；更新不覆寫設定。
+Mac0.9.13-mac.1候選加入D-46連線重用／batch8；目前交付階段見 [本輪收據](qa/2026-10-24-macos-relay-batch-release.md)，不能以source測試代替已發布／正式安裝。該輪owner為4＋4／64／64，0.9.12發版時的2常駐也是歷史配置；現行0.9.16指定4＋4／32／32見本文頂端，更新不自動覆寫其他profile。

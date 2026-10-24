@@ -12,6 +12,14 @@
 
 僅使用health／models／四類preflight（兩provider×LLM／Decisions，逐筆）與設定／原生安裝啟停：零模型推論，不呼叫probe或completion／decisions推論POST，不執行原機真API併發／負載；既有離線CI／單元回歸只用fake runner，不呼叫訂閱。測試Key只在RAM，最後撤銷；API raw內容與credential不落盤，僅allowlist metadata。既有request DB列數與CLI呼叫／用量不得因驗收增加。
 
-先在原0.9.12透過mac_service workers原子套用8／32／32並驗8idle、profile各4、接單且無queued/running；容量失敗回原8／64／64。再從公開0.9.16 ZIP更新同profile；程式更新失敗依update回復原0.9.12並保留已確認32配置。保留原URL／device／owner Key rows／模型／個人CLI config；不改登入、電源或鎖定。公開下載／hash／真ZIP安裝、CI與原安裝更新實際結果待補，沒有先宣稱已發布。
+先在原0.9.12透過mac_service workers原子套用8／32／32並驗8idle、profile各4、接單且無queued/running；容量失敗回原8／64／64。再從公開0.9.16 ZIP更新同profile；程式更新失敗依update回復原0.9.12並保留已確認32配置。保留原URL／device／owner Key rows／模型／個人CLI config；不改登入、電源或鎖定。公開下載／hash／真ZIP安裝、CI與原安裝更新均已按下列紀錄完成；這是owner指定的零推論限定驗收。
 
 本機維護回歸：Bridge366 passed／18平台限定skip，Worker17 passed；產品文件／branding／version／secret scan／diff通過。故意斷線fixture有loopback ConnectionResetError診斷但suite全過，不當正式網路故障。本機lint_terms --require因缺私有清單明確拒絕，仍要求repo CI帶secret的require檢查通過才合併。原0.9.12已原子套用8／32／32，profile idle各4、接單且無queued/running；75既有Key rows與所有其他settings保留，request DB列數未增加，0模型推論。
+
+## 已合併、公開發布與原機更新
+
+[PR #62](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/62) 最終head `43fbca3d804365050b5c02e4ac7dd77f0b90043c` 的一般CI40103544522、Windows installer40103544500、Windows Desktop40103544533、Mac40103544546全通過後合併，來源 `d473a5e5ccee2f7d7e188f28ccff57b4d0ccf1ca`。Mac [發布run40104102597](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/40104102597) 成功；[0.9.16-mac.1公開Release](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.16-mac.1)四附件匿名下載、clean manifest／commit及SHA256 `af864b4f199e4508ef6a5b77ef3ba62198f55257d02481b6d8aa6bcb66e1e22c` 均吻合。公開ZIP實際可拋棄profile安裝／互斥／停止通過，再以同一下載來源更新原設定檔；沒有Worker部署或Windows發布。
+
+本機manifest／health皆0.9.16，workers=pending=32、minimal／standard idle各4、running／queued／refill failures皆0；installed core／public data與公開ZIP一致。75筆既有Key rows全部保留，總76rows、3把owner有效Key、本輪1把臨時Key撤銷。其他設定／URL／device／原profile／個人Codex config保留，只明確把workers與pending從64改32。9個native inference／command／usage／auth函式與更新前相同，Decisions StructuredOutput保留；原0.9.12 rollback程式可用。
+
+同一臨時Key在更新前公開models成功，更新後models及兩provider×Chat／Decisions四筆preflight均200、ready=true／subscription_verified=false；全部循序，無completion／decisions推論、probe或併發。該Key在request表0列，原request表總列數 2869→2871：只讀時間／Key分類核對新增2筆為其他既有Key的completed呼叫，非本次測試Key，不納入本輪驗收或宣稱整個帳戶零用量。本次測試Key無模型推論／usage紀錄。metadata Ready不當作真模型成功，沒有實測32穩定性／latency／token改善；#39／#46／#60與歷史失敗保持開啟。私有metadata收據在`.desktop-build/0916-operator32`及原安裝`sources/macos-source-v0.9.16-mac.1`。

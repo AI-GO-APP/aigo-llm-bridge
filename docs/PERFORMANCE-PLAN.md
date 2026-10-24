@@ -54,3 +54,5 @@ python tools/benchmark_queue_memory.py --output /tmp/queue-memory.json
 同 PR 同步需求、API、資料、架構、安全、D 決策及驗收。跑 Bridge／tools／Worker tests、version、branding、product docs、terms；缺本機私有 terms 清單由 CI 核實。前端僅校正受理容量文案，不新增功能；六頁、深淺色／窄版及 Windows 適配卡另做 renderer 回歸。不發布 Windows、不自動部署 Worker。Mac 依 [MACOS-RELEASE](MACOS-RELEASE.md) 分層驗收；未達實機門檻不改正式預設或宣稱 release。
 
 回復先 pause/drain，恢復前一 source manifest／依賴，保留新 DB／nullable metadata，容量可明確設回 64/64。profile、URL、device ID、KEY、登入與 Worker 不變。
+
+D-49／R-29的0.9.16是owner另行明確授權的Mac4＋4／32／32與零推論簡易驗收，不以此替換本文件32／48／64一般效能比較門檻、宣稱32負載通過或改其他profile／Windows預設。[本輪收據](qa/2026-10-24-macos-32-operator-release.md)。

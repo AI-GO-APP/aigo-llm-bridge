@@ -1,6 +1,6 @@
 # 產品文件入口
 
-0.9.16 owner指定4＋4常駐、API／provider合計32／32的發布與零推論簡易驗收，見 [本輪QA](qa/2026-10-24-macos-32-operator-release.md)。不把此限定交付當#60已修復／完整效能放行。
+0.9.16已合併／公開發布／原機更新：owner指定4＋4常駐、API／provider合計32／32，零推論簡易驗收通過，見 [本輪QA](qa/2026-10-24-macos-32-operator-release.md)。不把此限定交付當#60已修復／完整效能放行。
 
 0.9.15已合併／公開發布並更新原機測試；4 serial＋3×16通過，但64僅47/64（總99/116），已回復0.9.12、保留4＋4／64／64。完整失敗、已知／unknown用量、prerelease及後續#60見 [本輪QA](qa/2026-10-24-macos-auth-preflight.md)。
 
@@ -83,4 +83,4 @@ Mac 0.9.11 的 namespace／Claude formatter 精簡、發布狀態與持續降低
 
 一般 LLM 接近原生 API token 用量的 [結構性計畫](LLM-CONTEXT-PLAN.md)與[研究 QA](qa/2026-10-24-macos-llm-structural-context.md)：Codex 純 Chat 候選已有真訂閱 500 caller-token 估算題的 3,127→506 input 證據，該研究後已於D-44整合／發布；沒有真 OpenRouter 對照。Decisions StructuredOutput 保持現況，Claude 固定提醒仍待根本解法。
 
-目前正式 Mac 0.9.12 純 Chat profile 已公開發布並完成原機更新，版本相容／共用容量／用量與發布、原機部署狀態見 [本輪收據](qa/2026-10-24-macos-chat-minimal-release.md)。已驗 CLI 的 gpt-6.1-sol 文字 Chat 精簡；Decisions、外部 schema／tools／images 保留 standard，未驗 CLI 明示原因。
+歷史 Mac 0.9.12 純 Chat profile 已公開發布並完成當時原機更新，版本相容／共用容量／用量與發布、原機部署狀態見 [本輪收據](qa/2026-10-24-macos-chat-minimal-release.md)。已驗 CLI 的 gpt-6.1-sol 文字 Chat 精簡；Decisions、外部 schema／tools／images 保留 standard，未驗 CLI 明示原因。
