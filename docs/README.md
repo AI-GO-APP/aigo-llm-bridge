@@ -1,5 +1,7 @@
 # 產品文件入口
 
+0.9.13正式後測抓到結果交付失敗，原機已回復0.9.12；D-47／0.9.14修正與當前交付狀態見 [結果交付QA](qa/2026-10-24-macos-result-delivery.md)。
+
 Mac0.9.13連線重用／batch8實作與交付狀態見 [本輪QA](qa/2026-10-24-macos-relay-batch-release.md)；Decisions StructuredOutput與4＋4／64／64保持原樣。
 
 後續優化研究見 [連線重用／批次輪詢與Claude schema去重](qa/2026-10-24-macos-optimization-probes.md)：真公開health連線重用有收益；批次目前只驗合成RTT原型；Claude去重未證明總用量改善，未套用正式服務。

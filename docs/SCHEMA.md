@@ -170,3 +170,5 @@ calls_started 在進入每題 provider 準備前記錄一次推論 CLI 執行嘗
 原型新增的 Entry generation（stat hash）、ready_at（monotonic）、state（starting／idle／active／closing／quarantined）及 session 均僅 RAM；resident／concurrency 也不寫 SQLite，現有設定與 DB 不變。benchmark 報告只含 arm、序號、正確性／model_match 布林、固定 error category、耗時、數字 usage、pool 計數與清理布林；無 Key、model 原始回應、thread ID、prompt、事件或 stderr。未觀測的 warm request spawn／ready 不回填為耗時零；預熱／idle／補池另含在 experiment wall time。未來後台設定須符合 [常駐契約](WARM-CLI-PLAN.md)，不能將規劃名稱當成已持久化欄位。
 
 0.9.13／D-46只新增RAM Relay session狀態：≤72在途ID、≤4096有效期限內去重ID、1／8／72有界連線與固定數字計數；停止丟棄，無DB migration／新設定／歷史內容。`relay_transport`是health metadata，不是requests表欄位或billing receipt；不記錄任何原始request／response／憑證。
+
+0.9.14／D-47不做DB migration。RAM新增result_delivery_retries、idle_discarded、固定enum／numeric last_failure；同一已計算result只保留至最多兩次交付或原deadline＋2秒，不持久化原始內容。所有既有裝置設定／Key rows與provider context保留。

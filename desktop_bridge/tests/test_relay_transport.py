@@ -200,17 +200,15 @@ def test_partial_write_is_cooperatively_cancelled_without_shutdown():
     finally: stop.set(); wire.close(); receiver.close(); pool.close(); thread.join(2)
 
 
-def test_stale_idle_connection_is_not_automatically_reconnected(server):
+def test_known_closed_idle_connection_is_discarded_before_new_request(server):
     pool = Connections(1, threading.Event(), local=True)
     try:
         pool.exchange(server.base, '/stale', {}, b'{}')
-        time.sleep(.05)
-        with pytest.raises(TransportError): pool.exchange(server.base, '/', {}, b'{}')
-        assert len(server.http.received) == 1
-        assert pool.snapshot()['connections_created'] == 1
-        # A distinct subsequent work may use a fresh connection; the failed work was not replayed.
+        deadline = time.monotonic()+1
+        while pool.idle[0][1].sock.usable() and time.monotonic()<deadline: time.sleep(.005)
         assert pool.exchange(server.base, '/', {}, b'{"new_work":true}')[0] == 200
         assert len(server.http.received) == 2 and pool.snapshot()['connections_created'] == 2
+        assert pool.snapshot()['idle_discarded'] == 1
     finally: pool.close()
 
 
@@ -312,3 +310,54 @@ def test_forward_preserves_local_error_receipt_and_cost_headers(tmp_path, server
                          'headers': {'X-Bridge-Cost-Source': 'fixture'}}]
         assert relay.snapshot()['forward_errors'] == 0
     finally: relay.stop(); store.close()
+
+
+@pytest.mark.parametrize('category,status,retry', [('io',None,True),('timeout',None,True),
+    ('http_status',503,True),('http_status',401,False),('http_status',403,False),('protocol',None,False)])
+def test_only_computed_result_is_redelivered_without_repeating_local_request(tmp_path, category, status, retry):
+    store = Store(tmp_path); relay = Relay(store, 0); local = []; sent = []
+    relay.session.local.exchange = lambda *args, **kwargs: local.append(args) or (200,b'{"fixture":true}',{})
+    def result(*args, **kwargs):
+        sent.append((args[2].copy(), kwargs))
+        if len(sent) == 1: raise TransportError(category, status)
+        return {'accepted':True}
+    relay.session.results.json = result
+    try:
+        relay.forward(work(), 'https://synthetic.invalid', 'synthetic')
+        assert len(local) == 1 and len(sent) == (2 if retry else 1)
+        assert relay.snapshot()['result_delivery_retries'] == int(retry)
+        assert relay.snapshot()['forward_errors'] == int(not retry)
+        if retry:
+            assert sent[0][0] == sent[1][0] and sent[1][1]['fresh'] is True
+    finally: relay.stop(); store.close()
+
+
+def test_result_delivery_is_bounded_and_stopping_never_redelivers(tmp_path):
+    for stop in (False, True):
+        store = Store(tmp_path/str(stop)); relay = Relay(store, 0); calls = []
+        relay.session.local.exchange = lambda *a, **kw: (200,b'{}',{})
+        def result(*a, **kw):
+            calls.append(a[2]['id'])
+            if stop: relay.session.stop.set()
+            raise TransportError('io')
+        relay.session.results.json = result
+        try:
+            relay.forward(work(), 'https://synthetic.invalid', 'synthetic')
+            assert len(calls) == (1 if stop else 2)
+            assert len(set(calls)) == 1 and relay.snapshot()['forward_errors'] == 1
+        finally: relay.stop(); store.close()
+
+
+def test_ack_lost_then_not_pending_does_not_infer_or_claim_confirmed_delivery(tmp_path):
+    store = Store(tmp_path); relay = Relay(store, 0); local=[]; sends=[]
+    relay.session.local.exchange=lambda *a,**kw: local.append(True) or (200,b'{}',{})
+    def result(*args,**kwargs):
+        sends.append(args[2]['id'])
+        if len(sends)==1:raise TransportError('io')
+        return {'accepted':False}
+    relay.session.results.json=result
+    try:
+        relay.forward(work(), 'https://synthetic.invalid', 'synthetic')
+        assert len(local)==1 and len(sends)==2 and len(set(sends))==1
+        assert relay.snapshot()['results_not_accepted']==1 and relay.snapshot()['forward_errors']==0
+    finally:relay.stop();store.close()

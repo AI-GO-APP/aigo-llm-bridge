@@ -98,3 +98,5 @@ D-43 的 [一般 LLM 結構性研究](qa/2026-10-24-macos-llm-structural-context
 R-25／D-44 的 Mac 0.9.12 純 Chat 整合、profile 共用容量、native config／wire／完整 caller 驗證及公開 ZIP／原安裝／API 分層狀態見 [收據](qa/2026-10-24-macos-chat-minimal-release.md)。Decisions StructuredOutput 不變；本項不代替完整 issue 39 效能放行或真 OpenRouter 同題對照。
 
 R-26／D-46 的Mac0.9.13連線重用／batch8驗收見 [本輪收據](qa/2026-10-24-macos-relay-batch-release.md)。來源／fault回歸、真TLS／Cocoa、CI／包、原機更新及真公開A/B逐項分列；無模型模擬不能替代真64公開負載，#39／#46保留未達門檻。
+
+0.9.13已發布但正式API後測51/52通過，一筆結果交付失敗，因此未跑64、原機回復0.9.12；不是完整放行。0.9.14 D-47修正的離線fault／真無推論傳輸及公開重驗分層見 [結果交付收據](qa/2026-10-24-macos-result-delivery.md)，保留失敗收據，不以改名或重送原推論掩蓋。
