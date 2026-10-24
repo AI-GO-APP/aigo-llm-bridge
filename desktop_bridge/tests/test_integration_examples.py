@@ -69,5 +69,13 @@ def test_handoff_uses_device_urls_preserves_original_jev_shape_and_never_reveals
         assert set(info['decisions']['request'])=={'model','state','questions','provider'}
         assert info['decisions']['response_path']=='answers' and not info['contains_key']
         assert info['model_capabilities_url']=='https://synthetic-owner.example/bridge/v1/model-capabilities'
+        assert info['config']['max_concurrent_requests']==64
+        s.set('inference_workers',2)
+        assert integration(s)['config']['max_concurrent_requests']==2
+        s.set('inference_pending',32)
+        queued=integration(s)
+        assert queued['config']['max_concurrent_requests']==32
+        assert '目前受理上限為 32 筆' in queued['prompt']
+        assert '包含內部排隊' in queued['prompt']
         assert not s.keys()
     finally:s.close()

@@ -42,4 +42,4 @@
 0.6 AI EA 相容補充：provider.data_collection=deny/allow 可原樣傳入，Bridge 將其作路由相容欄位，不影響接單；Cloud 不提供訂閱政策核准開關。其他尚無對應能力的 provider 路由參數仍會明確回 unsupported_parameter。
 
 
-標準容量為每裝置 64 筆同時推論，Claude／Codex 與 Chat／Decisions 共用。請以普通同步 API 並行 POST（async/await、Promise.all 或連線池），每筆直接取得結果；串接不需工單或輪詢。新 key 預設 600 RPM，既有 key 頻率另行核對。超過 64 尚待驗證，詳見 [併發規格](CONCURRENCY.md)。
+標準容量為每裝置最多受理 64 筆（驗證、排隊與執行合計），Claude／Codex 與 Chat／Decisions 共用。執行數可低於受理數；以裝置目前 handoff／health 容量為準。請以普通同步 API 並行 POST（async/await、Promise.all 或連線池），每筆直接取得結果；串接不需工單或輪詢。新 key 預設 600 RPM，既有 key 頻率另行核對。超過 64 尚待驗證，詳見 [併發規格](CONCURRENCY.md)。

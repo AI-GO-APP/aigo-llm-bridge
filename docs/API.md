@@ -121,3 +121,5 @@ Schema aggregate ≤256 KiB／8192 nodes／深度 24，不接受任何 $ref／$d
 以本機管理 token POST /manage/settings，body 僅含 `{"inference_workers":32,"inference_pending":64}` 可改容量；須 paused 且無未完成工作，1≤workers≤pending≤64。兩值與 live scheduler 一起更新。完整設定表單可帶原容量值，不能用混合更新改容量。
 
 同步本機受理時取 min(90 秒、timeout_s、X-Bridge-Deadline)，包含驗證／排隊／輸出驗證；jobs 保留 timeout_s 並含排隊。queued timeout 為 408／calls_started=0，已完成程序清理才回 execution_state:terminated。本機斷線取消工作；公開 Worker 斷線沒有完整取消傳播，只依原 deadline 終止，不保證零用量。成功 body／計價不變；分段耗時只由本機 logs／CSV 取得。[放行門檻](PERFORMANCE-PLAN.md)。
+
+終態 metadata 寫入失敗回 503 `metadata_unavailable`，釋放記憶體／受理名額且不回成功、不重送。先前已寫入的 billing 保留；DB 收據可能仍顯示非終態，直到後續恢復或重啟標為 interrupted，不能假造完整計量或以同 UUID 再推論。
