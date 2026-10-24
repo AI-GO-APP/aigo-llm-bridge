@@ -174,3 +174,5 @@ calls_started 在進入每題 provider 準備前記錄一次推論 CLI 執行嘗
 0.9.14／D-47不做DB migration。RAM新增result_delivery_retries、idle_discarded、固定enum／numeric last_failure；同一已計算result只保留至最多兩次交付或原deadline＋2秒，不持久化原始內容。所有既有裝置設定／Key rows與provider context保留。
 
 0.9.15不做DB／登入檔案遷移；只新增RAM冷Claude metadata重新驗證的兩種固定數字計數。stat仍不讀取credential內容，沒有保存原生status stdout／stderr。推論及成本原契約維持；已失敗的歷史收據不回填零或覆寫。
+
+D-49／R-29的owner Mac profile明確使用inference_resident=8、inference_workers=32、inference_pending=32；minimal／standard各4是既有pool分配，沒有新增schema／遷移或把私有profile打進包。其他profile與新安裝預設不因操作改寫。[限定驗收](qa/2026-10-24-macos-32-operator-release.md)。

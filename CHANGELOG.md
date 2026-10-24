@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.9.16-mac.1] - 2026-10-24
+
+- 依owner明確要求交付Mac限定32 operator設定：LLM／Decisions共用workers32與pending32，保留Codex minimal4＋standard4；Claude cold、常駐初始化不推論。原設定工具已支援，無新增推論／Relay協定變更。
+- 延續已合併0.9.15 runtime；本輪只以零推論設定／公開metadata及preflight／安裝啟停驗收，不跑併發或paid推論矩陣。這不是32穩定度／64效能放行，#39／#46／#60與0.9.13–15失敗完整保留。
+- 由公開source ZIP更新原profile，保留URL／Key／登入及個人設定；異常保留metadata並回復已驗的原程式／設定。其他安裝者的預設／既有設定與Windows發布不變。
+
 ## [0.9.15-mac.1] - 2026-10-24
 
 - 冷Claude在推論CLI啟動前，對單次只讀預檢負值或共享讀取中世代改變最多重新驗證一次；必須取得新且穩定的Ready，否則仍拒絕，不跳過登入、不改帳號、不重送模型。
