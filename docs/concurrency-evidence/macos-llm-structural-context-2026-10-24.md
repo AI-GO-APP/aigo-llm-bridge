@@ -391,3 +391,136 @@ prior_release_test_key_rows 為前輪 0.9.11 發布建立且已撤銷的兩筆�
   "new_test_key_rows_this_research": 0
 }
 ```
+
+## Codex caller-only：移除 Bridge 固定提示，保留 caller 原文
+
+首段模型工具／context 已清空；本段只移除固定 Bridge base/developer 前綴，保持 caller system／歷史及實際隔離限制。
+
+```json
+{
+  "candidate": "caller-only; zero Bridge fixed prompt; native subscription auth",
+  "production_changed": false,
+  "decisions_changed": false,
+  "inference_retries": 0,
+  "raw_content_saved": false,
+  "mock_calls": 1,
+  "rows": [
+    {
+      "case": "short",
+      "caller_estimated_tokens": 5,
+      "valid": true,
+      "completed": true,
+      "usage": {
+        "prompt_tokens": 11,
+        "completion_tokens": 6,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "seconds": 3.609
+    },
+    {
+      "case": "caller_500",
+      "caller_estimated_tokens": 500,
+      "valid": true,
+      "completed": true,
+      "usage": {
+        "prompt_tokens": 506,
+        "completion_tokens": 6,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "seconds": 3.7786
+    },
+    {
+      "case": "untrusted_data",
+      "caller_estimated_tokens": 32,
+      "valid": true,
+      "completed": true,
+      "usage": {
+        "prompt_tokens": 42,
+        "completion_tokens": 6,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      "seconds": 3.4978
+    },
+    {
+      "case": "history",
+      "caller_estimated_tokens": 14,
+      "valid": true,
+      "completed": true,
+      "usage": {
+        "prompt_tokens": 30,
+        "completion_tokens": 20,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 12
+        }
+      },
+      "seconds": 3.6789
+    }
+  ],
+  "mock": {
+    "completed": true,
+    "session_closed": true,
+    "rollout_files": 0,
+    "tools_count": [
+      0
+    ],
+    "additional_tools_count": [
+      0
+    ],
+    "caller": [
+      {
+        "role": "user",
+        "kind": "caller",
+        "characters": 2497,
+        "utf8_bytes": 2497,
+        "o200k_estimate": 500,
+        "sha256": "42d278f79ca7749939bc2648c9ef2cb44a28087355a42ec5b58800197cc7efc3",
+        "parts": [
+          {
+            "category": "remainder",
+            "characters": 2497,
+            "utf8_bytes": 2497,
+            "o200k_estimate": 500,
+            "sha256": "42d278f79ca7749939bc2648c9ef2cb44a28087355a42ec5b58800197cc7efc3"
+          }
+        ]
+      }
+    ],
+    "fields": [
+      {
+        "input": {
+          "characters": 2623,
+          "utf8_bytes": 2623,
+          "o200k_estimate": 549,
+          "sha256": "2d80ead94918d8458110e2ce4883c5233e45c608ba207a2f4455d38f7f15b201"
+        },
+        "text": {
+          "characters": 19,
+          "utf8_bytes": 19,
+          "o200k_estimate": 5,
+          "sha256": "ea2f7b2aec9b8322dfc4147fc30009def7ae33633895485ca85dadbcde2e0eef"
+        }
+      }
+    ]
+  },
+  "real_inference_calls": 4,
+  "success": true
+}
+```

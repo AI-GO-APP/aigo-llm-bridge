@@ -10,20 +10,24 @@
 
 | 模型／固定案例 | caller 估算 | 現行 input → 候選 | output | 秒數現行 → 候選 |
 |---|---:|---:|---:|---:|
-| Codex／短題 | 5 | 2,634 → 52 | 6 → 6 | 4.2372 → 4.5095 |
-| Codex／500 文字 | 500 | 3,127 → 547 | 6 → 6 | 3.8583 → 3.8434 |
+| Codex／短題，caller-only | 5 | 2,634 → 11 | 6 → 6 | 4.2372 → 3.6090 |
+| Codex／500 文字，caller-only | 500 | 3,127 → 506 | 6 → 6 | 3.8583 → 3.7786 |
 | Claude／短題 | 5 | 565 → 527 | 70 → 47 | 1.7519 → 1.4555 |
 | Claude／500 文字 | 500 | 1,061 → 1,022 | 104 → 77 | 1.9602 → 1.7963 |
 
-500 是同份 caller 文字的 `o200k_base` 估算；**沒有真 OpenRouter receipt，也不是 Claude tokenizer**。input/output 為 CLI 原生完整 usage。Codex 500 文字 input 減少 82.51%，與 caller 估算差 47（9.4%）；output 同為 6，候選 total 553。Claude 對同份文字 input 減少 3.68%，仍有明顯固定開銷；不要把其估算差直接當成 provider 精確 overhead。
+500 是同份 caller 文字的 `o200k_base` 估算；**沒有真 OpenRouter receipt，也不是 Claude tokenizer**。input/output 為 CLI 原生完整 usage。Codex 500 文字 input 減少 83.82%，與 caller 估算差 6（1.2%）；output 同為 6，候選 total 512。Claude 對同份文字 input 減少 3.68%，仍有明顯固定開銷；不要把其估算差直接當成 provider 精確 overhead。
+
+Codex 分兩段：先移除 agent 工具／context，保留 Bridge 固定 base/developer prompt，短題 52 input／6 output、4.5095 秒，500 文字 547／6、3.8434 秒；再用 caller-only，移除 Bridge 固定前綴及固定 developer 提示，caller system／developer／歷史不變，得到上表 11／506。後段不是刪 caller instructions，也沒有移除實際 sandbox／never approval／工具清單與事件拒絕。caller-only mock 的 provider instructions 欄位未出現、caller block 完整且 tools／additional_tools 空；不要把「空 prompt」解讀為繞過執行限制。
 
 Codex 另驗歷史訊息 71 input／18 output（reasoning 10）、不可信工具指令 79／6、initialize-only 等待後單次領取 547／6、caller JSON schema 80／15；模型、格式與語意簡檢全通過。initialize／initialized 後等待 0.5 秒，領取前 thread/start=turn/start=skills/list=0，領取後各一，結束程序清理。這一筆證明 ready 邊界，不代表多 profile 正式池已完成。caller schema 是普通 Chat，不是 Decisions。
 
-12 次真 CLI 合計 **10,312 input／367 output**；其中 Codex 8 次 7,137／69、Claude 4 次 3,175／298。全部 cache read=0，Claude cache write=0；沒有隱藏重試、失敗刪樣或原生輸出不計費。除 Codex history reasoning=10 外，Codex reasoning 均 0；Claude 未提供同型 reasoning 拆帳，不臆填零。Claude output 可能含推理，不能只用答案字數估 usage。單題時間受模型／網路波動，Codex 短題還略慢，本輪沒有延遲改善或費用比例保證。
+caller-only 另驗不可信工具指令 42 input／6 output、歷史 30／20（reasoning 12），語意簡檢通過，所有 caller 訊息仍送出。system／歷史的訊息邊界有不同 overhead，不能將單一 user 題的差 6 外推到每種請求。
+
+16 次真 CLI 合計 **10,901 input／405 output**；其中 Codex 12 次 7,726／107、Claude 4 次 3,175／298。全部 cache read=0，Claude cache write=0；沒有隱藏重試、失敗刪樣或原生輸出不計費。Codex 兩段 history reasoning 分別為 10／12，其餘均 0；Claude 未提供同型 reasoning 拆帳，不臆填零。Claude output 可能含推理，不能只用答案字數估 usage。單題時間受模型／網路波動，第一段 Codex 短題還略慢，本輪沒有延遲改善或費用比例保證。
 
 ## credential-free mock 與根因
 
-共 11 次 loopback：Codex 拆解 5 次、thread-only 覆寫 1 次、500 caller 完整性 2 次，Claude 拆解 3 次，零真模型推論。HOME／CLI config／XDG 為拋棄目錄；Codex provider requires_openai_auth=false 且無 Authorization header，Claude 僅明確 fake API KEY 送 loopback，不讀／轉送 owner auth。只存欄位型別、工具名稱、布林、長度、token 估算與 hash，不存 raw body／headers／event／stderr。
+共 12 次 loopback：Codex 拆解 5 次、thread-only 覆寫 1 次、500 caller 完整性 2 次、caller-only 1 次，Claude 拆解 3 次，零真模型推論。HOME／CLI config／XDG 為拋棄目錄；Codex provider requires_openai_auth=false 且無 Authorization header，Claude 僅明確 fake API KEY 送 loopback，不讀／轉送 owner auth。只存欄位型別、工具名稱、布林、長度、token 估算與 hash，不存 raw body／headers／event／stderr。
 
 Codex wire input JSON 的 o200k 估算（**不是計費**）：
 
