@@ -31,6 +31,13 @@ def valid(value, model, protocol):
             and type(probability) in (int, float) and math.isfinite(probability) and 0 <= probability <= 1)
 
 
+def token_subsets(record):
+    # Public receipts deliberately omit these details. Match the local row by
+    # this temporary key and UUID; unavailable metadata must remain null.
+    return {field: value if type(value := record.get(field)) is int and value >= 0 else None
+            for field in ('cached_tokens', 'reasoning_tokens')}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--apply', action='store_true')
@@ -139,16 +146,12 @@ def main():
                             ('completion_tokens', ('completion_tokens', 'output_tokens')), ('cost_usd', ('cost',))]:
                             number = next((usage[k] for k in alternatives if k in usage), None)
                             row[field] = number if type(number) in (int, float) and math.isfinite(number) else None
-                        for field, details in [('cached_tokens', 'prompt_tokens_details'),
-                                               ('reasoning_tokens', 'completion_tokens_details')]:
-                            # Decisions' compact public usage omits these subsets;
-                            # its billing receipt retains the complete CLI usage.
-                            number = receipt.get('billing', {}).get('usage', {}).get(details, {}).get(field)
-                            row[field] = number if type(number) is int and number >= 0 else None
                         with store.lock:
-                            record = store.db.execute('select '+','.join(TIMING_COLUMNS)+
+                            record = store.db.execute('select '+','.join((*TIMING_COLUMNS,'cached_tokens','reasoning_tokens'))+
                                 ' from requests where key_id=? and client_request_id=?', (kid, rid)).fetchone()
-                            row['timings_ms'] = dict(record) if record is not None else {}
+                            metadata = dict(record) if record is not None else {}
+                            row['timings_ms'] = {field:metadata.get(field) for field in TIMING_COLUMNS}
+                            row.update(token_subsets(metadata))
                         row['passed'] = row['lease_valid'] and row['response_valid'] and row['receipt_complete'] and row['cost_matches']
                     except Exception:
                         row.update(passed=False, transport_or_validation_error=True,

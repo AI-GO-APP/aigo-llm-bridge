@@ -4,7 +4,15 @@ import sys
 
 import pytest
 
-from tools.benchmark_api_latency import valid
+from tools.benchmark_api_latency import valid, token_subsets
+
+
+@pytest.mark.parametrize('record,expected',[
+    ({'cached_tokens':1024,'reasoning_tokens':0},{'cached_tokens':1024,'reasoning_tokens':0}),
+    ({},{'cached_tokens':None,'reasoning_tokens':None}),
+    ({'cached_tokens':True,'reasoning_tokens':-1},{'cached_tokens':None,'reasoning_tokens':None})])
+def test_local_token_subsets_preserve_zero_and_unknown(record,expected):
+    assert token_subsets(record)==expected
 
 
 @pytest.mark.parametrize('probability,expected',[(.5,True),(True,False),(float('nan'),False),(-.1,False)])

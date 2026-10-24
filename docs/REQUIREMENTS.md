@@ -62,3 +62,5 @@ Mac 0.9.9 明確選擇的 Codex 單次常駐試驗：預設 0，允許 0–infer
 ## Codex 上下文精簡
 
 0.9.10-mac.1 依 D-41，Bridge 專用程序停用 goals／列出的技能，保留個人 CLI、原訂閱、裝置 profile 與每題隔離；清單異常須在 thread／turn 前停止。必須以 Mac 受控上游封包確認宣告移除，再以相同模型／短題／常駐設定、低量無重試真 API 核對完整 usage，不把 token 估算當計費或小樣本延遲當 SLA。[本輪驗收與剩餘上下文](qa/2026-10-24-macos-codex-context.md)。
+
+0.9.11-mac.1 依 D-42，Codex 精簡 functions／clock 內層宣告；Claude 自有 Decisions 直接走 StructuredOutput formatter，保留 noul／choice／score、caller 指令優先序、JSON／歷史／影像／工具提案、取消／期限與完整成本契約。只可報實測用量下降，不能以單次研究宣稱普遍延遲改善、完全零工具上下文或已完成 issue 39。[候選／發布分層驗收](qa/2026-10-24-macos-cli-token-release.md)。

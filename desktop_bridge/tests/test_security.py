@@ -71,6 +71,8 @@ def test_claude_dynamic_content_is_only_in_stdin(monkeypatch,tmp_path):
     assert '--no-session-persistence' in captured['command'] and '--restricted' in captured['command']
     assert '--json-schema' not in captured['command']
     assert captured['command'][captured['command'].index('--max-turns')+1]=='1'
+    assert 'StructuredOutput' not in captured['command'][captured['command'].index('--system-prompt')+1]
+    assert captured['command'][captured['command'].index('--tools')+1]==''
 
 
 def test_provider_environment_excludes_unrelated_credentials(monkeypatch):

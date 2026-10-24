@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.9.11-mac.1] - 2026-10-24
+
+- Codex Bridge 子程序排除 functions／clock 內層工具說明；使用 code_mode table，維持 disabled、單題 ephemeral 與工具事件拒絕，不修改個人 CLI。
+- Claude 自有 Decisions 明確只允許 StructuredOutput 格式化，直接輸出結構答案，減少先產文字再格式化的重複上下文；保留 typed validator、訂閱登入、max-turns=2 與空本機工具／MCP。Chat 與外部 schema 契約保留。
+- 測速工具由相同臨時 Key／UUID 的本機 metadata 讀取 cache／reasoning，未知維持 null；不增加推論或擴張公開 receipt。
+
 ## [0.9.10-mac.1] - 2026-10-24
 
 - 精簡 Bridge 專用 Codex goals／技能上下文；每題用同一 app-server 唯讀列出當前技能，再於 ephemeral thread 停用，不改個人 CLI 設定或訂閱。清單異常／取消／逾時在推論前停止。
