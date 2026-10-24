@@ -7,6 +7,11 @@ const COST_HEADERS=["X-Bridge-Cost-Source","X-Bridge-Pricing-Model","X-Bridge-Pr
 const error = (code, type, message) => Response.json({error:{code,message,metadata:{error_type:type}}},
   {status:code,headers:{"Cache-Control":"no-store"}});
 const hash = async text => [...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text)))].map(b=>b.toString(16).padStart(2,"0")).join("");
+const envelope=(batch,works)=>{
+  const raw=JSON.stringify(batch?{requests:works}:{request:works[0]||null});
+  if(new TextEncoder().encode(raw).byteLength>BATCH_BYTES)return error(502,"response_too_large","Relay envelope too large.");
+  return new Response(raw,{headers:{'Content-Type':'application/json'}});
+};
 
 export default {
   async fetch(request, env) {
@@ -82,19 +87,25 @@ export class DeviceRelay {
           }
           if(selected.length){
             const works=selected.map(item=>item.work);
-            const response=Response.json(batch?{requests:works}:{request:works[0]});
+            const response=envelope(batch,works);
+            if(!response.ok)return response;
             for(const item of selected)item.dispatched=true;
             return response;
           }
           // One device, one long poll. Never use timers as durable storage.
-          const work=await new Promise(resolve=>{
+          const response=await new Promise(resolve=>{
             let completed=false;
-            const finish=value=>{if(completed)return;completed=true;clearTimeout(timer);this.waiter=null;resolve(value);};
+            const finish=value=>{
+              if(completed)return;
+              const response=envelope(batch,value?[value]:[]);
+              if(value&&response.ok){const item=this.pending.get(value.id);if(item)item.dispatched=true;}
+              completed=true;clearTimeout(timer);this.waiter=null;resolve(response);
+            };
             const timer=setTimeout(()=>finish(null),20_000);
             this.waiter=finish;
           });
           this.lastSeen=Date.now();
-          return Response.json(batch?{requests:work?[work]:[]}:{request:work});
+          return response;
         }
         if(path==="/agent/result") {
           this.lastSeen=Date.now();
@@ -139,7 +150,7 @@ export class DeviceRelay {
           resolve(error(408,"timeout","Device response timed out."));
         },Math.max(1,deadline-Date.now()+2000));
         const item={work,resolve,timer,dispatched:false,inference};this.pending.set(id,item);
-        if(this.waiter){item.dispatched=true;this.waiter(work);}
+        if(this.waiter)this.waiter(work);
       });
     } catch {return error(400,"invalid_request","Invalid or oversized request.");}
   }

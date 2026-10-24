@@ -10,11 +10,11 @@
 
 ## 候選本機檢查
 
-- Bridge pytest：349 passed／18 skipped；包含13項新transport／Relay案例，真本機TLS重用／不信任憑證拒絕實際執行。
+- Bridge pytest：351 passed／18 skipped；包含15項新transport／Relay案例，真本機TLS重用／不信任憑證拒絕、慢速標頭總期限、stale socket不隱式重連實際執行。
 - tools＋Windows packaging：161 passed／5 skipped；Mac歷史核心回歸33 passed；Windows platform JS 3 passed。這些不是Windows原生訂閱或發布證據。
-- Worker＋研究回歸37 passed（正式Worker15、重播15、原型7）；凍結0.9.4 baseline，避免整合後比較到自己。
+- Worker＋研究回歸39 passed（正式Worker16、重播16、原型7）；凍結0.9.4 baseline，避免整合後比較到自己。
 - 真Cocoa probe通過65張六頁／狀態／五步／Windows卡深淺×1200／480矩陣、native clipboard／NSSavePanel取消及儲存／CSV／關窗Key清除與服務保留。抽查窄版容量卡及寬版overview可讀。
-- 文件覆蓋、branding、版本一致、diff檢查通過。本機`lint_terms --require`因沒有BANNED_TERMS／.banned-terms以exit1拒絕；不要求owner貼secret，合併前仍須由repo CI帶secret執行通過。
+- 文件覆蓋、branding、版本一致、diff檢查通過。本機`lint_terms --require`因沒有BANNED_TERMS／.banned-terms以exit1拒絕；不要求owner貼secret，首輪repo CI已帶secret執行通過；最終head仍須全CI通過才合併。
 
 ## 更新前正式基準
 

@@ -35,6 +35,19 @@ test('batch byte cap counts encoded escaping and leaves remainder queued',async(
  }finally{for(const item of r.pending.values()){clearTimeout(item.timer);item.resolve(Response.json({ok:true}));}r.pending.clear();await Promise.all(external);}
 });
 
+test('waiting poll also bounds an oversized escaped envelope before dispatch',async()=>{
+ const r=new DeviceRelay({}, {DEVICE_KEY:device}),key='synthetic-waiting-key',keys=[await digest(key)];
+ const waiting=r.fetch(req('/agent/poll',{key_digests:keys,batch_size:8}));
+ await new Promise(resolve=>setTimeout(resolve,10));
+ const external=r.fetch(new Request('https://test.workers.dev/api/v1/chat/completions',{
+  method:'POST',headers:{Authorization:'Bearer '+key},body:'\u0000'.repeat(1_100_000)}));
+ try{
+  assert.equal((await waiting).status,502);
+  assert.equal(r.pending.size,1);
+  assert.ok([...r.pending.values()].every(x=>!x.dispatched));
+ }finally{for(const item of r.pending.values()){clearTimeout(item.timer);item.resolve(Response.json({ok:true}));}r.pending.clear();await external;}
+});
+
 test('queue reserves capacity before asynchronous body reads and releases failures',async()=>{
  const relay=new DeviceRelay({}, {DEVICE_KEY:device});const key='synthetic-queue-key';
  relay.keys.add(await digest(key));relay.lastSeen=Date.now();
