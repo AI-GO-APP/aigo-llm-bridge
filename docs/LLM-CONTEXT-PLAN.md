@@ -1,6 +1,6 @@
 # 一般 LLM 接近原生 API token 用量的計畫
 
-2026-10-24，Refs #46，D-43。**研究候選，尚未整合 runtime／發布**；正式 Mac 仍為 0.9.11-mac.1、常駐 2／workers 64／pending 64。本計畫不改 Decisions 的 StructuredOutput、formatter、thinking、schema 或 typed validator。實測與限制見 [研究 QA](qa/2026-10-24-macos-llm-structural-context.md)。
+2026-10-24，Refs #46，D-43研究及D-44實作。**0.9.12-mac.1 已整合、發布並更新原安裝**，常駐合計2／workers64／pending64；實際交付見 [發布收據](qa/2026-10-24-macos-chat-minimal-release.md)。前段數字是0.9.11時的研究基線，本計畫不改Decisions的StructuredOutput、formatter、thinking、schema或typed validator。[原研究](qa/2026-10-24-macos-llm-structural-context.md)保留當時候選狀態；真OpenRouter對照仍待驗。
 
 ## 目標及計量
 

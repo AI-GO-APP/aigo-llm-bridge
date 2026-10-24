@@ -38,7 +38,7 @@ Mac 公開 Decisions／模型探索上線及本機／Worker／真實推論證據
 
 ## 維護約定
 
-Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [最新 Mac Release／公開 API 收據](qa/2026-10-24-macos-cli-token-release.md)（[0.9.7 階段 0–2](qa/2026-10-24-macos-queue-release.md)）（[0.9.3 公開 API](qa/2026-10-23-macos-public-api.md)、[先前 Release](qa/2026-10-23-macos-release.md)、[parity QA](qa/2026-10-23-macos-parity.md) 為歷史證據）分別定義契約與獨立證據，不以 Windows 結果代替。
+Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [最新 Mac Release／公開 API 收據](qa/2026-10-24-macos-chat-minimal-release.md)（[0.9.7 階段 0–2](qa/2026-10-24-macos-queue-release.md)）（[0.9.3 公開 API](qa/2026-10-23-macos-public-api.md)、[先前 Release](qa/2026-10-23-macos-release.md)、[parity QA](qa/2026-10-23-macos-parity.md) 為歷史證據）分別定義契約與獨立證據，不以 Windows 結果代替。
 
 修改功能時，同一 PR 更新需求／API、資料字典、決策或設計文件中受影響的部分，並在 ACCEPTANCE 指向具體證據。新功能不能只留在聊天。文件的日期是維護日期，不是驗收通過證明。
 
@@ -67,8 +67,8 @@ Codex namespace／exec 與 Claude CLI、原生 StructuredOutput 多回合的進�
 
 Mac 0.9.11 的 namespace／Claude formatter 精簡、發布狀態與持續降低 token 研究見 [本輪收據](qa/2026-10-24-macos-cli-token-release.md)；前版與候選的數據分開記錄。
 
-目前正式 Mac 為 [0.9.11-mac.1](qa/2026-10-24-macos-cli-token-release.md)：namespace／formatter 已上線、原 profile 2/64/64；PR49所記候選後續已採用。schema去重／thinking-off則維持研究狀態，不能將簡單合成題結果當實務品質或SLA。
+前版 Mac [0.9.11-mac.1](qa/2026-10-24-macos-cli-token-release.md)：namespace／formatter 已上線、原 profile 2/64/64；PR49所記候選後續已採用。schema去重／thinking-off則維持研究狀態，不能將簡單合成題結果當實務品質或SLA。
 
-一般 LLM 接近原生 API token 用量的 [結構性計畫](LLM-CONTEXT-PLAN.md)與[研究 QA](qa/2026-10-24-macos-llm-structural-context.md)：Codex 純 Chat 候選已有真訂閱 500 caller-token 估算題的 3,127→506 input 證據，尚未整合／發布；沒有真 OpenRouter 對照。Decisions StructuredOutput 保持現況，Claude 固定提醒仍待根本解法。
+一般 LLM 接近原生 API token 用量的 [結構性計畫](LLM-CONTEXT-PLAN.md)與[研究 QA](qa/2026-10-24-macos-llm-structural-context.md)：Codex 純 Chat 候選已有真訂閱 500 caller-token 估算題的 3,127→506 input 證據，該研究後已於D-44整合／發布；沒有真 OpenRouter 對照。Decisions StructuredOutput 保持現況，Claude 固定提醒仍待根本解法。
 
-Mac 0.9.12 純 Chat profile 已有候選實作，版本相容／共用容量／用量與發布、原機部署狀態見 [本輪收據](qa/2026-10-24-macos-chat-minimal-release.md)。已驗 CLI 的 gpt-6.1-sol 文字 Chat 精簡；Decisions、外部 schema／tools／images 保留 standard，未驗 CLI 明示原因。
+目前正式 Mac 0.9.12 純 Chat profile 已公開發布並完成原機更新，版本相容／共用容量／用量與發布、原機部署狀態見 [本輪收據](qa/2026-10-24-macos-chat-minimal-release.md)。已驗 CLI 的 gpt-6.1-sol 文字 Chat 精簡；Decisions、外部 schema／tools／images 保留 standard，未驗 CLI 明示原因。
