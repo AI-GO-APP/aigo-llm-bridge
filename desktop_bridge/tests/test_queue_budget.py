@@ -204,18 +204,20 @@ def test_schema_admission_reservation_precedes_expensive_validation(tmp_path,mon
     rt=Runtime(store,lambda *_:('OK',{'prompt_tokens':1,'completion_tokens':1},'stop'),max_workers=1,max_pending=1)
     real=rt.validate_request
     def blocked(*args):
-        entered.set();assert release.wait(3)
+        entered.set();assert release.wait(10)
         return real(*args)
     monkeypatch.setattr(rt,'validate_request',blocked)
     try:
         with ThreadPoolExecutor(max_workers=1) as clients:
-            future=clients.submit(rt.submit,CHAT,caller,20,deadline=time.time()+.1)
+            # This tests reservation ordering, independent of OS thread scheduling.
+            # Deadline exhaustion has dedicated tests below.
+            future=clients.submit(rt.submit,CHAT,caller,20)
             try:
-                assert entered.wait(1)
+                assert entered.wait(5)
                 with pytest.raises(BridgeError) as error:rt.submit(CHAT,caller,20)
                 assert error.value.category=='queue_full'
             finally:release.set()
-            task=future.result(2);assert task.done.wait(2)
+            task=future.result(5);assert task.done.wait(5)
     finally:release.set();rt.stop();store.close()
 
 

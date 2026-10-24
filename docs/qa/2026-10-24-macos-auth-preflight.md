@@ -11,3 +11,5 @@
 ## 驗收
 
 專項驗證負值後Ready／讀取中世代變動後穩定各只spawn一次推論，持續負值／持續變動不spawn，取消在第二次前停止、Codex不重新驗證；原pacer後世代拒絕仍驗。本機Bridge366 passed／18平台限定skip，專項15 passed；原生Cocoa65張畫面、native clipboard、真save panel取消與儲存、CSV及關閉viewer服務仍在均通過。CI、公開ZIP／原機更新及新一輪兩provider×LLM／Decisions、3×16通過才64的結果待逐項補證。Meta重新驗證次數與CLI／完整usage分列，不以Ready當真推論證據。#39完整warm及真OpenRouter對照仍獨立。
+
+首輪CI的一般檢查／Windows Desktop通過；Windows installer的schema reservation排序測試在背景執行緒進入前使用0.1秒wall deadline，遇runner排程後未進入assert事件（450 passed／14 skip／1 failed）。移除與排序無關的短期限，保留專屬deadline回歸，使用事件控制的有界等待；不變更正式排程／期限語義。後續CI以修正版head重新完整執行，保留首輪失敗。
