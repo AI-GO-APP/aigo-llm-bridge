@@ -111,3 +111,5 @@ D-37 限定自有 Decisions 使用 Claude CLI 原生固定結構輸出，依 [�
 943b789 的原生結構＋40 ms 首版三輪為 47／49／50 正確，CLI provider_error 17／15／14；不是放行證據。[metadata](../concurrency-evidence/macos-live-native40-2026-10-24.json)。RSS 降至 5,536,960 KiB，但 Chat p95 約 11 秒，未通過速度／正確性。調為原生結構 CLI turn 上限 2，容納其結構終結步驟；每題仍僅一次 Bridge CLI 呼叫，無本機工具或 Bridge 重送，usage／cost 依 CLI 合計。另將啟動間距改為 20 ms，須重新核實。單筆協定 probe 的 CLI result 可回 num_turns=2，metadata 未含原文；不把 CLI turn 計數冒稱實際供應商 RPC 次數。
 
 完整本機回歸於 943b789 為 403 passed／23 skipped；後續 native turn／pacer 參數的針對性回歸 22 passed。格式缺失可拒絕，但已核對的模型用量／成本須先保存；另有回歸確認 502 的 calls_started=calls_completed=1、billing_complete=1、cost>0。benchmark 成本改從 receipt 加總，包含已知成本的失敗，不把失敗當作零費用。
+
+01e8596 的 native turn=2、所有請求共用 20 ms 間距已達三輪 192/192 正確、收據完整，RSS 6,190,480 KiB（低於 baseline）；但 Chat p95 中位數 11.2189 s、Decisions 15.0653 s，仍未放行。[全部 metadata](../concurrency-evidence/macos-live-native2-allpaced-2026-10-24.json)。因此將啟動節流限於因固定 schema 快速路徑而集中啟動的 Claude Decisions；一般 Chat 與 Codex 沿用原啟動方式，沒有更改 queue FIFO 或 64/64 容量。CLI 原生結構模式會增加部分輸入／終結步驟用量，本組每輪已知 cost 約 0.202–0.206 USD 等值，較 baseline 後兩輪約 0.144 高；這是 CLI token 的公開牌價估值，不是另收 API 費用，也不隱藏於 calls_completed=1（其單位為 CLI 呼叫）。調整後另驗，保留負面結果。

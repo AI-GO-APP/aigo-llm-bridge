@@ -137,5 +137,20 @@ def test_auth_generation_is_rechecked_after_waiting_to_launch(monkeypatch,tmp_pa
         launch_pacer=Pacer()
         def get(self,name):return 3
     with pytest.raises(BridgeError) as error:
-        providers.inference_status('claude',Settings(),threading.Event(),tmp_path)
+        providers.inference_status('claude',Settings(),threading.Event(),tmp_path,pace=True)
     assert error.value.status==503
+
+
+def test_simple_requests_do_not_wait_for_fixed_structure_startup(monkeypatch,tmp_path):
+    calls=[]
+    monkeypatch.setattr(providers,'auth_generation',lambda *_:'same')
+    monkeypatch.setattr(providers,'status',lambda *_,**kwargs:{'ready':True})
+    class Pacer:
+        def wait(self,_):calls.append(1)
+    class Settings:
+        launch_pacer=Pacer()
+        def get(self,name):return 3
+    assert providers.inference_status('claude',Settings(),threading.Event(),tmp_path)['ready']
+    assert not calls
+    assert providers.inference_status('claude',Settings(),threading.Event(),tmp_path,pace=True)['ready']
+    assert calls==[1]

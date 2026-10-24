@@ -144,14 +144,14 @@ class LaunchPacer:
             self.next_start=time.monotonic()+self.interval
 
 
-def inference_status(provider,settings,cancel,cwd):
+def inference_status(provider,settings,cancel,cwd,*,pace=False):
     generation=auth_generation(provider,settings)
     reads=getattr(settings,'status_reads',None)
     value=(reads.read(provider,settings,cancel,cwd) if reads is not None else
         status(provider,settings,timeout=min(20,settings.get('timeout_s')),cancel=cancel,cwd=cwd))
     if value.get('ready'):
         pacer=getattr(settings,'launch_pacer',None)
-        if pacer is not None:pacer.wait(cancel)
+        if pace and pacer is not None:pacer.wait(cancel)
         check()
         if generation!=auth_generation(provider,settings):
             raise BridgeError(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
@@ -288,7 +288,7 @@ def codex_usage(usage):
 
 def call_claude(spec,settings,cancel,cwd):
     with timed('provider_setup_ms'):
-        ready=inference_status('claude',settings,cancel,cwd)['ready']
+        ready=inference_status('claude',settings,cancel,cwd,pace=getattr(spec,'generated_schema',False))['ready']
     check()
     if not ready:
         raise BridgeError(503,"provider_authentication","Claude Code 尚未使用訂閱帳號登入。")
