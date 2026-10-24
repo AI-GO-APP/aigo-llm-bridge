@@ -64,8 +64,10 @@
 
 CPU 是 ps 程序生命期平均值的取樣峰值，非瞬時CPU；fd是proc_pidinfo描述資料bytes/8，短命程序可能漏採；sampler在原服務樹之外。兩段時長不同，不可用此表計算warm/cold RSS增幅。事前續測門檻為tree RSS≤8GiB、tree fd≤8192，未觸發；不是OS hard limit或一般產品資源建議。
 
-直連補測腳本第一次在零筆serial樣本做max時出現ValueError，**在推論前結束，發出0筆API**；兩把臨時Key已撤銷，保留 [負面metadata](../concurrency-evidence/macos-0912-staged-preflight-2026-10-24.json)。修正空集合摘要後才開始計畫中的16筆，沒有重送任何推論。兩個成功段的測試Key也全數撤銷，共6把臨時Key均撤銷，原59筆Key rows／3把有效owner Key保留；每段設定與manifest hash比對未變。
+直連補測腳本第一次在零筆serial樣本做max時出現ValueError，**在推論前結束，發出0筆API**；兩把臨時Key已撤銷，保留 [負面metadata](../concurrency-evidence/macos-0912-staged-preflight-2026-10-24.md)。修正空集合摘要後才開始計畫中的16筆，沒有重送任何推論。兩個成功段的測試Key也全數撤銷，共6把臨時Key均撤銷，原59筆Key rows／3把有效owner Key保留；每段設定與manifest hash比對未變。
 
 測後服務回到accepting、idle8、兩profile各4、workers／pending64、running／queued／refill failures為0。正式版仍0.9.12；這次僅新增測試證據，不修改產品預設、不重發immutable Release，不改電源／登入或原裝置資料。兩議題仍開啟：#39的完整cold/warm與真正本機64／持續資源門檻未驗；#46的Claude／其餘模式額外用量仍待追蹤。
 
-完整固定allowlist metadata：[公開96筆](../concurrency-evidence/macos-0912-staged-public-2026-10-24.json)、[直連16筆](../concurrency-evidence/macos-0912-staged-loopback-2026-10-24.json)。原始request／response／事件／stderr／完整Key皆不保存。
+完整固定allowlist metadata：[公開96筆](../concurrency-evidence/macos-0912-staged-public-2026-10-24.md)、[直連16筆](../concurrency-evidence/macos-0912-staged-loopback-2026-10-24.md)。原始request／response／事件／stderr／完整Key皆不保存。
+
+本輪回歸：Bridge 336 passed／18 skipped，Relay 13 passed；產品文件／品牌／版本／secrets／whitespace通過。私有terms本機清單未提供，PR的required CI使用secret核實。第一版證據檔使用JSON副檔名，被版本閘門正確視為非文件變更；改為repo既有的Markdown證據格式，JSON內容逐字保留，不修改或略過閘門，也不為收據升產品版。

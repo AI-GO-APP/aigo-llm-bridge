@@ -1,3 +1,8 @@
+# Mac 0.9.12 staged preflight metadata
+
+2026-10-24。僅固定 allowlist metadata；不含原始 request／response／事件／Key。[驗收與限制](../qa/2026-10-24-macos-0912-staged-api.md)。
+
+```json
 {
   "schema": 1,
   "version": "0.9.12-mac.1",
@@ -77,3 +82,4 @@
 
   ]
 }
+```

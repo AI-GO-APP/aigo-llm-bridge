@@ -1,3 +1,8 @@
+# Mac 0.9.12 staged loopback metadata
+
+2026-10-24。僅固定 allowlist metadata；不含原始 request／response／事件／Key。[驗收與限制](../qa/2026-10-24-macos-0912-staged-api.md)。
+
+```json
 {
   "schema": 1,
   "version": "0.9.12-mac.1",
@@ -271,3 +276,4 @@
     {"stage":"burst_16","index":13,"provider":"codex","kind":"decisions","request_id":"0cca80b3-f1ba-4a0b-9bee-78636e629c56","key_slot":0,"request_sha256":"2e7fc62cc863c24b85e5074f80da29987b7b85d9a2047075a85f91deb4d5a5ea","request_bytes":200,"caller_text_token_estimate":null,"status":200,"seconds":7.8651,"receipt_http":200,"billing_status":{"complete":true,"calls_started":1,"calls_completed":1},"execution":{"warm_hits":1,"cold_starts":0,"inference_profile":"standard","profile_reason":"request_standard"},"usage":{"prompt_tokens":2791,"completion_tokens":33,"cost":0.005912},"semantic_valid":true,"profile_valid":true,"usage_matches_response":true,"model_matches":true,"valid":true,"persisted":{"prompt_tokens":2791,"completion_tokens":33,"cost_usd":0.005912,"cached_tokens":0,"cache_write_tokens":0,"reasoning_tokens":15,"status":"completed"},"persisted_matching_rows":1,"timing_ms":{"validation_ms":0,"schema_wait_ms":null,"schema_execution_ms":null,"queue_wait_ms":1,"provider_setup_ms":154,"cli_spawn_ms":null,"cli_ready_ms":null,"inference_ms":7432,"output_validation_ms":0,"total_ms":7854},"persisted_call_receipt":{"calls_started":1,"calls_completed":1,"billing_complete":1},"observed_created_at_unix":1792839052.98441,"client_minus_runtime_seconds":0.0111}
   ]
 }
+```
