@@ -132,7 +132,13 @@ class Runtime:
                 task.budget.timings['queue_wait_ms']=time.monotonic()-task.enqueued
                 self.waiting=deque((t,s) for t,s in self.waiting if t is not task)
             task.budget.timings['total_ms']=time.monotonic()-task.budget.started
-            self.store.update_request(task.id,**task.routing,**task.budget.metadata(),**terminal)
+            try:
+                self.store.update_request(task.id,**task.routing,**task.budget.metadata(),**terminal)
+            except Exception:
+                # A failed receipt write must neither strand capacity nor report
+                # success. Keep durable billing as-is; never replay this request.
+                task.error=BridgeError(503,'metadata_unavailable','無法保存工作終態；請查詢原收據，勿自動重送。')
+                task.result=None
             if task.phase=='running':self.running_tasks-=1
             task.phase='done';task.disconnected=None
             task.completed=time.time();task.done.set();self.slots.release()

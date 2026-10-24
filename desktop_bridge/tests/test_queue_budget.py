@@ -149,6 +149,27 @@ def test_worker_start_failure_never_leaves_a_runnable_terminal_spec(tmp_path,mon
     finally:rt.stop();store.close()
 
 
+def test_terminal_receipt_write_failure_releases_capacity_without_false_success(tmp_path,monkeypatch):
+    store=Store(tmp_path);_,key=store.create_key('synthetic');caller=store.authenticate(key)
+    rt=Runtime(store,lambda *_:('OK',{'prompt_tokens':1,'completion_tokens':1},'stop'),max_workers=1,max_pending=1)
+    update=store.update_request;failed=[]
+    def fail_terminal_once(rid,**changes):
+        if 'total_ms' in changes and not failed:
+            failed.append(True);raise sqlite3.OperationalError('synthetic disk failure')
+        return update(rid,**changes)
+    monkeypatch.setattr(store,'update_request',fail_terminal_once)
+    try:
+        task=rt.submit(CHAT,caller,20,str(uuid.uuid4()));assert task.done.wait(2)
+        assert task.result is None and task.error.status==503
+        assert task.error.category=='metadata_unavailable'
+        assert rt.capacity()['running_requests']==0
+        # Known usage survived; terminal write was not silently invented.
+        assert store.request(task.id,caller['id'])['cost_usd'] is not None
+        next_task=rt.submit(CHAT,caller,20);assert next_task.done.wait(2)
+        assert next_task.error is None
+    finally:rt.stop();store.close()
+
+
 def test_stop_racing_validation_cannot_enqueue_after_scheduler_shutdown(tmp_path,monkeypatch):
     store=Store(tmp_path);_,key=store.create_key('synthetic');caller=store.authenticate(key)
     validated=threading.Event();release=threading.Event()
