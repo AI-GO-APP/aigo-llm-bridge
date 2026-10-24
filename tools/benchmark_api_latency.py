@@ -141,7 +141,9 @@ def main():
                             row[field] = number if type(number) in (int, float) and math.isfinite(number) else None
                         for field, details in [('cached_tokens', 'prompt_tokens_details'),
                                                ('reasoning_tokens', 'completion_tokens_details')]:
-                            number = usage.get(details, {}).get(field)
+                            # Decisions' compact public usage omits these subsets;
+                            # its billing receipt retains the complete CLI usage.
+                            number = receipt.get('billing', {}).get('usage', {}).get(details, {}).get(field)
                             row[field] = number if type(number) is int and number >= 0 else None
                         with store.lock:
                             record = store.db.execute('select '+','.join(TIMING_COLUMNS)+
