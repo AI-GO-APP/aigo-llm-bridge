@@ -65,3 +65,5 @@ python tools/lint_terms.py --require
 Mac 0.9.9 已發布並更新原安裝；Codex 可明確選擇單次使用常駐，預設 0，管理台設定 resident 不得超過執行併發。owner 的 2/64 公開 Chat／Decisions 對照與未驗邊界見 [收據](docs/qa/2026-10-24-macos-runtime-warm-pool.md)。Claude 仍 cold。
 
 Mac 0.9.10 已公開發布並更新原安裝：Codex goals／技能精簡令短 Chat／單題 Decisions input 約減少 25%，常駐 2／併發 64 保留；小樣本延遲未改善，剩餘內建上下文與完整驗收見 [收據](docs/qa/2026-10-24-macos-codex-context.md)。
+
+Mac **0.9.11-mac.1 已公開發布並更新原安裝**：Codex namespace／Claude Decisions formatter 精簡，原常駐2／併發64；公開 Chat／Decisions 真實 token、時間、cache 差異與 schema／thinking 後續實驗見 [本輪收據](docs/qa/2026-10-24-macos-cli-token-release.md)。省 input 不保證延遲或費用同比下降，後續研究候選未改正式推理設定。

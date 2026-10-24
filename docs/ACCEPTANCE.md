@@ -85,4 +85,4 @@ Mac 0.9.9 正式 API 的單次 Codex 常駐 operator 試驗／容量卡與後續
 
 Mac 0.9.10-mac.1 已合併、公開發布、匿名下載／ZIP 安裝並更新原 profile。issue 46 的 goals／技能精簡令短 Chat／單題 Decisions 真實 input 分別減少 25.57%／24.76%；兩筆小樣本延遲未改善。原 2/64/64、Key、個人 config 保留，11 次 CLI 完整計量、臨時 Key 撤銷；剩餘內建上下文及診斷工具 cache=null 的 SQLite 補證見 [收據](qa/2026-10-24-macos-codex-context.md)。完整 issue 39 門檻仍獨立。
 
-Mac 0.9.11-mac.1 的 D-42 namespace／StructuredOutput 精簡正在獨立驗收；只有具體 CI／公開 Release／下載安裝與原 profile 真 HTTPS 證據齊備才標為正式完成。當前狀態與數據見 [本輪收據](qa/2026-10-24-macos-cli-token-release.md)。
+Mac 0.9.11-mac.1 的 D-42 已合併／公開發布／匿名下載 ZIP 安裝／原 profile 更新，16筆同題 HTTPS 對照全通過；input減少與延遲、cache／牌價折算差異分開揭露，2/64/64與owner Key保留。31次低量真推論含型別／工具注入、升級與續測；schema去重／thinking-off仍是研究候選，未正式採用。發布首次 close事件時序驗收失敗與同來源重跑、完整數據見 [本輪收據](qa/2026-10-24-macos-cli-token-release.md)。
