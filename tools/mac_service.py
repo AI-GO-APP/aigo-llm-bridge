@@ -28,13 +28,24 @@ def setup(manifest, action, timeout=180):
     return result.stdout.decode()
 
 
-def control(action, root, timeout=180, workers=None, accepting=True):
+def control(action, root, timeout=180, workers=None, accepting=True, pending=None):
     if sys.platform != 'darwin': raise ValueError('This command requires macOS.')
     m = manifest_at(root)
     sys.path.insert(0, m['app'])
     from desktop_bridge.capacity import STANDARD_CONCURRENCY
-    if action == 'workers' and (type(workers) is not int or not 1<=workers<=STANDARD_CONCURRENCY):
-        raise ValueError('Workers must be an integer from 1 to 64.')
+    if action == 'workers':
+        from desktop_bridge.service import Runtime
+        from desktop_bridge.store import Store
+        # Validate both values before pause/bootout; preserve omitted pending.
+        store=Store(m['data_dir'],startup=False)
+        try:
+            accepting=store.get('accepting')
+            effective_pending=store.get('inference_pending') if pending is None else pending
+            # Older profiles may have no pending row; increasing workers retains
+            # the old command's behavior without shrinking an explicit queue.
+            if pending is None:effective_pending=max(workers,effective_pending) if type(workers) is int else effective_pending
+            Runtime.validate_capacity(workers,effective_pending)
+        finally:store.close()
     from desktop_bridge.windows import mac_startup_path, set_startup
     data = m['data_dir']; agent = mac_startup_path(data)
     domain = f'gui/{os.getuid()}'; label = agent.stem; target = domain + '/' + label
@@ -58,7 +69,10 @@ def control(action, root, timeout=180, workers=None, accepting=True):
     if action == 'workers':
         from desktop_bridge.store import Store
         store=Store(data,startup=False)
-        try: store.set('inference_workers',workers)
+        try:
+            with store.lock,store.db:
+                store.db.executemany('insert or replace into settings values (?,?)',
+                    [('inference_workers',json.dumps(workers)),('inference_pending',json.dumps(effective_pending))])
         finally: store.close()
     if action == 'disable': set_startup(False, data)
     if action == 'rollback':
@@ -163,10 +177,12 @@ def main():
     parser.add_argument('action', choices=['status','enable','disable','start','stop','restart','rollback','workers','update','onboarding-open','onboarding-status'])
     parser.add_argument('--source', help='Explicit local Bridge source checkout for update.')
     parser.add_argument('--count',type=int,help='Parallel isolated inference processes (workers action, 1–64; default profile is 64).')
+    parser.add_argument('--pending',type=int,help='Total admitted running plus queued requests (workers action, count–64).')
     parser.add_argument('--install-root', default=str(Path.home() / 'Library/Application Support/AIGO LLM Bridge'))
     parser.add_argument('--timeout', type=int, default=180)
     args = parser.parse_args()
     try:
+        if args.pending is not None and args.action!='workers':raise ValueError('--pending requires workers.')
         if args.action == 'update':
             if not args.source: raise ValueError('update requires --source.')
             value = update(args.install_root, args.source, args.timeout)
@@ -179,7 +195,7 @@ def main():
                 path = Path(m['data_dir']) / 'macos-onboarding.json'
                 value = json.loads(path.read_text()) if path.exists() else {'completed_at': None}
         else:
-            value = control(args.action, args.install_root, args.timeout, args.count)
+            value = control(args.action, args.install_root, args.timeout, args.count,pending=args.pending)
         print(json.dumps(value, ensure_ascii=False)); return 0
     except (OSError, ValueError, subprocess.SubprocessError):
         print('Mac service operation incomplete. Check this installation and drain/stop only its Bridge.', file=sys.stderr)

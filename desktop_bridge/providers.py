@@ -15,6 +15,7 @@ import tomllib
 
 from .errors import BridgeError
 from .process import Child, check_cancel
+from .execution_budget import current, check, timed
 
 
 def environment():
@@ -185,7 +186,10 @@ def codex_usage(usage):
 
 
 def call_claude(spec,settings,cancel,cwd):
-    if not status("claude",settings)["ready"]:
+    with timed('provider_setup_ms'):
+        ready=status('claude',settings,timeout=min(20,settings.get('timeout_s')))['ready']
+    check()
+    if not ready:
         raise BridgeError(503,"provider_authentication","Claude Code 尚未使用訂閱帳號登入。")
     command=[executable("claude",settings),"-p","--model",spec.model["native"],"--no-session-persistence",
              "--restricted","--tools","","--strict-mcp-config","--mcp-config",'{"mcpServers":{}}',
@@ -207,9 +211,11 @@ def call_claude(spec,settings,cancel,cwd):
         command += ["--input-format","stream-json"]
         payload=json.dumps({"type":"user","message":{"role":"user","content":content}})+"\n"
     else: payload=prefix+"\n".join(p["text"] for p in parts)
-    child=Child(command,cwd,environment())
+    with timed('cli_spawn_ms'):
+        child=Child(command,cwd,environment())
     try:
-        raw=child.communicate(payload.encode(),cancel,settings.get("timeout_s"))
+        with timed('inference_ms'):
+            raw=child.communicate(payload.encode(),cancel,settings.get("timeout_s"))
         try:
             events=[json.loads(line) for line in raw.splitlines() if line.strip()]
             result=next(e for e in reversed(events) if e.get("type")=="result")
@@ -256,9 +262,13 @@ def codex_command(settings):
 
 
 def call_codex(spec,settings,cancel,cwd):
-    if not status("codex",settings)["ready"]:
+    with timed('provider_setup_ms'):
+        ready=status('codex',settings,timeout=min(20,settings.get('timeout_s')))['ready']
+    check()
+    if not ready:
         raise BridgeError(503,"provider_authentication","Codex 尚未使用 ChatGPT 訂閱登入。")
-    child=Child(codex_command(settings),cwd,environment())
+    with timed('cli_spawn_ms'):
+        child=Child(codex_command(settings),cwd,environment())
     messages=queue.Queue(maxsize=4096); overflow=threading.Event()
     def reader():
         try:
@@ -285,7 +295,7 @@ def call_codex(spec,settings,cancel,cwd):
         next_id+=1
         message={"method":method,"params":params or {}}
         if not notification: message["id"]=next_id
-        child.proc.stdin.write((json.dumps(message)+"\n").encode()); child.proc.stdin.flush()
+        child.write((json.dumps(message)+"\n").encode(),cancel,max(.001,deadline-time.monotonic()))
         return next_id
     def receive():
         while True:
@@ -310,8 +320,9 @@ def call_codex(spec,settings,cancel,cwd):
                 if "error" in m: raise classify(str(m["error"].get("message","")))
                 return m.get("result",{})
     try:
-        response(send("initialize",{"clientInfo":{"name":"aigo_llm_bridge","version":"0.2.0"},"capabilities":{"experimentalApi":True}}))
-        send("initialized",notification=True)
+        with timed('cli_ready_ms'):
+            response(send("initialize",{"clientInfo":{"name":"aigo_llm_bridge","version":"0.2.0"},"capabilities":{"experimentalApi":True}}))
+            send("initialized",notification=True)
         start=response(send("thread/start",{"cwd":cwd,"ephemeral":True,"model":spec.model["native"],
             "approvalPolicy":"never","sandbox":"read-only",
             "baseInstructions":"You are an LLM inference assistant. Never use tools, access files, execute commands, or create sessions.\n"+spec.system,
@@ -341,6 +352,7 @@ def call_codex(spec,settings,cancel,cwd):
         params={"threadId":tid,"input":inputs}
         if spec.effort: params["effort"]=spec.effort
         if spec.schema: params["outputSchema"]=spec.schema
+        inference_started=time.monotonic()
         rid=send("turn/start",params)
         chunks=[]; size=0; usage={}; final=None
         while True:
@@ -359,7 +371,10 @@ def call_codex(spec,settings,cancel,cwd):
         return "".join(chunks),codex_usage(usage),"stop",start['model']
     except (BrokenPipeError,OSError):
         raise BridgeError(502,"provider_unavailable","CLI 通道中斷。") from None
-    finally: child.close()
+    finally:
+        if 'inference_started' in locals() and (budget:=current()):
+            budget.timings['inference_ms']=budget.timings.get('inference_ms',0)+time.monotonic()-inference_started
+        child.close()
 
 
 def infer(spec,settings,cancel):

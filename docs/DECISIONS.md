@@ -65,3 +65,7 @@ D-29（2026-10-23）：公開 API 的交付證據分為本機支援、無 Key �
 **D-32 採用 2026-10-23：Mac 64 容量沿用原地更新。** 新安裝使用共用標準；舊 profile 不隱式覆寫明確容量，由既有排空／停止／workers 指令設為 64。Mac Key handoff 預設 600 RPM，原 Key 頻率保留。本輪先跑少量公開 Chat／Decisions 與成本，另依新增授權本機 Claude 64 測試；不將 64 設定值視為負載實測。
 
 **D-33 採用 2026-10-23：Mac 自行提高描述符上限。** LaunchAgent 繼承 256 軟上限，不足以容納 64 個 CLI 子程序與 socket。Bridge 啟動時只提高本程序 RLIMIT_NOFILE 軟上限至 4096（不超過硬上限），不改 launchctl、sysctl 或 LaunchAgent 以外設定。
+
+**D-34 採用 2026-10-24：有界受理與可取消 FIFO。** #36 階段 0–1 補充 D-31：64 是驗證＋排隊＋執行的總受理數，執行預設仍為 64、可明確調低；舊明確 workers 缺 pending 者保留原受理容量。先保留名額再驗 schema，queued 取消／逾時／撤 Key 可移除及釋放，不等前方 CLI。同步受理時固定最長 90 秒，可被設定／外部 deadline 縮短；jobs 使用設定期限且含排隊。容量修改要求 paused＋idle，兩值原子更新；只存數值分段 metadata。不保證公開斷線即時取消，不自動重送未知結果。[門檻與代價](PERFORMANCE-PLAN.md)。
+
+**D-35 採用 2026-10-24：Decisions 固定結構型別驗證。** #36 階段 2 只優化自有 noul/probabilities，不以「無 pattern」推斷外部 schema 安全；維持 bytes/depth／型別／有限值／範圍／機率語意。外部 schema 保留四個一次性隔離程序、3 秒及原平台預算，等待計入 request deadline。Mac 不宣稱有 Windows Job Object 等價 RSS hard limit。warm CLI 池移至 #39，須獨立驗證隔離與含補池的持續收益。

@@ -66,3 +66,5 @@ Mac的新UI／封裝／更新仍需Mac維護者獨立驗收；本輪不介入其
 Mac 0.9.4-mac.1 整合與基本流程驗收另見 [Mac 併發交付](qa/2026-10-23-macos-concurrency.md)；Claude 真實 64 併發須以該收據的實際結果為準。
 
 Mac 0.9.5-mac.1：在 256 描述符上限下 64 個真實子程序經 HTTP 全數完成為必要回歸（未修正時約 40／64）。
+
+0.9.7-mac.1／#36 的固定門檻見 [效能計畫](PERFORMANCE-PLAN.md)，source／自動化／合成／真訂閱／HTTPS／Release／正式安裝實際狀態見 [Mac 排隊 QA](qa/2026-10-24-macos-queue-decisions.md)。不得以候選基準或 401 代替正式公開 64 推論；warm CLI 另列 #39。

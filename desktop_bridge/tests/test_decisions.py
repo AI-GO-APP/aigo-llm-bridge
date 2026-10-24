@@ -193,7 +193,10 @@ def test_invalid_contract_never_calls_provider(tmp_path,value):
         if value=={}:body={}
         with pytest.raises(BridgeError) as err:rt.submit(body,s.authenticate(key),100,protocol='decisions')
         assert err.value.status==400
-        assert not s.logs()
+        # Admission now reserves before validation and retains metadata-only rejections.
+        rows=s.logs()
+        assert len(rows)==1 and rows[0]['status']=='rejected'
+        assert rows[0]['calls_started']==0 and rows[0]['validation_ms'] is not None
     finally:rt.stop();s.close()
 
 
@@ -241,7 +244,11 @@ def test_no_next_question_after_interrupt_and_known_usage_survives(tmp_path,monk
         calls.append(1)
         if interruption=='cancel':cancel.set()
         elif interruption=='revoke':s.revoke(caller['id'])
-        elif interruption=='deadline':clock[0]+=180
+        elif interruption=='deadline':
+            # Admission converts the wall-clock deadline once; subsequent expiry
+            # is monotonic and must not depend on clock adjustments.
+            from desktop_bridge.execution_budget import current
+            current().until=0
         else:epoch[0]='second'
         return json.dumps(RAW[0]),{'prompt_tokens':10,'completion_tokens':2},'stop'
     s,key,rt=setup(tmp_path,runner);caller=s.authenticate(key)

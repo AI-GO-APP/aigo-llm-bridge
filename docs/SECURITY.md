@@ -47,3 +47,9 @@ Windows 全依賴及 announce signer 子集使用 published artifact SHA256 鎖�
 0.9 也在 Windows 共用啟動入口安裝同一獨占 listener adapter，涵蓋新版 source／ZIP；原生入口保留保護。Windows background 若埠占用則安靜回 exit 2，不跳出 Tk 對話框或搶占埠；Mac 分支不變。直接嵌入 Python 類別的開發者仍須自行選擇適當 server adapter，不將這些 entrypoint 保護宣稱成 stdlib 全域保證。
 
 模型發現僅以 stat metadata 識別登入世代，不讀取／輸出 auth.json；唯讀 Codex model/list 不建立推論 thread。refresh 最短 5 秒合併、一般快取 30 秒，避免重複持 KEY 探查啟動 CLI。這不是防已接管 OS 的隔離，也不代表 picker 目錄證明訂閱權限。新路徑只交付 Worker 範本，未獲部署授權時不得聲稱外部新路徑已修補／可用。
+
+## 0.9.7-mac.1 候選驗證預算（D-34／D-35）
+
+修訂前述歷史預算：外部 schema 保留四個一次性子程序，每次至多 3 秒，名額等待至多 30 秒，兩者均受 request 剩餘期限／取消約束。昂貴驗證前保留受理容量。Decisions 自有結構改固定欄位／長度／型別／有限值／0–1 驗證，JSON 至多 1 MB／深度 4；不提供外部 schema 程序內快速路徑。Windows 256 MiB Job Object 保留；Mac 只有既有輸入／複雜度／時間／並行預算，不宣稱相同 OS RSS hard limit。
+
+移除 queued spec 後釋放引用，worker 空閒清掉上一筆 spec；終態錯誤保存新的固定診斷，不保留 caller exception traceback。CLI stdin 也有取消／期限，避免不讀 pipe 的子程序永久卡住。分段時間僅接受 SCHEMA 的固定數字，未知 ready 為 null。公開取消限制與效能門檻見 [計畫](PERFORMANCE-PLAN.md)。

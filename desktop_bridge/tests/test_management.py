@@ -144,6 +144,24 @@ def test_settings_save_preserves_default_provider_and_explicit_owner_choice(cons
     assert m.store.get('default_model')=='anthropic/claude-haiku-4.5'
 
 
+def test_capacity_api_requires_paused_idle_and_health_distinguishes_limits(console):
+    m,_=console
+    assert request(m,'/manage/settings',{'inference_workers':32,'inference_pending':64})[0]==400
+    assert request(m,'/manage/accepting',{'accepting':False})[0]==200
+    assert request(m,'/manage/settings',{'inference_workers':32,'inference_pending':64})[0]==200
+    state=request(m)[1]
+    assert state['max_concurrent_requests']==64 and state['max_execution_workers']==32
+    assert state['queued_requests']==state['running_requests']==0
+    assert state['settings']['inference_pending']==64
+    with urllib.request.urlopen(f'http://127.0.0.1:{m.api.port}/health') as response:
+        health=json.load(response)
+    assert health['max_concurrent_requests']==64 and health['max_execution_workers']==32
+    assert request(m,'/manage/settings',{'inference_workers':True,'inference_pending':64})[0]==400
+    assert m.store.get('inference_workers')==32
+    # Original six-page full-form payload continues to work with unchanged limits.
+    assert request(m,'/manage/settings',{**state['settings'],'startup':False})[0]==200
+
+
 def test_filters_export_clear_and_pause(console):
     m, done = console
     import time

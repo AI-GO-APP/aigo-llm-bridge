@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -14,6 +13,7 @@ import uuid
 
 from .capacity import STANDARD_CONCURRENCY
 from .schema_guard import validate_instances
+from .execution_budget import Budget, scope, timed
 
 from . import __version__, providers
 from .contract import validate
@@ -40,6 +40,11 @@ class Task:
     usage: dict | None = None
     calls_started: int = 0
     calls_completed: int = 0
+    budget: Budget | None = None
+    phase: str = 'validating'
+    enqueued: float | None = None
+    disconnected: object = None
+    routing: dict = field(default_factory=dict)
 
 
 class Runtime:
@@ -49,18 +54,96 @@ class Runtime:
         self.pricing=pricing or Catalog(store.directory)
         self.models=model_catalog or ModelCatalog(store)
         workers=store.get('inference_workers') if max_workers is None else max_workers
-        pending=workers if max_pending is None else max_pending
-        if type(workers) is not int or not 1<=workers<=STANDARD_CONCURRENCY:
-            raise ValueError('inference_workers must be an integer from 1 to 64.')
-        if type(pending) is not int or not workers<=pending<=STANDARD_CONCURRENCY:
-            raise ValueError('max_pending must be an integer between workers and 64.')
+        pending=store.get('inference_pending') if max_pending is None else max_pending
+        self.validate_capacity(workers,pending)
         self.max_workers,self.max_pending=workers,pending
-        self.pool=ThreadPoolExecutor(max_workers=workers,thread_name_prefix="bridge-inference")
         self.slots=threading.BoundedSemaphore(pending)
         self.lock=threading.RLock()
+        self.condition=threading.Condition(self.lock)
+        self.waiting=deque()
+        self.worker_threads=[]
+        self.running_tasks=0
+        self.stop_event=threading.Event()
         self.tasks={}
         self.rate=defaultdict(deque)
         self.stopped=False
+        self.monitor=threading.Thread(target=self._monitor,daemon=True,name='bridge-queue-monitor')
+        self.monitor.start()
+
+    @staticmethod
+    def validate_capacity(workers,pending):
+        if type(workers) is not int or not 1<=workers<=STANDARD_CONCURRENCY:
+            raise ValueError('inference_workers must be an integer from 1 to 64.')
+        if type(pending) is not int or not workers<=pending<=STANDARD_CONCURRENCY:
+            raise ValueError('inference_pending must be an integer between workers and 64.')
+
+    def capacity(self):
+        with self.lock:
+            return {'max_concurrent_requests':self.max_pending,'max_execution_workers':self.max_workers,
+                    'queued_requests':sum(t.phase in {'validating','queued'} for t in self.tasks.values()),
+                    'running_requests':sum(t.phase=='running' for t in self.tasks.values()),
+                    'shared_provider_capacity':True}
+
+    def configure_capacity(self,workers,pending):
+        self.validate_capacity(workers,pending)
+        with self.condition:
+            if self.stopped or self.store.get('accepting') or any(not t.done.is_set() for t in self.tasks.values()):
+                raise ValueError('Pause and drain before changing inference capacity.')
+            # No outstanding reservation: settings and live limits change together.
+            with self.store.lock,self.store.db:
+                self.store.db.executemany('insert or replace into settings values (?,?)',
+                    [('inference_workers',json.dumps(workers)),('inference_pending',json.dumps(pending))])
+            self.max_workers,self.max_pending=workers,pending
+            self.slots=threading.BoundedSemaphore(pending)
+            self.condition.notify_all()
+
+    def _worker(self):
+        while True:
+            with self.condition:
+                while not self.stopped and (not self.waiting or self.running_tasks>=self.max_workers):
+                    self.condition.wait()
+                if self.stopped:return
+                task,spec=self.waiting.popleft()
+                task.phase='running'
+                self.running_tasks+=1
+                task.budget.timings['queue_wait_ms']=time.monotonic()-task.enqueued
+            self.execute(task,spec)
+            # Idle workers must not retain a caller's previous spec/result.
+            task=spec=None
+
+    def _monitor(self):
+        while not self.stop_event.wait(.05):
+            with self.condition:
+                for task in list(self.tasks.values()):
+                    if task.done.is_set():continue
+                    if task.disconnected:
+                        try:
+                            if task.disconnected():task.cancel.set()
+                        except (OSError,ValueError):task.cancel.set()
+                    if task.phase!='queued':continue
+                    try:self.check_execution(task,task.deadline)
+                    except BridgeError as error:
+                        self._fail(task,error)
+
+    def _finish(self,task,**terminal):
+        with self.condition:
+            if task.done.is_set():return
+            if task.enqueued is not None and task.phase=='queued':
+                task.budget.timings['queue_wait_ms']=time.monotonic()-task.enqueued
+                self.waiting=deque((t,s) for t,s in self.waiting if t is not task)
+            task.budget.timings['total_ms']=time.monotonic()-task.budget.started
+            self.store.update_request(task.id,**task.routing,**task.budget.metadata(),**terminal)
+            if task.phase=='running':self.running_tasks-=1
+            task.phase='done';task.disconnected=None
+            task.completed=time.time();task.done.set();self.slots.release()
+            if self.stopped:self.condition.notify_all()
+            else:self.condition.notify(1)
+
+    def _fail(self,task,error,*,rejected=False):
+        # Store a fresh diagnostic: a raised exception's traceback retains caller frames.
+        task.error=BridgeError(error.status,error.category,error.message,error.parameter)
+        self._finish(task,status='rejected' if rejected else 'cancelled' if error.category=='cancelled' else 'failed',
+            http_status=error.status,error_code=error.category,finished_ts=time.time())
 
     def authorize(self,header):
         token=header[7:] if header.startswith("Bearer ") else ""
@@ -81,21 +164,25 @@ class Runtime:
             def get(self,name): return merged if name=='models' else store.get(name)
         return validator(body,RoutingSettings(),caller)
 
-    def preflight(self,body,caller):
+    def preflight(self,body,caller,deadline=None):
         protocol='decisions' if isinstance(body,dict) and ('state' in body or 'questions' in body) else 'chat'
-        spec=self.validate_request(body,caller,protocol)
         if self.stopped or not self.store.get("accepting"):
             raise BridgeError(503,"device_paused","服務目前暫停接單。")
         with self.lock:
             if sum(not t.done.is_set() for t in self.tasks.values())>=self.max_pending:
                 raise BridgeError(429,"queue_full","同時推論已達裝置容量。")
+        seconds=min(90,self.store.get('timeout_s'),(deadline-time.time()) if deadline else 90)
+        budget=Budget(time.monotonic()+seconds,threading.Event())
+        with scope(budget):
+            budget.check()
+            spec=self.validate_request(body,caller,protocol)
+            budget.check()
         return spec
 
-    def submit(self,body,caller,input_bytes,request_id=None,deadline=None,protocol="chat"):
-        spec=self.validate_request(body,caller,protocol)
-        if self.stopped or not self.store.get("accepting"):
-            raise BridgeError(503,"device_paused","本機目前暫停接單。")
+    def submit(self,body,caller,input_bytes,request_id=None,deadline=None,protocol="chat",*,synchronous=True,disconnected=None):
         with self.lock:
+            if self.stopped or not self.store.get("accepting"):
+                raise BridgeError(503,"device_paused","本機目前暫停接單。")
             self.cleanup()
             if request_id:
                 try: request_id=str(uuid.UUID(request_id))
@@ -112,23 +199,55 @@ class Runtime:
             while history and history[0]<now-60: history.popleft()
             if len(history)>=caller["rpm"]: raise BridgeError(429,"rate_limit_exceeded","這把 key 已達每分鐘上限。")
             if not self.slots.acquire(blocking=False): raise BridgeError(429,"queue_full","同時推論已達裝置容量。")
-            history.append(now)
             rid=uuid.uuid4().hex
-            task=Task(rid,caller["id"],time.time(),deadline=deadline,protocol=protocol)
+            seconds=min(self.store.get('timeout_s'),90 if synchronous else float('inf'))
+            fixed_deadline=min(deadline if deadline is not None else float('inf'),time.time()+seconds)
+            task=Task(rid,caller['id'],time.time(),deadline=fixed_deadline,protocol=protocol,disconnected=disconnected)
+            task.budget=Budget(time.monotonic()+max(0,fixed_deadline-time.time()),task.cancel)
             try:
-                self.store.insert_request({"id":rid,"key_id":caller["id"],"model":spec.model["id"],"provider":spec.model["provider"],
+                self.store.insert_request({"id":rid,"key_id":caller["id"],
                     "created_ts":task.created,"status":"queued","input_bytes":input_bytes,"protocol":protocol,
-                    "question_count":len(spec.questions) if isinstance(spec,DecisionSpec) else 0,
+                    "question_count":0,
                     "calls_started":0,"calls_completed":0,"billing_complete":1},(request_id,digest) if request_id else None)
                 self.tasks[rid]=task
-                self.pool.submit(self.execute,task,spec)
             except Exception:
                 self.tasks.pop(rid,None); self.slots.release(); raise
+        try:
+            with scope(task.budget),timed('validation_ms'):
+                task.budget.check()
+                spec=self.validate_request(body,caller,protocol)
+                self.check_execution(task,task.deadline)
+            with self.condition:
+                # stop() can race the validation thread after its last check.
+                self.check_execution(task,task.deadline)
+                now=time.monotonic();history=self.rate[caller['id']]
+                while history and history[0]<now-60:history.popleft()
+                if len(history)>=caller['rpm']:
+                    raise BridgeError(429,'rate_limit_exceeded','這把 key 已達每分鐘上限。')
+                history.append(now)
+                task.routing={'model':spec.model['id'],'provider':spec.model['provider'],
+                    'question_count':len(spec.questions) if isinstance(spec,DecisionSpec) else 0}
+                task.enqueued=time.monotonic();task.phase='queued'
+                self.waiting.append((task,spec))
+                needed=min(self.max_workers,sum(t.phase in {'queued','running'} for t in self.tasks.values()))
+                while len(self.worker_threads)<needed:
+                    thread=threading.Thread(target=self._worker,
+                        daemon=True,name='bridge-inference-'+str(len(self.worker_threads)))
+                    thread.start();self.worker_threads.append(thread)
+                self.condition.notify(1)
+        except BridgeError as error:
+            self._fail(task,error,rejected=error.status not in {408,499})
+            if error.status not in {408,499}:
+                error.recorded=True
+                raise
+        except Exception:
+            self._fail(task,BridgeError(500,'server','服務無法受理此請求。'))
+            raise
         return task
 
     def check_execution(self,task,deadline):
         if task.cancel.is_set() or self.stopped: raise BridgeError(499,"cancelled","請求已取消。")
-        if time.time()>=deadline: raise BridgeError(408,"timeout","請求期限已過。")
+        task.budget.check()
         with self.store.lock:
             key=self.store.db.execute("select revoked_ts from api_keys where id=?",(task.key_id,)).fetchone()
         if key is None or key[0] is not None: raise BridgeError(401,"authentication","API key 已撤銷。")
@@ -140,7 +259,7 @@ class Runtime:
         store=self.store
         class DeadlineSettings:
             def get(self,name):
-                return max(.001,min(store.get(name),deadline-time.time())) if name=="timeout_s" else store.get(name)
+                return max(.001,min(store.get(name),task.budget.remaining())) if name=="timeout_s" else store.get(name)
         task.calls_started+=1
         self.store.update_request(task.id,calls_started=task.calls_started,billing_complete=0)
         result=self.runner(spec,DeadlineSettings(),task.cancel)
@@ -163,12 +282,17 @@ class Runtime:
         return text,task.usage,finish
 
     def execute(self,task,spec):
+        with scope(task.budget):
+            self._execute(task,spec)
+
+    def _execute(self,task,spec):
         start=time.monotonic()
         generation=None
+        terminal={}
         try:
-            deadline=min(task.deadline or float('inf'),time.time()+self.store.get('timeout_s'))
+            deadline=task.deadline
             self.check_execution(task,deadline)
-            self.store.update_request(task.id,status="running",started_ts=time.time())
+            self.store.update_request(task.id,status="running",started_ts=time.time(),**task.routing)
             generation=self.models.generation(spec.model['provider'],self.store)
             quote=self.pricing.quote(spec.model)
             if isinstance(spec,DecisionSpec):
@@ -177,7 +301,9 @@ class Runtime:
                     inference=spec.inference(question)
                     text,usage,finish=self.run_call(task,inference,quote,deadline,generation)
                     if finish!='stop': raise BridgeError(502,'invalid_structured_output','Decisions 推論未完整完成。')
-                    answers[name]=decision_answer(text,question,inference.schema,task.cancel)
+                    with timed('output_validation_ms'):
+                        answers[name]=decision_answer(text,question,inference.schema,task.cancel)
+                    self.check_execution(task,deadline)
                 task.result={'id':'gen-'+task.id,'model':spec.model['id'],'provider':spec.model['provider'],
                     'answers':answers,'usage':{'input_tokens':usage['prompt_tokens'],
                                               'output_tokens':usage['completion_tokens'],'cost':usage['cost']}}
@@ -186,9 +312,10 @@ class Runtime:
                 text,usage,finish=self.run_call(task,spec,quote,deadline,generation)
             if not isinstance(spec,DecisionSpec) and spec.format in {"json_object","json_schema"}:
                 try:
-                    value=json.loads(text)
-                    if not isinstance(value,dict): raise ValueError()
-                    if spec.schema and not validate_instances([[spec.schema,value]],task.cancel):raise ValueError()
+                    with timed('output_validation_ms'):
+                        value=json.loads(text)
+                        if not isinstance(value,dict): raise ValueError()
+                        if spec.schema and not validate_instances([[spec.schema,value]],task.cancel):raise ValueError()
                 except ValueError:
                     raise BridgeError(502,"invalid_structured_output","模型輸出未符合 JSON 格式或指定 schema。") from None
             prompt=usage['prompt_tokens'];completion=usage['completion_tokens']
@@ -198,11 +325,13 @@ class Runtime:
                 message={"role":"assistant","content":text}
                 if spec.tool_proposals:
                     from .tool_contract import proposal_message
-                    message,finish=proposal_message(json.loads(text),spec.tool_schemas)
+                    with timed('output_validation_ms'):
+                        message,finish=proposal_message(json.loads(text),spec.tool_schemas)
                 task.result={"id":"gen-"+task.id,"object":"chat.completion","created":int(task.created),"model":spec.model["id"],
                     "system_fingerprint":None,"choices":[{"index":0,"message":message,"finish_reason":finish}],"usage":usage}
+            self.check_execution(task,deadline)
             self.models.observe(spec.model,task.protocol,generation)
-            self.store.update_request(task.id,status="completed",http_status=200,finished_ts=time.time(),
+            terminal=dict(status="completed",http_status=200,finished_ts=time.time(),
                 duration_ms=round((time.monotonic()-start)*1000),output_bytes=len(text.encode()),prompt_tokens=prompt,completion_tokens=completion,
                 cost_usd=usage['cost'],pricing_model=quote.model,pricing_fetched_ts=quote.fetched_at,
                 cached_tokens=usage.get('prompt_tokens_details',{}).get('cached_tokens'),
@@ -210,16 +339,16 @@ class Runtime:
                 reasoning_tokens=usage.get('completion_tokens_details',{}).get('reasoning_tokens'))
         except BridgeError as error:
             if generation is not None: self.models.observe(spec.model,task.protocol,generation,error)
-            task.error=error
-            self.store.update_request(task.id,status="cancelled" if error.category=="cancelled" else "failed",http_status=error.status,
+            task.error=BridgeError(error.status,error.category,error.message,error.parameter)
+            terminal=dict(status="cancelled" if error.category=="cancelled" else "failed",http_status=error.status,
                 error_code=error.category,finished_ts=time.time(),duration_ms=round((time.monotonic()-start)*1000))
         except Exception:
             # No exception text, traceback, local path, prompt, header or native event is logged.
             task.error=BridgeError(500,"server","服務無法完成此請求；請檢查 CLI 狀態。")
-            self.store.update_request(task.id,status="failed",http_status=500,error_code="server",finished_ts=time.time())
+            terminal=dict(status="failed",http_status=500,error_code="server",finished_ts=time.time())
         finally:
             spec=None
-            task.completed=time.time(); task.done.set(); self.slots.release()
+            self._finish(task,**terminal)
 
     def get_job(self,rid,caller):
         row=self.store.request(rid,caller["id"])
@@ -267,11 +396,17 @@ class Runtime:
                 if task.key_id==kid and not task.done.is_set(): task.cancel.set()
 
     def stop(self):
-        self.stopped=True
-        with self.lock:
+        with self.condition:
+            self.stopped=True
             for task in self.tasks.values():
                 if not task.done.is_set(): task.cancel.set()
-        self.pool.shutdown(wait=True,cancel_futures=False)
+            self.waiting.clear()
+            for task in self.tasks.values():
+                if task.phase=='queued':self._fail(task,BridgeError(499,'cancelled','請求已取消。'))
+            self.condition.notify_all()
+            while any(t.phase=='validating' for t in self.tasks.values()):self.condition.wait(.05)
+        for thread in self.worker_threads:thread.join()
+        self.stop_event.set();self.monitor.join()
         self.tasks.clear()
 
 
@@ -303,7 +438,7 @@ class ApiServer:
                 try:
                     path=self.path.split("?",1)[0]
                     if not is_post and path=="/health":
-                        return self.reply(200,{"ok":True,"version":__version__,"accepting":rt.store.get("accepting"),"max_concurrent_requests":rt.max_workers,"shared_provider_capacity":True})
+                        return self.reply(200,{"ok":True,"version":__version__,"accepting":rt.store.get("accepting"),**rt.capacity()})
                     caller=rt.authorize(self.headers.get("Authorization",""))
                     if not is_post and path.startswith('/bridge/v1/receipts/'):
                         return self.reply(200,rt.receipt(path.removeprefix('/bridge/v1/receipts/'),caller))
@@ -345,16 +480,19 @@ class ApiServer:
                         body=({'model':model,'state':'A synthetic object is blue.',
                                'questions':{'blue':{'type':'noul','instructions':'Is the object blue?'}}}
                               if protocol=='decisions' else {'model':model,'messages':[{'role':'user','content':'Reply exactly PONG.'}]})
-                    if path=="/bridge/v1/preflight":
-                        spec=rt.preflight(body,caller)
-                        return self.reply(200,{"ready":True,"model":spec.model["id"],"subscription_verified":False,"expires_in_s":5})
                     deadline=None
                     if self.headers.get("X-Bridge-Deadline"):
                         try:
                             deadline=float(self.headers["X-Bridge-Deadline"])/1000
                             if not 0<deadline<1e14:raise ValueError()
                         except ValueError:raise BridgeError(400,"invalid_request","請求期限無效。") from None
-                    task=rt.submit(body,caller,length,self.headers.get("X-AIEA-Request-Id"),deadline,protocol)
+                    if path=="/bridge/v1/preflight":
+                        spec=rt.preflight(body,caller,deadline)
+                        return self.reply(200,{"ready":True,"model":spec.model["id"],"subscription_verified":False,"expires_in_s":5})
+                    def disconnected():
+                        return bool(select.select([self.connection],[],[],0)[0] and self.connection.recv(1,socket.MSG_PEEK)==b'')
+                    task=rt.submit(body,caller,length,self.headers.get("X-AIEA-Request-Id"),deadline,protocol,
+                        synchronous=path!='/bridge/v1/jobs',disconnected=disconnected if path!='/bridge/v1/jobs' else None)
                     raw=None; body=None
                     if path=="/bridge/v1/jobs":
                         return self.reply(202,{"id":task.id,"status":"queued","created":int(task.created)})
@@ -364,12 +502,14 @@ class ApiServer:
                             if select.select([self.connection],[],[],0)[0] and self.connection.recv(1,socket.MSG_PEEK)==b"":
                                 task.cancel.set(); return
                         except OSError: task.cancel.set(); return
-                    if task.error: raise task.error
+                    if task.error:
+                        error=task.error
+                        raise BridgeError(error.status,error.category,error.message,error.parameter)
                     self.reply(200,task.result,task.pricing_headers)
                     if not self.headers.get("X-AIEA-Request-Id"):
                         with rt.lock: rt.tasks.pop(task.id,None)
                 except BridgeError as error:
-                    if is_post and task is None:
+                    if is_post and task is None and not getattr(error,'recorded',False):
                         # Even rejected inference requests leave only fixed-category metadata.
                         try:
                             rt.store.insert_request({"id":uuid.uuid4().hex,"key_id":caller["id"] if caller else None,

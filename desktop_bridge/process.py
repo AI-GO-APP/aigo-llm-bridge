@@ -78,8 +78,8 @@ class Child:
         readers=[threading.Thread(target=drain,args=(self.proc.stdout,stdout),daemon=True),
                  threading.Thread(target=drain,args=(self.proc.stderr,),daemon=True)]
         for reader in readers: reader.start()
-        self.proc.stdin.write(data); self.proc.stdin.close()
         deadline=time.monotonic()+timeout
+        self.write(data,cancel,timeout,close_stdin=True)
         while self.proc.poll() is None:
             check_cancel(cancel,deadline)
             if exceeded.is_set():
@@ -88,6 +88,21 @@ class Child:
         for reader in readers: reader.join(timeout=3)
         if exceeded.is_set(): raise BridgeError(502,"output_too_large","CLI 輸出超過服務上限。")
         return bytes(stdout)
+
+    def write(self,data,cancel,timeout,*,close_stdin=False):
+        # A CLI which stops reading stdin must not hold the request indefinitely.
+        done=threading.Event();failed=[]
+        def writer():
+            try:
+                self.proc.stdin.write(data);self.proc.stdin.flush()
+                if close_stdin:self.proc.stdin.close()
+            except (OSError,ValueError):failed.append(True)
+            finally:done.set()
+        threading.Thread(target=writer,daemon=True,name='bridge-stdin').start()
+        deadline=time.monotonic()+timeout
+        while not done.wait(.05):check_cancel(cancel,deadline)
+        check_cancel(cancel,deadline)
+        if failed:raise BridgeError(502,'provider_unavailable','CLI 輸入通道中斷。')
 
 
 def check_cancel(cancel,deadline):

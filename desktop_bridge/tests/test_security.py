@@ -16,6 +16,18 @@ from desktop_bridge.errors import BridgeError
 from desktop_bridge.store import Store
 
 
+def test_cli_that_never_reads_large_stdin_cannot_ignore_timeout(tmp_path):
+    import sys
+    from desktop_bridge.process import Child
+    child=Child([sys.executable,'-c','import time; time.sleep(10)'],str(tmp_path),None)
+    started=time.monotonic()
+    try:
+        with pytest.raises(BridgeError) as error:
+            child.communicate(b'S'*3_000_000,threading.Event(),.15)
+        assert error.value.status==408 and time.monotonic()-started<1
+    finally:child.close()
+
+
 def test_relay_never_forwards_credentials_to_redirect_target(tmp_path):
     received=[]
     class Target(BaseHTTPRequestHandler):
@@ -50,7 +62,7 @@ def test_claude_dynamic_content_is_only_in_stdin(monkeypatch,tmp_path):
             return json.dumps({'type':'result','result':'```json\n{}\n```','usage':{'input_tokens':1,'output_tokens':1},'modelUsage':{'test':{}}}).encode()
         def close(self):pass
     monkeypatch.setattr(providers,'Child',Child)
-    monkeypatch.setattr(providers,'status',lambda *_:{'ready':True})
+    monkeypatch.setattr(providers,'status',lambda *_,**kwargs:{'ready':True})
     monkeypatch.setattr(providers,'executable',lambda *_:'synthetic-cli')
     spec=SimpleNamespace(model={'native':'test'},system=system,schema=schema,effort=None,messages=[{'parts':[{'type':'text','text':'synthetic-user-canary'}]}])
     assert providers.call_claude(spec,{'timeout_s':10},threading.Event(),tmp_path)[0]=='{}'

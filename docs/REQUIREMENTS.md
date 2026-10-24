@@ -37,7 +37,7 @@ Mac source 同步的共通功能及平台差異以 [Mac 設定契約](MACOS-SETU
 
 R-23：管理台及串接訊息分別呈現本機支援、公開 Worker 路由相容性與真實推論證據。路由檢查不傳服務 Key、不推論、不部署；明確測試才呼叫 Chat／Decisions。舊 Worker 的新路徑 404 必須引導在原帳戶更新同一 Worker。證據包含端點、模型、協定、時間與成本 metadata，僅留 RAM；變更網址或程序重啟不可沿用先前證據。
 
-- 每裝置標準 64 筆同時推論，Claude／Codex、Chat／Decisions 共用總容量；一般同步 API 並行 POST。新 KEY 預設 600 RPM，既有頻率保留；超過 64 列待驗證。Mac 0.9.5-mac.1 採同一規格並解除 LaunchAgent 描述符限制；Claude 真實 64 負載與各平台實機驗收分開記錄。詳見 [併發規格](CONCURRENCY.md)。
+- 每裝置標準最多受理 64 筆（驗證＋排隊＋執行合計），預設執行上限仍為 64，可明確設定 1–64 並採內部 FIFO；Claude／Codex、Chat／Decisions 共用總容量；一般同步 API 並行 POST。新 KEY 預設 600 RPM，既有頻率保留；超過 64 列待驗證。Mac 0.9.5-mac.1 採同一規格並解除 LaunchAgent 描述符限制；Claude 真實 64 負載與各平台實機驗收分開記錄。詳見 [併發規格](CONCURRENCY.md)。
 - 管理 plane 只監聽 loopback 動態 port，驗 Host／Origin 與獨立管理憑證；client KEY 無管理權。固定外部 endpoint 與短效本機管理 URL 是不同概念。
 - HTTPS Worker 與雲端 RAM 轉送可能離線／中斷；關機時網址仍存在，但不能承諾仍可推論。同步雲端等候有時限，未知執行結果不可自動重試以免重複計量。
 - 淺／深色跟隨 OS；不載入外部字型、圖示 CDN、追蹤程式。窄版仍能導覽、操作；寬表在表格容器內水平捲動。
@@ -50,3 +50,5 @@ R-23：管理台及串接訊息分別呈現本機支援、公開 Worker 路由�
 新增需求附 R 編號與驗收案例。涉及資料、API、UI、身分或更新的變更同時更新相應文件；取捨加 D 編號。完成必須區分 source、CI、安裝包、已發布及正式已安裝，禁止以測試成功代替交付。
 
 Windows 0.8.1 的安全邊界、依賴與 Schema／CLI 傳輸限制見 [SECURITY](SECURITY.md)；更新不重新授權 CLI、不重建 endpoint 或 KEY，也不自動部署 Worker。
+
+R-24：#36 階段 0–2 在昂貴驗證前保留有界受理名額；執行數可低於受理數。queued 取消／撤 Key／逾時 1 秒內釋放，CLI 零呼叫；同步總期限含驗證與排隊。僅自有 Decisions 固定結構採型別驗證，外部 schema 仍隔離，timings 不含原文。量化門檻及未達時保留正式預設的規則見 [計畫](PERFORMANCE-PLAN.md)。
