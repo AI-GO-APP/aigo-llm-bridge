@@ -71,5 +71,11 @@
   "real_save_panel_save": true,
   "key_cleared_on_close": true,
   "navigation_bound": true,
-  "service_after_viewer_close": true
+  "service_after_viewer_close": true,
+  "frontend_hashes": {
+    "desktop_bridge/web/app.js": "91f5f66a9b29d7b45e72cbea57ea6ea22c4c0ed901b9a2f489a797e176f47dc0",
+    "desktop_bridge/web/index.html": "ceec835a34aa6af84e2659441086f927d8148a34dd6a88901c0dac139e3b0fe6",
+    "desktop_bridge/web/style.css": "160ec510c32bd36408b5d486e8b2765fd8d812b689f6e10d985156adc83b4488",
+    "packaging/windows/console_extension.js": "45ec0cf4e7cd4e1395c3258c236f80b1cc0e1b8d9e3da153ce387be27e798ac6"
+  }
 }

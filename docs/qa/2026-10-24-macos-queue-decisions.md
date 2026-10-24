@@ -9,7 +9,7 @@
 | 層次 | 本輪證據 |
 |---|---|
 | Source | 已實作可取消 FIFO、受理預算、容量設定、numeric timings、固定 Decisions 驗證；原始碼候選 |
-| 回歸／維護 | 最終本機 Bridge＋tools 313 passed／18 skipped；Worker 13 passed；version／branding／product docs／secret scan 通過 |
+| 回歸／維護 | 最終本機 Bridge＋tools 316 passed／18 skipped；Worker 13 passed；version／branding／product docs／secret scan 通過 |
 | 合成基準 | 完整矩陣＋最終 64 配置＋三波持續負載，共 7,296/7,296 正確；HTTP／真 schema 子程序／替身 runner，未啟動訂閱 CLI |
 | 真訂閱 3 輪混合 64 | 未驗；不將合成數字當訂閱收益 |
 | 公開 HTTPS 64 | 未驗；不以 health／401／本機成功替代 |
@@ -39,22 +39,22 @@
 
 ## 最終來源與持續負載
 
-Runtime commit `170066432e77b84462504c141fbee2c2e76161e7`；選定與持續報告附 service／schema／decision／process／provider／store／budget 的 SHA256，已與最終 runtime 核對。所有合成 aggregate metadata 見 [JSON 收據](../concurrency-evidence/macos-queue-2026-10-24.json)。前期完整矩陣與最終來源報告分別標示，不捏造前期 hash。
+Runtime commit `3749f90320189cbb369d94dd1317198285dff2cd`；選定與持續報告附 service／schema／decision／process／provider／store／budget 的 SHA256，已與最終 runtime 核對。所有合成 aggregate metadata 見 [JSON 收據](../concurrency-evidence/macos-queue-2026-10-24.json)。前期完整矩陣與最終來源報告分別標示，不捏造前期 hash。
 
 完整矩陣後，最終來源另各跑 baseline／candidate 的 64 workers、單題／三題各三輪 burst，以及單題／三題各一組三波連續 64。全輪正確，沒有重送或 CLI 訂閱用量。
 
 | 測項 | 題數 | Decisions p95 基線→候選 | Chat p95 基線→候選 | good RPM 基線→候選 |
 |---|---|---|---|---|
-| 三輪 burst 中位數 | 1 | 1.781→0.579 s | 0.552→0.576 s | 2086.66→6553.65 |
-| 三輪 burst 中位數 | 3 | 2.890→1.596 s | 0.556→0.578 s | 1305.75→2389.22 |
-| 三波連續合計 | 1 | 1.542→0.571 s | 0.544→0.568 s | 2334.84→6786.56 |
-| 三波連續合計 | 3 | 3.127→1.587 s | 0.554→0.567 s | 1136.32→2422.12 |
+| 三輪 burst 中位數 | 1 | 1.781→0.572 s | 0.552→0.573 s | 2086.66→6597.03 |
+| 三輪 burst 中位數 | 3 | 2.890→1.593 s | 0.556→0.568 s | 1305.75→2391.51 |
+| 三波連續合計 | 1 | 1.542→0.555 s | 0.544→0.552 s | 2334.84→6875.34 |
+| 三波連續合計 | 3 | 3.127→1.585 s | 0.554→0.565 s | 1136.32→2422.12 |
 
-最終 64 配置符合合成門檻：單題 Decisions p95 約 -68%、三題約 -45%，Chat 增幅約 4.4%／3.8%；持續負載也符合。三波不是三輪中位數，表中明列合計。p50／p95／max／HTTP／38 秒與資源取樣保留在 JSON；第一組舊版完整矩陣未量 p50，最終選定及持續組已補齊，不反推缺失值。保留 64/64，不採低執行數。
+最終 64 配置符合合成門檻：單題 Decisions p95 -67.9%、三題 -44.9%，Chat 變化 +3.8%／+2.1%；持續負載也符合。三波不是三輪中位數，表中明列合計。p50／p95／max／HTTP／38 秒與資源取樣保留在 JSON；第一組舊版完整矩陣未量 p50，最終選定及持續組已補齊，不反推缺失值。保留 64/64，不採低執行數。
 
 ## 測試與 CI 分層
 
-- 本機 Python 3.12：`python -m pytest desktop_bridge/tests tools/tests -q` → **313 passed，18 skipped**；涵蓋受理前保留、32＋32／第 65 筆、1 秒內取消／撤 Key／逾時、3 MB queued spec 引用釋放、20 次滿載 health p95 <1 秒、FIFO、去重、stop 競態、worker 啟動失敗清理、設定第二筆寫入失敗的交易回復、終態收據失敗回 503 並釋放且不誤回成功、舊 profile、wall-clock 調整、外部惡意 regex、stdin 不讀取的逾時與 typed differential corpus。
+- 本機 Python 3.12：`python -m pytest desktop_bridge/tests tools/tests -q` → **316 passed，18 skipped**；涵蓋受理前保留、32＋32／第 65 筆、1 秒內取消／撤 Key／逾時、3 MB queued spec 引用釋放、20 次滿載 health p95 <1 秒、FIFO、去重、stop 競態、worker 啟動失敗清理、設定第二筆寫入失敗的交易回復、終態收據失敗回 503 並釋放且不誤回成功、舊 profile、wall-clock 調整、外部惡意 regex、stdin 不讀取的逾時與 typed differential corpus。
 - `node --test cloudflare/test/relay.test.js` → **13 passed**。version／lint_branding／check_product_docs／scan_secrets／git diff --check 通過。第三方 handoff 改用 profile 的實際 inference_pending；建立 Key 的說明改為受理總數，沒有新增前端功能。
 - 本機 `lint_terms.py --require` 因缺私有清單失敗；前一 source commit 769d0bc 的 [CI](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/40047968385) 中 lint-terms（--require）、secret／version／docs 檢查成功；不複製私有清單到工作樹。最終 PR head 另依實際 CI 結果更新。
 - [Windows installer regression](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/40047968384) 在核心測試前的鎖定依賴掃描失敗：未改動的 cloudflare/package-lock.json 含 undici 7.29.1，scanner 回報 GHSA-4qv8-2p9j-2685、GHSA-f72v-6w45-q472、GHSA-xjj6-f33q-929c。沒有移除 scanner、放寬門檻或更改 Windows 依賴；它是獨立的 CI 阻擋，不宣稱整體 CI 全綠。
@@ -68,3 +68,5 @@ PR 保持 Draft。真訂閱三輪、公開 HTTPS 64、Mac release／正式安裝
 第三方 handoff／管理／onboarding 針對性回歸另 41 passed／6 skipped；handoff 的 64 預設、舊 profile 2 容量與獨立 pending=32 皆正確，不能對較小容量仍交付固定 64。
 
 [原生驗證 metadata](assets/mac-queue-ui-result.json)、[六頁淺色寬版](assets/mac-queue-light-wide.png)、[六頁深色窄版](assets/mac-queue-dark-narrow.png)、[Windows 深色窄版適配卡](assets/mac-queue-windows-card.png)。圖片全為合成資料，不含 owner Key／設定。這些是 renderer／adapter 證據，不替代 Windows 原生安裝。
+
+最後硬化將 request budget 傳入 model discovery／auth status／牌價載入 timeout 與共用 metadata lock。新增短期限 cold-model／pricing lock 測試與 status timeout 測試，全部 408／零推論；可選 RAM availability evidence 不得蓋掉原錯誤。Windows adapter JavaScript tests 3 passed；handoff／前端文字修正後的完整本機回歸仍為 316 passed／18 skipped。
