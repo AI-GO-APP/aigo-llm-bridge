@@ -2314,6 +2314,62 @@
     "observed_unique_assistant_messages": 2,
     "assistant_input_sum_matches_cli_total": true
   },
+  "claude_format_candidate": {
+    "schema": 1,
+    "real_inference_cli_calls": 1,
+    "transport": "direct subscribed native CLI; no public relay",
+    "cli_version": "2.1.306",
+    "model": "anthropic/claude-haiku-4.5",
+    "candidate": "explicit StructuredOutput-only formatting instruction",
+    "raw_content_events_or_credentials_saved": false,
+    "events": {
+      "system": 5,
+      "assistant": 2,
+      "user": 1,
+      "rate_limit_event": 1,
+      "result": 1
+    },
+    "assistant_messages": [
+      {
+        "usage": {
+          "input_tokens": 1529,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "output_tokens": 6
+        },
+        "content_types": {
+          "tool_use": 1
+        },
+        "text_characters": 0,
+        "tool_names": [
+          "StructuredOutput"
+        ],
+        "stop_reason": null,
+        "usage_scope": "latest assistant event; output may be partial; CLI aggregate is authoritative"
+      }
+    ],
+    "num_turns": 2,
+    "usage": {
+      "input_tokens": 1529,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 393
+    },
+    "structured_output_present": true,
+    "success": true,
+    "bridge_usage": {
+      "prompt_tokens": 1529,
+      "completion_tokens": 393,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "cache_write_1h_tokens": 0
+      }
+    },
+    "seconds": 4.4281,
+    "observed_unique_assistant_messages": 1,
+    "assistant_input_sum_matches_cli_total": true
+  },
   "pre_inference_helper_failure": {
     "schema": 1,
     "real_inference_cli_calls": 0,
@@ -2329,9 +2385,9 @@
     "phase": "read-only auth metadata parsing in diagnostic helper, before inference"
   },
   "real_usage_total": {
-    "inference_cli_calls": 7,
-    "prompt_tokens": 19478,
-    "completion_tokens": 1549
+    "inference_cli_calls": 8,
+    "prompt_tokens": 21007,
+    "completion_tokens": 1942
   },
   "production_proof": {
     "installed_version": "0.9.10-mac.1",
@@ -2383,7 +2439,8 @@
     "ltbb-issue46-claude-decisions.py": "9a685130a5ca5bd0d67f3d4f09fe5f93884501e51d20333b3c82a1147ad651c8",
     "ltbb-issue46-claude-skill-fixture.py": "c1ea5c8ccb2467703d5af7c3d7a5f046cebae30fa01d12405e8993bb5619f688",
     "ltbb-issue46-followup-real-codex.py": "758f6ccd591c14825356e272bd4ed4c408b7bc9fae380c2f64a26ddf58fcf915",
-    "ltbb-issue46-claude-real-turns.py": "9bc83ab6bb690dc7f049e96574ae4e269c80e1afdf15c335f045b4d65a3e354c"
+    "ltbb-issue46-claude-real-turns.py": "9bc83ab6bb690dc7f049e96574ae4e269c80e1afdf15c335f045b4d65a3e354c",
+    "ltbb-issue46-claude-format-candidate.py": "312a9e5725fb3aa50925161ca01f003e8965e2c6075e0e84cd74709c966711bd"
   }
 }
 ```
