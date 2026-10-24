@@ -1,6 +1,6 @@
 # Mac BYO source Release：安裝、更新與發布
 
-最新已發布並正式安裝驗證為 [0.9.11-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.11-mac.1)。Codex namespace／Claude formatter 精簡、公開四附件、ZIP 安裝、原 profile 更新與兩來源真實 API 對照見 [0.9.11 收據](qa/2026-10-24-macos-cli-token-release.md)。owner 保留 2/64/64 operator 試驗；新安裝常駐預設0，Claude cold，完整放行仍追蹤 issue39。本機更新維持原 Worker。先前 [0.9.10 收據](qa/2026-10-24-macos-codex-context.md) 與 [0.9.9 收據](qa/2026-10-24-macos-runtime-warm-pool.md) 留作歷史。
+最新已發布並正式安裝驗證為 [0.9.12-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.12-mac.1)。Codex純文字Chat profile、公開四附件、ZIP真安裝、原profile更新與同Key真API對照見 [本輪收據](qa/2026-10-24-macos-chat-minimal-release.md)。owner保留常駐合計2（minimal／standard各1）及64/64；新安裝預設常駐0，Claude cold，Decisions StructuredOutput保留。完整warm放行仍追蹤issue39，本輪沒有Worker部署或Windows發布。先前 [0.9.11收據](qa/2026-10-24-macos-cli-token-release.md)留作歷史。
 
 0.9.4-mac.1 候選整合 PR #32 的 64 併發；本輪先驗基本流程；owner 後續授權本機 Claude 64 併發測試。交付狀態見 [Mac 併發收據](qa/2026-10-23-macos-concurrency.md)。
 

@@ -4,6 +4,8 @@
 
 **候選研究完成，未整合 runtime／未發布。** 正式仍是 0.9.11-mac.1，source `f9b481047485a9be8c0351a3b44139064e021c86`，原 profile／Key／URL／常駐 2／workers 64／pending 64。依 owner 最新指示，Decisions 的 StructuredOutput 保持原樣；本輪亦未採用前輪 Decisions schema-dedup／thinking-off 候選。
 
+後續D-44已於0.9.12發布並更新原安裝，見 [新收據](2026-10-24-macos-chat-minimal-release.md)。本頁保留研究當時的候選狀態，不代表目前正式版仍未整合。
+
 ## 原生 CLI 真實用量
 
 直接啟動獨立的已登入訂閱 CLI，每次一程序一題、全程串行、零 Bridge 推論重送。模型為 gpt-6.1-sol／claude-haiku-4-5-20251001；CLI Codex 0.163.0-alpha.11、Claude 2.1.306。不是公開 Bridge receipt、不是正式 pool 效能基準。

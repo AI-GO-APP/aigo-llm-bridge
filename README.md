@@ -13,7 +13,7 @@ Windows / macOS · BYO Cloudflare
 | 使用者／環境 | 安裝入口 | 首次啟動與日後更新 |
 |---|---|---|
 | Windows，一般使用者 | [Windows Releases](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases)：選 `windows-installer-internal-v…` 的 Setup.exe；[完整安裝指南](docs/WINDOWS-INSTALL-UPDATE.md) | 不需要 Python；Setup 後開 Bridge，依五步精靈完成。日後走應用內簽章更新。 |
-| macOS，一般使用者 | [Mac 0.9.1-mac.1 source Release](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.1-mac.1)：下載 ZIP 與 SHA256；[Mac 安裝／操作](docs/MACOS-SETUP.md) | 需要 Python 3.12+。解壓後執行 `Install.command`，再開安裝目錄的 `Bridge.command`，依五步精靈完成。日後下載新版，排空後更新同一安裝。 |
+| macOS，一般使用者 | [Mac 0.9.12-mac.1 source Release](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.12-mac.1)：下載 ZIP 與 SHA256；[Mac 安裝／操作](docs/MACOS-SETUP.md) | 需要 Python 3.12+。解壓後執行 `Install.command`，再開安裝目錄的 `Bridge.command`，依五步精靈完成。日後下載新版，排空後更新同一安裝。 |
 | AI Agent 協助安裝或原始碼安裝 | [可直接複製的 Agent prompt](docs/AI-AGENT-SETUP.md)、[雙平台 source 指令](docs/CROSS-PLATFORM-INSTALL.md) | 先辨識 OS、既有安裝與 data-dir；沿用安裝 manifest 的 Python／app／data_dir，不把 clone 當成永久服務。 |
 
 [Windows 0.9.2 internal 已發布並升級正式安裝](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/windows-installer-internal-v0.9.2)：獨立產品改名、Windows 全機單一 runtime、安全修補及既有 Jev／模型查詢已整合。[最終收據](docs/qa/2026-10-23-windows-machine-runtime.md) 包含真跨使用者／TS session、native＋source、正常停止／重啟、原公開 URL／KEY／資料及成本核對。既有 Worker 不會隨 Windows 更新部署；新公開路徑仍需擁有者更新原 Worker。
@@ -67,3 +67,5 @@ Mac 0.9.9 已發布並更新原安裝；Codex 可明確選擇單次使用常駐�
 Mac 0.9.10 已公開發布並更新原安裝：Codex goals／技能精簡令短 Chat／單題 Decisions input 約減少 25%，常駐 2／併發 64 保留；小樣本延遲未改善，剩餘內建上下文與完整驗收見 [收據](docs/qa/2026-10-24-macos-codex-context.md)。
 
 Mac **0.9.11-mac.1 已公開發布並更新原安裝**：Codex namespace／Claude Decisions formatter 精簡，原常駐2／併發64；公開 Chat／Decisions 真實 token、時間、cache 差異與 schema／thinking 後續實驗見 [本輪收據](docs/qa/2026-10-24-macos-cli-token-release.md)。省 input 不保證延遲或費用同比下降，後續研究候選未改正式推理設定。
+
+目前正式 Mac **0.9.12-mac.1 已公開發布並更新原安裝**：已驗 Codex gpt-6.1-sol 文字Chat使用純推論profile，同份500 caller-token估算題公開API input3129→506；Decisions StructuredOutput保留。常駐合計2、併發64，原URL／Key／設定不變。完整發布與前後用量、延遲及限制見 [收據](docs/qa/2026-10-24-macos-chat-minimal-release.md)。
