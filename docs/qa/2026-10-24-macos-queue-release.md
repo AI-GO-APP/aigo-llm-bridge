@@ -1,6 +1,6 @@
 # Mac 0.9.7-mac.1 階段 0–2：完成收據
 
-Local Token Buffet Bridge 的 #36 階段 0–2 已合併、發布並更新原 Mac 安裝；warm CLI 池另列 [#39](https://github.com/AI-GO-APP/local-token-buffet-bridge/issues/39)。[發布與原安裝 metadata](../concurrency-evidence/macos-release-2026-10-24.json)記錄實際完成結果，不含 Key 或原始 I/O。
+Local Token Buffet Bridge 的 #36 階段 0–2 已合併、發布並更新原 Mac 安裝；warm CLI 池另列 [#39](https://github.com/AI-GO-APP/local-token-buffet-bridge/issues/39)。[發布與原安裝 metadata](../concurrency-evidence/macos-release-2026-10-24.md)記錄實際完成結果，不含 Key 或原始 I/O。
 
 ## 合併與來源
 

@@ -1,3 +1,8 @@
+# Mac 0.9.7-mac.1 發布驗收 metadata
+
+此為已發布 immutable runtime 的文件收據；下列 JSON 只含固定驗收 metadata，不是可執行設定或新發布內容。
+
+```json
 {
   "schema": 1,
   "version": "0.9.7-mac.1",
@@ -148,3 +153,4 @@
   "owner_local_files_preserved": true,
   "success": true
 }
+```
