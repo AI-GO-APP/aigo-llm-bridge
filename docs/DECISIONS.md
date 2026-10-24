@@ -77,3 +77,6 @@ D-29（2026-10-23）：公開 API 的交付證據分為本機支援、無 Key �
 **D-38 採用 2026-10-24：限制冷 CLI 啟動瞬間負載。** 同一 Runtime 僅對 Claude 自有 Decisions 使用最短 20 ms 的啟動間距，保持 64/64 受理／執行上限與既有 profile；不限制已啟動 CLI 的推論重疊數、不保留 warm CLI。64 筆 Decisions 同時到達的純間距最長約 1.26 秒，計入 provider_setup_ms 與既有期限。等待可取消／逾時，取消不留下未來預約名額；取得啟動機會後再核對 auth generation。一般 Chat 與 Codex 沿用原啟動方式；目的是降低移除 Decisions schema 子程序後，Claude 結構輸出集中冷啟動的 RSS／CPU 峰值，必須重驗原吞吐與 p95 門檻，不以名目容量當作實測通過。
 
 **D-39 試驗 2026-10-24：單次使用 initialize-only warm CLI。** 先做獨立、預設關閉的 Codex 原型，一程序只供一題；不跨 Key／model／system 重用，不推論補池。Claude 須有經驗證的 ready 邊界才納入。常駐總數預設零並且不得大於 inference_workers，active＋warm＋refill＋closing 共用同一預算；後台控制項待固定效能／隔離／資源門檻通過才開放。root 上限不冒充 RSS／CPU 保證，未達門檻維持關閉，跨平台結果分開。詳見 [契約](WARM-CLI-PLAN.md)與 [Mac 試驗收據](qa/2026-10-24-macos-warm-cli-pilot.md)。
+
+
+**D-40 Mac operator 試驗 2026-10-24：正式 API 可明確啟用 2/64。** owner 在 0.9.8 發布後要求實際常駐開關對照，故將 Codex initialize-only pool 接入 Runtime；新安裝維持零，不以小樣本取代 D-39 完整放行。兩 provider 推論 root 共用容量，Claude 無已驗 ready 邊界，維持 cold；不足名額時先清 idle，補池不超額。三設定由 paused／idle 專用 API 原子套用，管理台與 Mac CLI 同步，receipt 記真正 warm／cold 次數。分開記錄實作、owner 原機試驗與未通過的跨平台／尖峰門檻，後續外部測速可使用同一入口／原 Key。

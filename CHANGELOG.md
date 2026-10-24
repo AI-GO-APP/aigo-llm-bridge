@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.9.9-mac.1] - 2026-10-24
+
+- Mac 正式 Chat／Decisions 接入 Codex 單次使用初始化常駐池，預設零；owner 明確選擇 2 常駐／64 併發的小量 API 對照。Claude 保持 cold，不宣稱完整效能門檻通過。
+- 管理台／本機 API／Mac CLI 原子設定 resident／workers／pending，待命／補池／兩來源執行／清理共用容量，常駐不得超過執行併發；receipt 新增真實 warm／cold 計數。
+
 ## [0.9.8-mac.1] - 2026-10-24
 
 - Mac source 整合預設關閉的實驗工具：Codex 單次使用有界 stdio transport、獨立 initialize-only warm pool 與 Mac opt-in 合成實驗工具；正式 Runtime 不建立池。

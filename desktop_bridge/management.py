@@ -159,7 +159,7 @@ class ManagementServer:
         threading.Thread(target=check, daemon=True, name="bridge-auth-status").start()
 
     def state(self):
-        settings = {k: self.store.get(k) for k in ("public_url", "tunnel_name", "port", "retention_days", "timeout_s", "inference_workers", "inference_pending", "claude_path", "codex_path", "models", "relay_enabled")}
+        settings = {k: self.store.get(k) for k in ("public_url", "tunnel_name", "port", "retention_days", "timeout_s", "inference_workers", "inference_pending", "inference_resident", "claude_path", "codex_path", "models", "relay_enabled")}
         with self.store.lock:
             counts = dict(self.store.db.execute("select status,count(*) from requests group by status"))
         keys = self.store.keys()
@@ -236,11 +236,11 @@ class ManagementServer:
 
     def save_settings(self, data):
         capacity_fields={'inference_workers','inference_pending'}
-        if set(data)==capacity_fields:
+        if set(data) in (capacity_fields,capacity_fields|{'inference_resident'}):
             # Dedicated narrow API; the six-page settings form remains unchanged.
-            self.runtime.configure_capacity(data['inference_workers'],data['inference_pending'])
+            self.runtime.configure_capacity(data['inference_workers'],data['inference_pending'],data.get('inference_resident'))
             return
-        for name in capacity_fields&set(data):
+        for name in (capacity_fields|{'inference_resident'})&set(data):
             if type(data[name]) is not int or data[name]!=self.store.get(name):
                 raise ValueError('Supply both capacity settings in a dedicated paused/idle request.')
         names = ("public_url", "tunnel_name", "claude_path", "codex_path")

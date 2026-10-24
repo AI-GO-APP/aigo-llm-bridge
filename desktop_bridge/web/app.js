@@ -76,6 +76,10 @@ function render() {
   updateHTML("keys-list", state.keys.length ? `<table><thead><tr><th>名稱</th><th>金鑰</th><th>來源</th><th>每分鐘上限</th><th>狀態</th><th>建立時間</th><th>操作</th></tr></thead><tbody>${state.keys.map(k => `<tr><td>${esc(k.label)}</td><td class="model">${esc(k.prefix)}…</td><td>${esc(JSON.parse(k.providers).join(" / "))}</td><td>${k.rpm}</td><td>${badge(k.revoked_ts ? "已撤銷" : "有效", k.revoked_ts ? "neutral" : "")}</td><td>${date(k.created_ts)}</td><td><div class="row-actions">${k.revoked_ts ? "—" : `<button class="text-button" data-key-action="rotate" data-key="${esc(k.id)}">輪替</button><button class="text-button danger" data-key-action="revoke" data-key="${esc(k.id)}">撤銷</button>`}</div></td></tr>`).join("")}</tbody></table>` : empty("尚未建立 API 金鑰", "為你的第一個服務建立專屬金鑰，設定可用來源與請求上限。", '<button class="primary compact" id="empty-create">＋ 建立金鑰</button>'));
   $("relay-detail").textContent = state.relay; $("tunnel-detail").textContent = state.tunnel;
   renderIntegration();
+  const pool = state.warm_pool || {}, supported = (state.warm_supported_providers || []).includes("codex");
+  $("capacity-resident").disabled = !supported;
+  $("save-capacity").disabled = state.accepting || state.queued_requests > 0 || state.running_requests > 0;
+  $("capacity-status").textContent = `有效設定：常駐 ${pool.resident_target || 0}／併發 ${state.max_execution_workers}／受理 ${state.max_concurrent_requests} · 待命 ${pool.idle || 0} · 啟動 ${pool.starting || 0} · 使用中 ${pool.active || 0} · 清理 ${pool.closing || 0}${state.accepting ? " · 請先暫停接單" : " · 已暫停接單"}${supported ? "" : " · 此平台尚未開放常駐"}${pool.quarantined || pool.unavailable ? " · 常駐池異常，請排空並重啟 Bridge" : ""}`;
   if (!initialized) { fillSettings(); renderModels(); initialized = true; }
 }
 async function refresh() {
@@ -233,7 +237,14 @@ $("refresh-auth").addEventListener("click", e => run(e.currentTarget, async () =
 for (const id of ["log-status","log-provider"]) $(id).addEventListener("change", () => refreshLogs().catch(e => toast(e.message)));
 $("export").addEventListener("click", e => run(e.currentTarget, async () => { if (await window.BridgePlatform.exportLogs(logQuery(), () => api(`/manage/export?${logQuery()}`, undefined, true))) toast("已匯出目前篩選的中繼資料"); }));
 $("clear-logs").addEventListener("click", () => confirmation("清除已結束紀錄", "將清除所有已結束的請求紀錄（包含目前篩選以外的紀錄）。排隊與執行中的工作會保留，此操作無法復原。", "確認清除", async () => { await api("/manage/logs/clear", {}); closeModal(); await refresh(); }));
-function fillSettings() { const form = $("settings-form"); for (const [k,v] of Object.entries({...state.settings, startup:state.startup})) { const input = form.elements[k]; if (!input) continue; if (input.type === "checkbox") input.checked = v; else input.value = v; } }
+function fillCapacity() { for (const name of ["resident", "workers", "pending"]) $("capacity-"+name).value = state.settings["inference_"+name] ?? 0; }
+$("capacity-form").addEventListener("submit", e => { e.preventDefault(); run($("save-capacity"), async () => {
+  const data = Object.fromEntries(["resident","workers","pending"].map(name => ["inference_"+name, Number($("capacity-"+name).value)]));
+  const {inference_resident:r,inference_workers:w,inference_pending:p} = data;
+  if (![r,w,p].every(Number.isInteger) || r<0 || r>w || w<1 || w>p || p>64) throw new Error("請設定整數，並符合 0 ≤ 常駐 ≤ 執行併發 ≤ 受理總數 ≤ 64。");
+  await api("/manage/settings", data); await refresh(); fillCapacity(); toast("常駐與併發已套用；可恢復接單。");
+}); });
+function fillSettings() { fillCapacity(); const form = $("settings-form"); for (const [k,v] of Object.entries({...state.settings, startup:state.startup})) { const input = form.elements[k]; if (!input) continue; if (input.type === "checkbox") input.checked = v; else input.value = v; } }
 function settingsData() { const values = {...state.settings, startup:state.startup}; for (const input of $("settings-form").elements) { if (!input.name) continue; values[input.name] = input.type === "checkbox" ? input.checked : input.type === "number" ? Number(input.value) : input.value.trim(); } return values; }
 $("settings-form").addEventListener("submit", e => { e.preventDefault(); run(document.querySelector('[form="settings-form"]'), async () => { if (!state) throw new Error("請等待管理台連線。"); await api("/manage/settings", settingsData()); toast("設定已儲存；連接埠變更會在重啟後生效。"); await refresh(); }); });
 function modelRow(model = {id:"",provider:"claude",native:""}) { return `<div class="model-row"><label>呼叫端模型名稱<input data-model="id" value="${esc(model.id)}" placeholder="anthropic/model-name" required></label><label>來源<select data-model="provider"><option value="claude" ${model.provider === "claude" ? "selected" : ""}>Claude</option><option value="codex" ${model.provider === "codex" ? "selected" : ""}>Codex</option></select></label><label>原生模型 ID<input data-model="native" value="${esc(model.native)}" placeholder="CLI model ID" required></label><button class="icon-button remove-model" aria-label="移除此模型">×</button></div>`; }

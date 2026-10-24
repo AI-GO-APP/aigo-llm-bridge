@@ -80,3 +80,5 @@ Mac 0.9.5-mac.1：在 256 描述符上限下 64 個真實子程序經 HTTP 全�
 ## Mac 0.9.8 發布與少量 API 延遲
 
 owner 授權合併／發布 cold transport 與預設關閉的原型工具。交付與公開 LLM／Decisions 實測見 [本輪收據](qa/2026-10-24-macos-warm-cli-release.md)；這不表示 warm pool 或管理 UI 已放行。Windows installer 回歸保留真 clipboard 讀回，NULL owner 改用自有隱藏視窗；不發布 Windows 安裝包。
+
+Mac 0.9.9 正式 API 的單次 Codex 常駐 operator 試驗／容量卡與後續公開開關對照狀態見 [本輪收據](qa/2026-10-24-macos-runtime-warm-pool.md)。預設零，Claude cold；完整 #39 放行另列，不將 UI／fake CLI 通過冒充真尖峰收益。

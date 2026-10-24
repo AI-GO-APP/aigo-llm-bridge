@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--apply', action='store_true')
     parser.add_argument('--install-root', type=Path, default=Path.home() / 'Library/Application Support/AIGO LLM Bridge')
     parser.add_argument('--label', required=True)
+    parser.add_argument('--provider', choices=['both','codex','claude'], default='both')
     parser.add_argument('--rounds', type=int, default=3)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
@@ -56,7 +57,8 @@ def main():
     base = store.get('public_url').rstrip('/')
     report = {'schema': 1, 'label': args.label, 'version': manifest['version'],
         'source_commit': manifest['source_commit'], 'transport': 'public HTTPS', 'rounds': args.rounds,
-        'inference_retries': 0, 'concurrent_requests': 1, 'warm_pool_enabled': False,
+        'inference_retries': 0, 'concurrent_requests': 1, 'warm_pool_enabled': store.get('inference_resident') > 0,
+        'resident': store.get('inference_resident'), 'workers': store.get('inference_workers'),
         'raw_content_saved': False, 'rows': [],
         'runtime_sha256': {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
                           for p in sorted((Path(manifest['app']) / 'desktop_bridge').glob('*.py'))}}
@@ -90,7 +92,8 @@ def main():
             if code != 401 or time.monotonic() >= until:
                 break
             time.sleep(.5)  # Key-digest propagation: read-only, no inference.
-        models = ['openai/gpt-6.1-sol', 'anthropic/claude-haiku-4.5']
+        models = [m for m in ['openai/gpt-6.1-sol', 'anthropic/claude-haiku-4.5']
+                  if args.provider=='both' or m.startswith('openai/' if args.provider=='codex' else 'anthropic/')]
         report['models_http'] = code
         if code != 200 or not set(models) <= {m['id'] for m in catalog.get('data', [])}:
             raise ValueError('Required models are not available.')
@@ -106,6 +109,16 @@ def main():
                     row = {'round': round_no, 'model': model, 'protocol': protocol,
                            'request_bytes': len(json.dumps(body).encode())}
                     report['rows'].append(row)
+                    if report['warm_pool_enabled'] and model.startswith('openai/'):
+                        ready_until=time.monotonic()+15
+                        while True:
+                            with opener.open('http://127.0.0.1:'+str(store.get('port'))+'/health',timeout=2) as response:
+                                health=json.load(response)
+                            pool=health.get('warm_pool',{})
+                            if pool.get('idle',0)>=report['resident']:break
+                            if time.monotonic()>=ready_until:raise ValueError('Resident pool not ready.')
+                            time.sleep(.05)
+                        row['ready_residents_before']=pool['idle']
                     began = time.monotonic()
                     try:
                         code, value = http(path, body, rid)
@@ -114,6 +127,9 @@ def main():
                         usage = value.get('usage', {})
                         cost = usage.get('cost')
                         receipt_code, receipt = http('/bridge/v1/receipts/' + rid)
+                        row['execution']=receipt.get('execution',{})
+                        row['lease_valid']=(row['execution'].get('warm_hits')==int(report['warm_pool_enabled'] and model.startswith('openai/'))
+                            and row['execution'].get('cold_starts')==int(not report['warm_pool_enabled'] or not model.startswith('openai/')))
                         row.update(receipt_http=receipt_code,
                             receipt_complete=receipt.get('billing_status') == {
                                 'complete': True, 'calls_started': 1, 'calls_completed': 1},
@@ -127,7 +143,7 @@ def main():
                             record = store.db.execute('select '+','.join(TIMING_COLUMNS)+
                                 ' from requests where key_id=? and client_request_id=?', (kid, rid)).fetchone()
                             row['timings_ms'] = dict(record) if record is not None else {}
-                        row['passed'] = row['response_valid'] and row['receipt_complete'] and row['cost_matches']
+                        row['passed'] = row['lease_valid'] and row['response_valid'] and row['receipt_complete'] and row['cost_matches']
                     except Exception:
                         row.update(passed=False, transport_or_validation_error=True,
                                    seconds=round(time.monotonic() - began, 4))

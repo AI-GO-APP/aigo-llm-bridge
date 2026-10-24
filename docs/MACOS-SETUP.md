@@ -68,3 +68,9 @@ Mac 使用相同的拒絕 Relay redirect、回應讀取上限、provider 環境 
 ## 0.9.7-mac.1 候選受理容量
 
 更新後可用 `mac_service.py workers --count 32 --pending 64` 明確選擇 32 執行／64 總受理。先驗值再沿用 pause/drain/stop，原子改兩值、保留原 accepting 狀態。缺 pending 的舊 profile 保留原明確 workers 容量；新預設仍 64/64，未達實測門檻不自動調低。health 另回 execution／queued／running；[計畫與回復](PERFORMANCE-PLAN.md)。
+
+### 常駐與併發（0.9.9）
+
+管理台「連線與設定 → 常駐與併發」可設定常駐、執行併發及受理總數。先按「暫停接單」並等待工作結束，再套用並恢復接單。必須 `0 ≤ 常駐 ≤ 執行併發 ≤ 受理總數 ≤ 64`；常駐 0 關閉，預設 0。Mac 目前僅 Codex 支援初始化常駐，Claude 保持按需啟動。畫面顯示有效配置與待命／啟動／使用中／清理數量。這是明確選擇的 operator 試驗，完整效能門檻見 [計畫](WARM-CLI-PLAN.md)。
+
+也可從 source-install.json 解析目前 python／app 後執行 `tools/mac_service.py workers --count 64 --pending 64 --resident 2`；參數先驗證，接著排空／更新設定／重啟，保留先前接單狀態。關閉改 `--resident 0`，不改裝置、Worker、KEY 或訂閱登入。

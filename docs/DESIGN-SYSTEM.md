@@ -71,3 +71,5 @@ Mac `web/macos.js`／`macos-onboarding.js` 使用同一六頁 tokens 與 dialog 
 0.8.0 候選 `packaging/windows/onboarding.js` 是 Windows 專用五步安裝 dialog：沿用既有 tokens／按鈕／表單／深淺色，最大寬 960px、最大高 92dvh、內容捲動。首次未完成時不能按 Esc／× 誤關，但可明確按暫存進度進主畫面調整模型／CLI；完成旗標不變，設定卡顯示尚未完成，下次啟動繼續。也可關閉整個管理視窗；完成後日常不彈出。不得預勾電源風險同意／帳戶部署授權，不以 busy 卡住背景管理；KEY 只留密碼輸入框 RAM，關閉清空。電源 UAC、OAuth、訂閱額度測試皆需明確按鈕，狀態有失敗及未驗說明。五步、權限取消、淺深色及窄版需另驗，見 [ONBOARDING](ONBOARDING.md)。
 
 Mac 安裝與更新卡顯示來源版本／commit、精靈狀態與排空更新；發布後文字明確引導 GitHub Release source ZIP 與手動來源更新，不再顯示「沒有公開安裝包」。不把來源更新按鈕說成自動下載或 Windows 簽章更新。
+
+0.9.9 的「常駐與併發」沿用 settings-card／field-grid，為獨立 form，不把容量變更混入一般設定或模型儲存。三欄整數、明示大小關係與常駐 0；接單中／仍有工作時停用套用，server 再獨立驗證。Windows 常駐欄停用並說明未開放，執行與受理容量仍可設定；狀態文字含有效配置與 idle／starting／active／closing。深淺色、窄版與 Windows 附加卡另驗。

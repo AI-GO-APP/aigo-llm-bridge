@@ -41,3 +41,13 @@ def test_mac_capacity_pair_preserves_accepting_profile_and_restart_order(tmp_pat
         assert store.get('device_id')==device_id and store.get('accepting') is False
     finally:store.close()
     assert calls==['pause','wait-idle','pause','status']
+
+
+@pytest.mark.parametrize('resident',[-1,65,True,1.5])
+def test_invalid_resident_never_pauses(tmp_path,monkeypatch,resident):
+    app=Path(__file__).resolve().parents[2]
+    monkeypatch.setattr(mac_service.sys,'platform','darwin')
+    monkeypatch.setattr(mac_service,'manifest_at',lambda *_:{'app':str(app),'data_dir':str(tmp_path/'data')})
+    calls=[];monkeypatch.setattr(mac_service,'setup',lambda *args:calls.append(args))
+    with pytest.raises(ValueError):mac_service.control('workers',tmp_path,workers=64,resident=resident)
+    assert not calls

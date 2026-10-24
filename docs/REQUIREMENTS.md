@@ -56,3 +56,5 @@ R-24：#36 階段 0–2 在昂貴驗證前保留有界受理名額；執行數�
 ## #39 常駐池條件功能
 
 通過 [warm CLI 放行門檻](WARM-CLI-PLAN.md)後，後台須提供機器可調的常駐總數及執行併發上限，整數 `0 ≤ 常駐總數 ≤ 執行併發 ≤ 受理總數 ≤ 64`；常駐零關閉。兩 provider 共用配額，變更 pause/drain 後原子套用。這是尚未開放的條件功能，原型不新增正式 API／DB／UI。
+
+Mac 0.9.9 明確選擇的 Codex 單次常駐試驗：預設 0，允許 0–inference_workers，兩 provider 推論 active／warm／refill／closing 共用 root 名額；每題不跨 caller 重用。管理台／本機 API／Mac CLI 須先 paused＋idle 原子修改 resident/workers/pending，receipt 揭露 warm_hits/cold_starts。完整效能與跨平台門檻繼續追蹤 issue 39，詳見 [計畫](WARM-CLI-PLAN.md)。
