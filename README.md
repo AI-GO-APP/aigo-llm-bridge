@@ -68,4 +68,6 @@ Mac 0.9.10 已公開發布並更新原安裝：Codex goals／技能精簡令短 
 
 Mac **0.9.11-mac.1 已公開發布並更新原安裝**：Codex namespace／Claude Decisions formatter 精簡，原常駐2／併發64；公開 Chat／Decisions 真實 token、時間、cache 差異與 schema／thinking 後續實驗見 [本輪收據](docs/qa/2026-10-24-macos-cli-token-release.md)。省 input 不保證延遲或費用同比下降，後續研究候選未改正式推理設定。
 
-目前正式 Mac **0.9.12-mac.1 已公開發布並更新原安裝**：已驗 Codex gpt-6.1-sol 文字Chat使用純推論profile，同份500 caller-token估算題公開API input3129→506；Decisions StructuredOutput保留。常駐合計2、併發64，原URL／Key／設定不變。完整發布與前後用量、延遲及限制見 [收據](docs/qa/2026-10-24-macos-chat-minimal-release.md)。
+目前正式 Mac **0.9.12-mac.1 已公開發布並更新原安裝**：已驗 Codex gpt-6.1-sol 文字Chat使用純推論profile，同份500 caller-token估算題公開API input3129→506；Decisions StructuredOutput保留。發版當時常駐合計2、併發64；目前owner為4＋4／64，原URL／Key／設定不變。完整發布與前後用量、延遲及限制見 [收據](docs/qa/2026-10-24-macos-chat-minimal-release.md)。
+
+0.9.15優化候選已合併／發布／實機測試，但64交付驗收未過（47/64），已回復上述0.9.12；失敗、用量與後續修復見 [最新收據](docs/qa/2026-10-24-macos-auth-preflight.md)。
