@@ -28,7 +28,7 @@ owner 補充：成功後後台須讓使用者依機器能力手動設定常駐�
 python tools/benchmark_warm_cli.py --apply --idle-seconds 600 --requests 3 --resident 2 --concurrency 8 --output /tmp/warm-pilot.json
 ```
 
-僅 Mac 可執行，未加 --apply 不啟動 CLI；requests=0 可只驗待命。以 read-only SQLite 讀取原安裝 CLI 路徑與期限，不開 Store、不讀 client Key、不改 owner 設定或服務。合成內容只在 stdin／RAM，各 arm 都用同一原型程序帳本；cold arm 將 resident 設零，warm arm 明確等握手就緒。整段 wall time 包含預熱／idle／補池，另記單請求延遲。取樣及 metadata 報告不得保存原始內容。小量單筆對照不等於 64 burst／持續吞吐、API receipt、真跨 Key 或跨模型驗收。
+僅 Mac 可執行，未加 --apply 不啟動 CLI；requests=0 可只驗待命。以 read-only SQLite 讀取原安裝 CLI 路徑與期限，不開 Store、不讀 client Key、不改 owner 設定或服務。合成內容只在 stdin／RAM，各 arm 都用同一原型程序帳本；cold arm 將 resident 設零，warm arm 明確等握手就緒。整段 wall time 包含預熱／idle／補池，另記單請求延遲。工具會取樣自身整棵程序樹 RSS／CPU／fd 並記來源 hash；取樣及 metadata 報告不得保存原始內容。小量單筆對照不等於 64 burst／持續吞吐、API receipt、真跨 Key 或跨模型驗收。
 
 ## 固定放行門檻（不因試作結果降低）
 
