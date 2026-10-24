@@ -61,3 +61,9 @@ Windows 全依賴及 announce signer 子集使用 published artifact SHA256 鎖�
 單次 Codex transport 的 stdout 以 4 MB 單行、8 MB 待處理 bytes 與 4096 筆限制；stderr 丟棄。預熱不建立 thread／turn，不接收 Key、model、system 或 request；領用後不可歸還重用。generation 失效、取消、pause、TTL 及 stop 清理自有程序與空 cwd；清理失敗保留 counted slot、停止補池。實驗工具不加入正式服務，無新的 KEY／憑證檔；Mac 尚無全裝置 RSS／CPU hard limit，相關預算未放行。[完整契約](WARM-CLI-PLAN.md)。
 
 Windows 原生文字複製使用同一呼叫執行緒建立的 message-only window 作為 OpenClipboard／EmptyClipboard owner，不借用其他 app 的前景視窗。成功後 Windows 接管記憶體，失敗時本程序釋放；兩種情況均清理隱藏視窗。來源與外部導覽檢查保留。
+
+## Mac 明確啟用的單次常駐（0.9.9）
+
+Codex 常駐只做 initialize／initialized；沒有 caller key、模型、prompt、thread 或 turn。一個 lease 只執行一題，無工具與空 cwd 及原 event/line/buffer 上限保持，關閉程序與 pipe 後才刪目錄並釋放 slot。auth／binary／config stat generation 改變、TTL、異常 idle 工作事件均淘汰；開始後失敗不重送。active、idle、refill、closing 共用兩 provider 的推論 root limit，Claude cold 也占相同名額；補池讓位於受理驗證／排隊／執行滿載與 lease 等候者。唯讀 auth/model 與外部 schema 的既有控制預算分開，這不是 Mac 程序樹 RSS／CPU hard limit。清理失敗保留 quarantined 名額並停止池，不虛報可用容量；request monitor 仍持續處理取消與期限。
+
+常駐預設 0，只有明確 owner 選擇的 Mac operator 試驗才開啟；管理認證 API 要求 paused＋idle，三容量整數驗證後同一 transaction 套用，DB 失敗不留下半套設定。原文／事件／stderr 只在管線與 RAM，warm/cold 次數為 numeric metadata。完整隔離／尖峰／資源門檻仍見 [計畫](WARM-CLI-PLAN.md)。

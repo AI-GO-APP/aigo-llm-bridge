@@ -39,12 +39,13 @@ class StartupCancel:
 
 
 class SingleUsePool:
-    def __init__(self, factory, generation, *, target=0, limit=8, ttl=120, backoff=.1, paused=False):
+    def __init__(self, factory, generation, *, target=0, limit=8, ttl=120, backoff=.1, paused=False, refill_allowed=lambda: True):
         if type(target) is not int or type(limit) is not int or not 0 <= target <= limit <= 64 or limit < 1:
             raise ValueError('Require 0 <= target <= limit <= 64 and limit >= 1.')
         if not 0 < ttl <= 600 or not .01 <= backoff <= 5:
             raise ValueError('Invalid TTL or backoff.')
         self.factory, self.generation = factory, generation
+        self.refill_allowed = refill_allowed
         self.target, self.limit, self.ttl = target, limit, ttl
         self.backoff = backoff
         self.condition = threading.Condition(threading.RLock())
@@ -114,6 +115,7 @@ class SingleUsePool:
                         self.condition.wait(.05)
                         continue
                 generation = self.generation()
+                allowed = self.refill_allowed()  # Outside pool lock: Runtime owns its admission lock.
                 with self.condition:
                     stale = [e for e in self.entries if e.state == 'idle' and (
                         self.paused or e.generation != generation or
@@ -121,7 +123,7 @@ class SingleUsePool:
                     for old in stale:
                         old.state = 'retiring'
                     idle = sum(e.state in {'idle', 'starting'} for e in self.entries)
-                    if (not stale and not self.paused and not self.waiting_leases
+                    if (allowed and not stale and not self.paused and not self.waiting_leases
                             and idle < self.target and len(self.entries) < self.limit):
                         entry = self._reserve(generation)
                 for old in stale:

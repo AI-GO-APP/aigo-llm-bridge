@@ -53,7 +53,6 @@ def main():
             return (store.db.execute('select name,value from settings order by name').fetchall(),
                     store.db.execute('select * from api_keys order by id').fetchall())
     before_settings, before_keys = snapshot()
-    kid, key = store.create_key('Synthetic API latency acceptance', ['claude', 'codex'], 60)
     base = store.get('public_url').rstrip('/')
     report = {'schema': 1, 'label': args.label, 'version': manifest['version'],
         'source_commit': manifest['source_commit'], 'transport': 'public HTTPS', 'rounds': args.rounds,
@@ -82,6 +81,7 @@ def main():
             except ValueError:
                 value = {}
             return response.status, value if isinstance(value, dict) else {}
+    kid, key = store.create_key('Synthetic API latency acceptance', ['claude', 'codex'], 60)
     success = False
     try:
         if not base.startswith('https://') or not store.get('accepting'):

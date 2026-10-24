@@ -505,3 +505,17 @@ def test_paused_runtime_can_drain_already_accepted_calls_without_refill():
             assert pool.snapshot()['total']==1
         time.sleep(.1)
         assert len(resources)==before+1 and pool.snapshot()['total']==0
+
+
+def test_refill_yields_to_runtime_admission_without_blocking_request_lease():
+    allowed=threading.Event();resources=[]
+    def factory(cancel,deadline):
+        value=FakeResource(cancel,deadline);resources.append(value);return value
+    pool=SingleUsePool(factory,lambda:'a',target=1,limit=1,refill_allowed=allowed.is_set)
+    try:
+        time.sleep(.1);assert not resources
+        with pool.lease(threading.Event(),time.monotonic()+3):
+            assert pool.snapshot()['active']==1
+        assert len(resources)==1
+        allowed.set();wait_for(lambda:pool.snapshot()['idle']==1)
+    finally:pool.close()

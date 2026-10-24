@@ -80,9 +80,14 @@ class Runtime:
             from .warm_runtime import CodexResource
             self.cli_pool=SingleUsePool(lambda cancel,deadline: CodexResource(store,cancel,deadline),
                 lambda:providers.auth_generation('codex',store),target=resident,limit=workers,
-                paused=not store.get('accepting'))
+                paused=not store.get('accepting'),refill_allowed=self._can_refill)
         self.monitor=threading.Thread(target=self._monitor,daemon=True,name='bridge-queue-monitor')
         self.monitor.start()
+
+    def _can_refill(self):
+        with self.lock:
+            return (not self.stopped and not self.waiting and self.running_tasks<self.max_workers
+                    and not any(t.phase=='validating' for t in self.tasks.values()))
 
     @staticmethod
     def validate_capacity(workers,pending):
