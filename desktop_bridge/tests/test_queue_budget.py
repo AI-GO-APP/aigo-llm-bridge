@@ -6,6 +6,8 @@ import time
 import uuid
 import gc
 import weakref
+import sqlite3
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -16,7 +18,7 @@ from desktop_bridge.decision_contract import output_schema
 from desktop_bridge.decisions import typed_output
 from desktop_bridge.errors import BridgeError
 from desktop_bridge.execution_budget import Budget, TIMING_COLUMNS, scope
-from desktop_bridge.service import Runtime
+from desktop_bridge.service import Runtime, ApiServer
 from desktop_bridge.store import Store
 
 CHAT={'model':'openai/gpt-6-astra','messages':[{'role':'user','content':'synthetic'}]}
@@ -34,11 +36,19 @@ def test_32_running_32_queued_share_capacity_and_cancel_frees_before_dequeue(tmp
         assert release.wait(5)
         return ('{"noul":0.9}' if spec.schema else 'OK'),{'prompt_tokens':2,'completion_tokens':1},'stop'
     rt=Runtime(store,runner,max_workers=32,max_pending=64)
+    api=ApiServer(rt,0);api.start()
     try:
         tasks=[rt.submit(DECISION if i%2 else CHAT,caller,20,
                          protocol='decisions' if i%2 else 'chat') for i in range(64)]
         assert entered.wait(2)
         assert rt.capacity()['running_requests']==32 and rt.capacity()['queued_requests']==32
+        latencies=[]
+        for _ in range(20):
+            began=time.monotonic()
+            with urllib.request.urlopen(f'http://127.0.0.1:{api.port}/health',timeout=1) as response:
+                assert json.load(response)['max_execution_workers']==32
+            latencies.append(time.monotonic()-began)
+        assert sorted(latencies)[18]<1
         with pytest.raises(BridgeError) as error:rt.submit(CHAT,caller,20)
         assert error.value.status==429
         tasks[-1].cancel.set()
@@ -50,7 +60,7 @@ def test_32_running_32_queued_share_capacity_and_cancel_frees_before_dequeue(tmp
         assert len(calls)==64
         assert store.request(tasks[-1].id,caller['id'])['calls_started']==0
         assert rt.capacity()['queued_requests']==rt.capacity()['running_requests']==0
-    finally:release.set();rt.stop();store.close()
+    finally:release.set();rt.stop();api.stop();store.close()
 
 
 @pytest.mark.parametrize('cause',['deadline','revoke','cancel'])
@@ -139,6 +149,29 @@ def test_worker_start_failure_never_leaves_a_runnable_terminal_spec(tmp_path,mon
     finally:rt.stop();store.close()
 
 
+def test_stop_racing_validation_cannot_enqueue_after_scheduler_shutdown(tmp_path,monkeypatch):
+    store=Store(tmp_path);_,key=store.create_key('synthetic');caller=store.authenticate(key)
+    validated=threading.Event();release=threading.Event()
+    rt=Runtime(store,lambda *_:pytest.fail('Stop must prevent inference.'),max_workers=1,max_pending=1)
+    real=rt.check_execution
+    def hold_after_first_check(*args):
+        real(*args)
+        if not validated.is_set():
+            validated.set();assert release.wait(3)
+    monkeypatch.setattr(rt,'check_execution',hold_after_first_check)
+    try:
+        with ThreadPoolExecutor(max_workers=2) as clients:
+            submit=clients.submit(rt.submit,CHAT,caller,20)
+            assert validated.wait(1)
+            stop=clients.submit(rt.stop)
+            until=time.monotonic()+1
+            while not rt.stopped and time.monotonic()<until:time.sleep(.01)
+            assert rt.stopped
+            release.set();task=submit.result(2);stop.result(2)
+            assert task.done.is_set() and task.error.status==499 and not rt.waiting
+    finally:release.set();rt.stop();store.close()
+
+
 def test_schema_admission_reservation_precedes_expensive_validation(tmp_path,monkeypatch):
     store=Store(tmp_path);_,key=store.create_key('synthetic');caller=store.authenticate(key)
     entered=threading.Event();release=threading.Event()
@@ -187,6 +220,12 @@ def test_capacity_migration_and_atomic_reconfiguration(tmp_path):
         for pair in [(0,64),(True,64),(2,1),(1,65),(1,False)]:
             with pytest.raises(ValueError):rt.configure_capacity(*pair)
         assert rt.max_workers==rt.max_pending==2
+        store.db.execute("create trigger fail_pending before insert on settings when new.name='inference_pending' begin select raise(abort,'synthetic failure'); end")
+        store.db.commit()
+        with pytest.raises(sqlite3.IntegrityError):rt.configure_capacity(1,64)
+        assert (store.get('inference_workers'),store.get('inference_pending'))==(2,2)
+        assert rt.max_workers==rt.max_pending==2
+        store.db.execute('drop trigger fail_pending');store.db.commit()
         rt.configure_capacity(1,64)
         assert (store.get('inference_workers'),store.get('inference_pending'))==(1,64)
         assert rt.capacity()['max_execution_workers']==1

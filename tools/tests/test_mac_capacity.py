@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -21,6 +22,7 @@ def test_invalid_mac_capacity_never_pauses_or_stops(tmp_path,monkeypatch,workers
     finally:store.close()
 
 
+@pytest.mark.skipif(os.name=='nt',reason='macOS helper uses a POSIX profile lock; no Windows native claim.')
 def test_mac_capacity_pair_preserves_accepting_profile_and_restart_order(tmp_path,monkeypatch):
     app=Path(__file__).resolve().parents[2];data=tmp_path/'data'
     store=Store(data);device_id=store.get('device_id');store.set('accepting',False);store.close()
