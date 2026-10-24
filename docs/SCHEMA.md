@@ -158,4 +158,4 @@ source ZIP 的 `source-release.json` 只含 schema=1、format=macos-byo-source�
 
 provider_setup_ms 包含重疊 auth status 查詢等待與 Claude 自有 Decisions 的 20 ms 啟動間距等待；cli_spawn_ms 只量測實際建立推論子程序。兩者不含登入憑證或查詢原文。內部 generated_schema 標記僅在 RAM，不是 API／DB 欄位。
 
-calls_started／calls_completed 計算 Bridge 啟動的 CLI 呼叫；Claude 原生固定結構模式可在該次 CLI 內使用最多 2 的 turn 上限，usage／cost 按 CLI 回報合計。這些計數不宣稱供應商內部 RPC 次數，Bridge 不重送推論。
+calls_started 在進入每題 provider 準備前記錄一次推論 CLI 執行嘗試；準備失敗也可能 started=1、completed=0，不能當作 OS 子程序數。calls_completed 在 CLI 回報且實際模型／用量核對後增加，唯讀 auth status 不另外加計。Claude 原生固定結構模式可在同次 CLI 內使用最多 2 的 turn 上限，usage／cost 按 CLI 合計。這些計數不宣稱供應商內部 RPC 次數，Bridge 不重送推論。
