@@ -58,3 +58,5 @@ Mac #36 階段 0–2 的排隊、期限、固定 Decisions 驗證與量化門檻
 #39 已開始單次使用 warm CLI 試作，仍預設關閉；常駐零關閉／不得超過執行併發及後台開放條件見 [原型計畫](WARM-CLI-PLAN.md)，已驗與未驗見 [Mac 原型收據](qa/2026-10-24-macos-warm-cli-pilot.md)。
 
 Mac 0.9.9 已發布並將 Codex 常駐接入正式 Chat／Decisions，提供容量卡與真 warm/cold receipt；owner 選擇 2/64，小量公開對照與發布狀態見 [本輪收據](qa/2026-10-24-macos-runtime-warm-pool.md)。預設仍零，Claude 仍按需啟動。
+
+issue 46 的 Mac Codex 固定輸入調查與 0.9.10-mac.1 goals／技能精簡，見 [上下文驗收](qa/2026-10-24-macos-codex-context.md)。受控 mock、實際計量與發布狀態分開記錄。

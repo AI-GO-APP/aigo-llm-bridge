@@ -22,7 +22,9 @@ model = None
 for line in sys.stdin:
     m = json.loads(line); method = m['method']; p = m['params']
     result = {}
-    if method == 'thread/start':
+    if method == 'skills/list':
+        result = {'data':[{'cwd':p['cwds'][0],'skills':[], 'errors':[]}]}
+    elif method == 'thread/start':
         model = p['model']
         result = {'model':model,'thread':{'id':str(os.getpid()),'ephemeral':True,'path':None}}
     elif method == 'turn/start':

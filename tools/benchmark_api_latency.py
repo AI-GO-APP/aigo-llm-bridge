@@ -106,7 +106,7 @@ def main():
                              'questions': {'q': {'type': 'noul', 'instructions': 'Is the object blue?'}}})
                     path = '/api/v1/chat/completions' if protocol == 'chat' else '/api/alpha/decisions'
                     rid = str(uuid.uuid4())
-                    row = {'round': round_no, 'model': model, 'protocol': protocol,
+                    row = {'round': round_no, 'model': model, 'protocol': protocol, 'request_id': rid,
                            'request_bytes': len(json.dumps(body).encode())}
                     report['rows'].append(row)
                     if report['warm_pool_enabled'] and model.startswith('openai/'):
@@ -139,6 +139,10 @@ def main():
                             ('completion_tokens', ('completion_tokens', 'output_tokens')), ('cost_usd', ('cost',))]:
                             number = next((usage[k] for k in alternatives if k in usage), None)
                             row[field] = number if type(number) in (int, float) and math.isfinite(number) else None
+                        for field, details in [('cached_tokens', 'prompt_tokens_details'),
+                                               ('reasoning_tokens', 'completion_tokens_details')]:
+                            number = usage.get(details, {}).get(field)
+                            row[field] = number if type(number) is int and number >= 0 else None
                         with store.lock:
                             record = store.db.execute('select '+','.join(TIMING_COLUMNS)+
                                 ' from requests where key_id=? and client_request_id=?', (kid, rid)).fetchone()

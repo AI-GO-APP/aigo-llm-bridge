@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.9.10-mac.1] - 2026-10-24
+
+- 精簡 Bridge 專用 Codex goals／技能上下文；每題用同一 app-server 唯讀列出當前技能，再於 ephemeral thread 停用，不改個人 CLI 設定或訂閱。清單異常／取消／逾時在推論前停止。
+- 保留常駐 0／2、64 共用容量與逐題隔離／計量；公開小量測速報告補記 request UUID、cache 與 reasoning，區分 mock 估算與真實用量。剩餘 Codex 工具／環境上下文仍有固定成本。
+
 ## [0.9.9-mac.1] - 2026-10-24
 
 - Mac 正式 Chat／Decisions 接入 Codex 單次使用初始化常駐池，預設零；owner 明確選擇 2 常駐／64 併發的小量 API 對照。Claude 保持 cold，不宣稱完整效能門檻通過。

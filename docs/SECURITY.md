@@ -67,3 +67,7 @@ Windows 原生文字複製使用同一呼叫執行緒建立的 message-only wind
 Codex 常駐只做 initialize／initialized；沒有 caller key、模型、prompt、thread 或 turn。一個 lease 只執行一題，無工具與空 cwd 及原 event/line/buffer 上限保持，關閉程序與 pipe 後才刪目錄並釋放 slot。auth／binary／config stat generation 改變、TTL、異常 idle 工作事件均淘汰；開始後失敗不重送。active、idle、refill、closing 共用兩 provider 的推論 root limit，Claude cold 也占相同名額；補池讓位於受理驗證／排隊／執行滿載與 lease 等候者。唯讀 auth/model 與外部 schema 的既有控制預算分開，這不是 Mac 程序樹 RSS／CPU hard limit。清理失敗保留 quarantined 名額並停止池，不虛報可用容量；request monitor 仍持續處理取消與期限。
 
 常駐預設 0，只有明確 owner 選擇的 Mac operator 試驗才開啟；管理認證 API 要求 paused＋idle，三容量整數驗證後同一 transaction 套用，DB 失敗不留下半套設定。原文／事件／stderr 只在管線與 RAM，warm/cold 次數為 numeric metadata。完整隔離／尖峰／資源門檻仍見 [計畫](WARM-CLI-PLAN.md)。
+
+## Codex 上下文精簡（0.9.10-mac.1）
+
+Bridge 子程序及 ephemeral thread 覆寫 goals=false；每題於 claim 前重新取得同空 cwd 的技能 metadata，驗證單一 cwd、無 discovery errors、最多 512 筆、每筆明確 enabled bool 與最長 4096 字元的絕對 path，再於該 thread 停用全清單。清單、路徑與原始事件僅 RAM，不寫個人 config、不讀 auth.json 內容、不執行 skill。metadata 查詢可取消／逾時且只允許一次，其他 preclaim RPC 仍拒絕；異常不建立 thread／turn，不自動回退為帶技能推論。`codex_context_unavailable` 表示清單結構未通過，並非已執行模型。原 provider 通道錯誤及取消沿用既有分類。上游仍可能宣告部分內建工具；不可由 dynamicTools=[] 或停用執行推論宣告全部消失，也不可因看到定義宣稱曾實際執行。既有只讀 sandbox／approval=never、工具事件拒絕與一次性清理繼續適用。[證據](qa/2026-10-24-macos-codex-context.md)。

@@ -358,7 +358,7 @@ def codex_command(settings):
     config={"web_search":"disabled","analytics.enabled":False,"feedback.enabled":False,"notify":[],
             "agents.enabled":False,"project_doc_max_bytes":0,"service_tier":"default",
             "history.persistence":"none","shell_environment_policy.inherit":"none"}
-    for name in ("hooks","memories","shell_tool","unified_exec","code_mode","apps","plugins","browser_use",
+    for name in ("goals","hooks","memories","shell_tool","unified_exec","code_mode","apps","plugins","browser_use",
                  "browser_use_external","computer_use","image_generation","multi_agent","multi_agent_v2",
                  "view_image","in_app_browser","artifact","shell_snapshot","code_mode_host","daemon_auto_start","workspace_dependencies","sleep_tool","remote_plugin","skill_search","tool_suggest"):
         config["features."+name]=False
@@ -388,6 +388,8 @@ def call_codex(spec,settings,cancel,cwd,*,session=None):
     def receive():return session.receive(cancel,deadline)
     def response(rid):return session.response(rid,cancel,deadline)
     try:
+        with timed('provider_setup_ms'):
+            thread_config=session.inference_config(cancel,deadline)
         if session.generation is not None and session.generation!=auth_generation('codex',settings):
             raise BridgeError(503,'provider_authentication','待命 CLI 的登入或設定世代已變更。')
         session.claim(cwd)
@@ -395,7 +397,7 @@ def call_codex(spec,settings,cancel,cwd,*,session=None):
             "approvalPolicy":"never","sandbox":"read-only",
             "baseInstructions":"You are an LLM inference assistant. Never use tools, access files, execute commands, or create sessions.\n"+spec.system,
             "developerInstructions":"Only return the requested answer. No tools are available.",
-            "config":{"project_doc_max_bytes":0},"dynamicTools":[]}))
+            "config":thread_config,"dynamicTools":[]}))
         if start.get("model")!=spec.model["native"]:
             raise BridgeError(502,"model_mismatch","CLI 使用的模型與請求不同。")
         if not start.get("thread",{}).get("ephemeral") or start["thread"].get("path"):
