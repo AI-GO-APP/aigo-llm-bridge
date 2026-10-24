@@ -38,7 +38,7 @@ Mac 公開 Decisions／模型探索上線及本機／Worker／真實推論證據
 
 ## 維護約定
 
-Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [最新 Mac Release／公開 API 收據](qa/2026-10-24-macos-warm-cli-release.md)（[0.9.7 階段 0–2](qa/2026-10-24-macos-queue-release.md)）（[0.9.3 公開 API](qa/2026-10-23-macos-public-api.md)、[先前 Release](qa/2026-10-23-macos-release.md)、[parity QA](qa/2026-10-23-macos-parity.md) 為歷史證據）分別定義契約與獨立證據，不以 Windows 結果代替。
+Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [最新 Mac Release／公開 API 收據](qa/2026-10-24-macos-runtime-warm-pool.md)（[0.9.7 階段 0–2](qa/2026-10-24-macos-queue-release.md)）（[0.9.3 公開 API](qa/2026-10-23-macos-public-api.md)、[先前 Release](qa/2026-10-23-macos-release.md)、[parity QA](qa/2026-10-23-macos-parity.md) 為歷史證據）分別定義契約與獨立證據，不以 Windows 結果代替。
 
 修改功能時，同一 PR 更新需求／API、資料字典、決策或設計文件中受影響的部分，並在 ACCEPTANCE 指向具體證據。新功能不能只留在聊天。文件的日期是維護日期，不是驗收通過證明。
 
@@ -57,4 +57,4 @@ Mac #36 階段 0–2 的排隊、期限、固定 Decisions 驗證與量化門檻
 
 #39 已開始單次使用 warm CLI 試作，仍預設關閉；常駐零關閉／不得超過執行併發及後台開放條件見 [原型計畫](WARM-CLI-PLAN.md)，已驗與未驗見 [Mac 原型收據](qa/2026-10-24-macos-warm-cli-pilot.md)。
 
-Mac 0.9.9 候選將 Codex 常駐接入正式 Chat／Decisions，提供容量卡與真 warm/cold receipt；owner 選擇 2/64，小量公開對照與發布狀態見 [本輪收據](qa/2026-10-24-macos-runtime-warm-pool.md)。預設仍零，Claude 仍按需啟動。
+Mac 0.9.9 已發布並將 Codex 常駐接入正式 Chat／Decisions，提供容量卡與真 warm/cold receipt；owner 選擇 2/64，小量公開對照與發布狀態見 [本輪收據](qa/2026-10-24-macos-runtime-warm-pool.md)。預設仍零，Claude 仍按需啟動。
