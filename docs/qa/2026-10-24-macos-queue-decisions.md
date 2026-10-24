@@ -1,6 +1,6 @@
-# Mac 排隊與 Decisions 階段 0–2：候選證據
+# Mac 排隊與 Decisions 階段 0–2：實作與效能證據
 
-日期 2026-10-24（Asia/Taipei），候選 0.9.7-mac.1，基線來源 main 5d5e406。範圍為 [#36](https://github.com/AI-GO-APP/local-token-buffet-bridge/issues/36)，門檻固定於 [效能計畫](../PERFORMANCE-PLAN.md)；warm CLI 池另列 #39。
+日期 2026-10-24（Asia/Taipei），版本 0.9.7-mac.1，基線來源 main 5d5e406。範圍為 [#36](https://github.com/AI-GO-APP/local-token-buffet-bridge/issues/36)，門檻固定於 [效能計畫](../PERFORMANCE-PLAN.md)；warm CLI 池另列 #39。
 
 本文件只記實際證據。Source 實作、單元／HTTP 回歸、deterministic 基準、真訂閱、HTTPS、Release 與正式安裝為不同層。未通過的欄位不能用相鄰層證明。
 
@@ -8,12 +8,12 @@
 
 | 層次 | 本輪證據 |
 |---|---|
-| Source | 已實作可取消 FIFO、受理預算、容量設定、numeric timings、固定 Decisions 驗證；原始碼候選 |
+| Source | 已實作可取消 FIFO、受理預算、容量設定、numeric timings、固定 Decisions 驗證；已合併並發布 |
 | 回歸／維護 | 最終本機 Bridge＋tools＋Windows package source 404 passed／23 skipped；Worker 13 passed；version／branding／product docs／secret scan 通過 |
 | 合成基準 | 完整矩陣＋最終 64 配置＋三波持續負載，共 7,296/7,296 正確；HTTP／真 schema 子程序／替身 runner，未啟動訂閱 CLI |
 | 真訂閱 3 輪混合 64 | e637cfa 三輪 192/192 正確，全部數值門檻通過；收益限於固定 factual probe |
 | 公開 HTTPS 64 | 原 Worker／URL 真實 64/64 正確，完整收據且均在 38 秒內；不是 health／401 代認 |
-| Mac Release／正式更新 | 未執行；保留原正式 profile／URL／KEY／CLI 登入 |
+| Mac Release／正式更新 | 已發布並完成公開 ZIP／原安裝更新，見 [完成收據](2026-10-24-macos-queue-release.md) |
 | Windows | 僅共用 source 回歸；沒有原生安裝／發布證據 |
 
 原工作區的 AGENTS.local.md／.codex/config.toml 及未提交 owner 變更未帶入工作樹或發布包。未操作電源、鎖定、訂閱登入、Cloudflare 帳單或其他 Cloud 專案。
@@ -59,7 +59,7 @@ Runtime commit `3749f90320189cbb369d94dd1317198285dff2cd`；選定與持續報�
 - 本機 `lint_terms.py --require` 因缺私有清單失敗；前一 source commit 769d0bc 的 [CI](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/40047968385) 中 lint-terms（--require）、secret／version／docs 檢查成功；不複製私有清單到工作樹。最終 PR head 另依實際 CI 結果更新。
 - [Windows installer regression](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/40047968384) 在核心測試前的鎖定依賴掃描失敗：未改動的 cloudflare/package-lock.json 含 undici 7.29.1，scanner 回報 GHSA-4qv8-2p9j-2685、GHSA-f72v-6w45-q472、GHSA-xjj6-f33q-929c。沒有移除 scanner、放寬門檻或更改 Windows 依賴；它是獨立的 CI 阻擋，不宣稱整體 CI 全綠。
 
-以上為早期來源的分層狀態；後續完整放行結果見下方。Mac release／公開下載／正式安裝尚待發布流程，不把候選測試當作正式交付，也不提前關閉 #36。
+以上為早期來源的分層狀態；後續完整放行結果見下方。正式 release／公開下載／原安裝更新已完成，見 [發布收據](2026-10-24-macos-queue-release.md)。
 
 ## 本機原生 UI 與第三方容量文案
 
@@ -106,7 +106,7 @@ Mac 與 Windows source CI 均通過後，Windows installer 的既有 OSV 閘門�
 
 D-36 已使 factual Decisions p95 中位數 17.0286→12.5876 s（-26.08%），Chat 9.1072→6.8898 s（-24.35%），good RPM 215.565→222.993（+3.45%）。但一筆模型格式錯誤回 502，且程序樹 RSS 9,268,592→12,225,440 KiB（+31.90%，超過 +25%），故仍未放行。不得用延遲改善掩蓋正確性／記憶體門檻。
 
-D-37 限定自有 Decisions 使用 Claude CLI 原生固定結構輸出，依 [官方 structured output](https://code.claude.com/docs/en/headless#Get-structured-output) 與本機 CLI help 核對，單筆真訂閱成功，7.862 s；未列入正式三輪。D-38 以 40 ms 冷啟動間距緩和瞬間程序負載；保持既有 64/64、固定期限與不重試。新增 canary 回歸證明 caller state／instructions／criteria 名稱／外部 schema 不進 argv、原生 structured_output 必須存在；取消／期限／generation 在等候後仍核對。兩項修補後必須重驗，未先宣稱通過。
+D-37 限定自有 Decisions 使用 Claude CLI 原生固定結構輸出，依 [官方 structured output](https://code.claude.com/docs/en/headless#get-structured-output) 與本機 CLI help 核對，單筆真訂閱成功，7.862 s；未列入正式三輪。D-38 以 40 ms 冷啟動間距緩和瞬間程序負載；保持既有 64/64、固定期限與不重試。新增 canary 回歸證明 caller state／instructions／criteria 名稱／外部 schema 不進 argv、原生 structured_output 必須存在；取消／期限／generation 在等候後仍核對。兩項修補後必須重驗，未先宣稱通過。
 
 943b789 的原生結構＋40 ms 首版三輪為 47／49／50 正確，CLI provider_error 17／15／14；不是放行證據。[metadata](../concurrency-evidence/macos-live-native40-2026-10-24.json)。RSS 降至 5,536,960 KiB，但 Chat p95 約 11 秒，未通過速度／正確性。調為原生結構 CLI turn 上限 2，容納其結構終結步驟；每題仍僅一次 Bridge CLI 呼叫，無本機工具或 Bridge 重送，usage／cost 依 CLI 合計。另將啟動間距改為 20 ms，須重新核實。單筆協定 probe 的 CLI result 可回 num_turns=2，metadata 未含原文；不把 CLI turn 計數冒稱實際供應商 RPC 次數。
 
@@ -130,4 +130,4 @@ Runtime `e637cfabc7e0a8f0057da3e46a9049d2ab5064bd`。全部 desktop_bridge 模�
 
 公開 HTTPS：原 Worker／URL，32 Chat＋32 Decisions 真實 burst，64/64 HTTP 200、model／合法答案／cost／完整單次 CLI 收據一致；牆鐘 33.227 s、p50 19.5748 s、p95 30.1186 s、max 33.2171 s，64/64 在 38 秒內，已知 cost 合計 0.209489 USD 等值。初次只讀 readiness 因新 Key digest 尚未傳播而中止、未推論；工具改以 GET models 等待（不推論），ready 後只發一輪 64、沒有推論重送。測試 Key 全數撤銷，owner 原長效 Key 保留。
 
-本機實測與 HTTPS 不是同一延遲分布；改善只描述固定 factual probe，numeric-directive 負面結果與 native turn 的較高 token 使用量仍保留。Worker 程式／路徑未改，因此此輪沒有重新部署 Worker 或改 endpoint／配對 secret。正式 Release、匿名下載及原安裝升級另於發布收據補齊。
+本機實測與 HTTPS 不是同一延遲分布；改善只描述固定 factual probe，numeric-directive 負面結果與 native turn 的較高 token 使用量仍保留。Worker 程式／路徑未改，因此此輪沒有重新部署 Worker 或改 endpoint／配對 secret。正式 Release、匿名下載及原安裝升級已補齊 [發布收據](2026-10-24-macos-queue-release.md)。

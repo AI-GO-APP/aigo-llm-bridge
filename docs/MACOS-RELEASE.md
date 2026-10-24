@@ -1,6 +1,6 @@
 # Mac BYO source Release：安裝、更新與發布
 
-最新已發布並正式安裝驗證的版本為 [0.9.3-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.3-mac.1)。公開附件／來源 hash、原 profile 更新、公開 Chat／Decisions 及 Key 保留見 [完成收據](qa/2026-10-23-macos-public-api.md)。此版本提供公開 Worker 相容性提示；本機更新仍不會自動部署任何安裝者 Worker。
+最新已發布並正式安裝驗證的版本為 [0.9.7-mac.1](https://github.com/AI-GO-APP/local-token-buffet-bridge/releases/tag/macos-source-v0.9.7-mac.1)。公開附件／來源 hash、原 profile 更新、公開 Chat／Decisions、64 HTTPS 及 Key 保留見 [完成收據](qa/2026-10-24-macos-queue-release.md)。本機更新仍不會自動部署任何安裝者 Worker。
 
 0.9.4-mac.1 候選整合 PR #32 的 64 併發；本輪先驗基本流程；owner 後續授權本機 Claude 64 併發測試。交付狀態見 [Mac 併發收據](qa/2026-10-23-macos-concurrency.md)。
 
@@ -43,4 +43,4 @@ BRIDGE_APP="$("$BRIDGE_PY" -c 'import json,sys; print(json.load(open(sys.argv[1]
 
 發布權限只限 Mac GitHub Release，不部署任何安裝者 Worker、不變更 Windows 更新政策、不操作其他 Cloud 專案。根 release.yml 持續略過 Mac 版號，避免把歷史 worker 附件當作現行 Mac 安裝包。
 
-0.9.7-mac.1 為 #36 階段 0–2 的候選來源，測試不代表已發布或正式安裝。[效能門檻](PERFORMANCE-PLAN.md)與[本輪 QA](qa/2026-10-24-macos-queue-decisions.md)分層記錄，warm CLI 不隨本批啟用。
+0.9.7-mac.1 已完成 #36 階段 0–2、公開發布及原安裝升級。[效能門檻](PERFORMANCE-PLAN.md)、[實作與負面結果](qa/2026-10-24-macos-queue-decisions.md)及[發布收據](qa/2026-10-24-macos-queue-release.md)分層記錄，warm CLI 不隨本批啟用。

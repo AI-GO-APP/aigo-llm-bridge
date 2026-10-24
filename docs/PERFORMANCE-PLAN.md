@@ -1,6 +1,6 @@
 # Mac 效能階段 0–2
 
-2026-10-24 owner 授權實作 [#36](https://github.com/AI-GO-APP/local-token-buffet-bridge/issues/36)。warm CLI 池拆至 [#39](https://github.com/AI-GO-APP/local-token-buffet-bridge/issues/39)，本批不啟用任何常駐 CLI／validator 池。候選版 0.9.7-mac.1，證據見 [QA](qa/2026-10-24-macos-queue-decisions.md)。
+2026-10-24 owner 授權實作 [#36](https://github.com/AI-GO-APP/local-token-buffet-bridge/issues/36)。warm CLI 池拆至 [#39](https://github.com/AI-GO-APP/local-token-buffet-bridge/issues/39)，本批不啟用任何常駐 CLI／validator 池。已發布 Mac 0.9.7-mac.1；[效能 QA](qa/2026-10-24-macos-queue-decisions.md)與[發布收據](qa/2026-10-24-macos-queue-release.md)分層記錄。
 
 ## 交付契約
 

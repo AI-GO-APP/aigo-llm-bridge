@@ -1,5 +1,7 @@
 # 驗收與交付矩陣
 
+Mac **0.9.7-mac.1 階段 0–2 已合併、發布、匿名下載校驗及完成原安裝更新**。真訂閱 192/192、原 Worker HTTPS 64/64、公開 ZIP 實際安裝與全機互斥、升級後 Codex／Claude 三題型及成本收據通過；原設定、28 筆既有 Key rows 與 3 把有效 Key 保留。詳見 [完成收據](qa/2026-10-24-macos-queue-release.md)；warm CLI 仍為獨立 #39，Cloudflare 原免費配額未變。
+
 R-23／D-29 的 Mac 公開 Worker 部署、全鏈合成推論與管理台證據修補見 [公開 API 上線收據](qa/2026-10-23-macos-public-api.md)。套件發布、已安裝來源與公開 Worker 驗證須分別記錄；不得以 401 路由探查或 health.online 代替真推論。
 
 Mac **0.9.3-mac.1 已合併、發布、匿名下載校驗並完成正式安裝更新**；公開 Worker `0.9.0-relay` 的 Chat、Decisions 三題型、模型查詢／refresh／probe、jobs／receipt／去重與重啟驗收通過。原網址、裝置、owner Key 與容量保留；53 個安裝檔吻合公開 ZIP。此輪沒有發布 Windows，使用方應用程式與業務閾值未代驗。
