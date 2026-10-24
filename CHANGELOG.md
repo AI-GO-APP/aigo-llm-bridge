@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.9.14-mac.1] - 2026-10-24
+
+- 修正0.9.13公開驗收發現的已完成結果未交付：送出前丟棄可讀／已關閉或超過10秒的idle連線；只對同一已計算result／work ID，暫時傳輸失敗最多補送一次且強制新連線，絕不重送本機推論。
+- Worker現有pending-ID刪除使結果交付至多一次；已回accepted:false不再補送，遺失ACK後重複交付亦不冒稱確認成功。401／403等拒絕、格式／大小錯誤、停止或期限已過不補送。
+- 新增RAM結果補送計數及固定錯誤分類／phase／HTTP status等診斷，不保存URL、憑證、原始例外或內容。Decisions StructuredOutput與provider邏輯不變；0.9.13已標註驗收失敗，附件保留。
+
 ## [0.9.13-mac.1] - 2026-10-24
 
 - Relay 直連 HTTPS 使用有界 keep-alive，長輪詢與結果回傳分離；保留 certifi、既有系統代理與拒絕 redirect，不對已送出的 HTTP／推論自動重試。

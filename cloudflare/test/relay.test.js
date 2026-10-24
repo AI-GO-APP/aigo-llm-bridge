@@ -5,6 +5,21 @@ const device='x'.repeat(48);
 const digest=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(v=>v.toString(16).padStart(2,'0')).join('');
 const req=(path,body,token=device)=>new Request('https://test.workers.dev'+path,{method:'POST',headers:{Authorization:'Bearer '+token},body:JSON.stringify(body)});
 
+test('lost result acknowledgement can be redelivered without resolving a caller twice',async()=>{
+ const r=new DeviceRelay({}, {DEVICE_KEY:device}),key='synthetic-result-key',keys=[await digest(key)];
+ r.keys=new Set(keys);r.lastSeen=Date.now();
+ const external=r.fetch(req('/api/v1/chat/completions',{},key));
+ await new Promise(resolve=>setTimeout(resolve,10));
+ const item=(await(await r.fetch(req('/agent/poll',{key_digests:keys,batch_size:8}))).json()).requests[0];
+ let resolved=0;const pending=r.pending.get(item.id),resolve=pending.resolve;
+ pending.resolve=value=>{resolved++;resolve(value);};
+ const result={id:item.id,status:200,body:'{"fixture":true}'};
+ await r.fetch(req('/agent/result',result)); // acknowledgement lost; caller was already resolved
+ assert.equal((await(await r.fetch(req('/agent/result',result))).json()).accepted,false);
+ assert.equal(await(await external).text(),result.body);
+ assert.equal(resolved,1);assert.equal(r.pending.size,0);
+});
+
 test('batch FIFO, legacy envelope and invalid sizes preserve at-most-once dispatch',async()=>{
  const r=new DeviceRelay({storage:{put(){throw Error('payload storage forbidden')}}},{DEVICE_KEY:device});
  const key='synthetic-batch-key',keys=[await digest(key)];r.keys=new Set(keys);r.lastSeen=Date.now();

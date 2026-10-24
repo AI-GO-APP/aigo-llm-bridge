@@ -9,6 +9,8 @@
 3. `resume` 後等待邊緣版本生效及 relay 重連，檢查實際 `/health` 版本與新路由，再明確執行真 Chat／Decisions 測試。CLI 成功與外網生效可能有延遲，不能只憑 deploy exit 0 放行。
 4. 部署失敗或外網驗收未通過時，保留 profile／pending Keychain 配對，不刪 DB、不換網址／client key。核對目前 deployments；若需回復，以 `wrangler rollback <先前已驗證version-ID> --config <同一設定檔>` 回復同一 Worker，然後恢復接單並驗舊功能。這只適用於仍相容的既有 DO migration／binding，不能當作任意資料遷移還原。
 
+Mac既有長輪詢的本輪更新曾出現外層header新版、DO health仍舊版；pause不會結束poll。原帳戶／Worker排空後，正常停止此Bridge，等原20秒poll退場，再停機plan／deploy並核對health body與header／協定，最後start／resume及真API驗證。不得以新actor名稱／Worker／Key製造成功；首次尚無live poll的安裝不需此退場。詳見D-46正式收據。
+
 普通更新沿用 transport secret，避免在 deploy 後重寫不變 secret 而啟用舊程式。Keychain 或帳戶驗證失敗需處理原授權，不以新 Worker 或明文 secret 繞過。
 
 Windows 0.8.0 可透過 [首次安裝精靈](ONBOARDING.md) 執行官方 CLI 授權、明確選帳戶、一鍵部署或複製 AI IDE 協作 prompt。首次本人電源同意、KEY 保存及真 HTTPS／cost 測試完成後，日常啟動直接主畫面；已發布 internal，來源與未驗範圍見 [發布收據](qa/2026-10-23-windows-080-release.md)。

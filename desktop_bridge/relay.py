@@ -12,7 +12,7 @@ import certifi
 
 from . import secret
 from .capacity import STANDARD_CONCURRENCY, CONTROL_CONCURRENCY, is_inference_request
-from .relay_transport import Connections, COST_HEADERS, NoRedirect, parse_json
+from .relay_transport import Connections, COST_HEADERS, NoRedirect, parse_json, TransportError
 
 MAX_CLOUD_BODY = 6_100_000
 MAX_BATCH = 8
@@ -78,7 +78,8 @@ class Session:
         self.inflight = set(); self.seen = {}
         self.counts = dict(poll_responses=0, batch_responses=0, legacy_responses=0,
                            works_dispatched=0, peak_inflight=0, protocol_errors=0,
-                           duplicate_rejections=0, forward_errors=0, results_not_accepted=0)
+                           duplicate_rejections=0, forward_errors=0, results_not_accepted=0,
+                           result_delivery_retries=0)
 
 
 class Relay:
@@ -202,9 +203,23 @@ class Relay:
                 work['body'].encode() if work['method'] == 'POST' else None,
                 timeout=timeout, limit=4_000_000, success_only=False)
             result = {'id': work['id'], 'status': status, 'body': raw.decode(), 'headers': costs}
+            delivery_deadline = work['deadline'] / 1000 + 2
             work = raw = None
             if session.stop.is_set(): return
-            accepted = session.results.json(base, '/agent/result', result, device_key, limit=1000)
+            for attempt in range(2):
+                try:
+                    accepted = session.results.json(base, '/agent/result', result, device_key, limit=1000,
+                        timeout=max(.001, min(30, delivery_deadline-time.time())), fresh=attempt > 0)
+                    break
+                except TransportError as error:
+                    transient = str(error) in {'io','timeout','truncated_response'} or (
+                        str(error) == 'http_status' and (error.status == 408 or (error.status or 0) >= 500))
+                    if attempt or not transient or session.stop.is_set() or time.time() >= delivery_deadline:
+                        raise
+                    # Only redeliver this already computed result with the same work
+                    # ID. Worker removes pending[id] before resolving the caller, so
+                    # duplicate delivery cannot infer or resolve a caller twice.
+                    with session.condition: session.counts['result_delivery_retries'] += 1
             if accepted.get('accepted') is not True:
                 with session.condition: session.counts['results_not_accepted'] += 1
         except Exception:

@@ -23,6 +23,9 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 class TransportError(ValueError):
     """Fixed category only; never expose URLs, credentials or response text."""
+    def __init__(self, category, status=None):
+        super().__init__(category)
+        self.status = status
 
 
 def parse_json(raw):
@@ -73,6 +76,15 @@ class Wire:
             if not self.readers: self.raw.close()
     def shutdown(self, how): self.raw.shutdown(how)
 
+    def usable(self):
+        # Readable idle sockets may contain EOF, TLS close-notify or unexpected
+        # leftover data. Discard before sending any bytes of a new request.
+        try:
+            return (not self.closed and self.raw.fileno() >= 0
+                    and not (isinstance(self.raw, ssl.SSLSocket) and self.raw.pending())
+                    and not select.select([self.raw], [], [], 0)[0])
+        except (OSError, ValueError): return False
+
     def wait(self, read):
         while True:
             delay = min(.05, self.check(self.deadline))
@@ -109,7 +121,8 @@ class Connections:
         self.sockets = {}
         self.closed = False
         self.counts = dict(requests_started=0, requests_completed=0, requests_failed=0,
-                           connections_created=0, reused_requests=0, proxy_requests=0)
+                           connections_created=0, reused_requests=0, proxy_requests=0,
+                           idle_discarded=0, last_failure=None)
 
     def snapshot(self):
         with self.lock:
@@ -143,15 +156,17 @@ class Connections:
         for conn, wire in items:
             self.dispose(conn, wire)
 
-    def exchange(self, base, path, headers, body, *, timeout=30, limit=6_100_000, success_only=True):
+    def exchange(self, base, path, headers, body, *, timeout=30, limit=6_100_000, success_only=True, fresh=False):
         deadline = time.monotonic() + timeout
         acquired = False
         conn = wire = response = None
         reusable = reused = False
+        phase, idle_ms = 'slot', None
         try:
             while not acquired:
                 acquired = self.slots.acquire(timeout=min(.05, self.check(deadline)))
             with self.lock: self.counts['requests_started'] += 1
+            phase = 'origin'
             target = urlsplit(base.rstrip('/') + path)
             if (target.username is not None or target.password is not None or target.query or target.fragment
                     or not target.hostname or target.scheme not in ('http', 'https')):
@@ -164,6 +179,7 @@ class Connections:
             proxy = bool((proxies.get(target.scheme) or proxies.get('all'))
                          and not urllib.request.proxy_bypass(target.netloc))
             if proxy:
+                phase = 'proxy'
                 # Keep urllib's existing proxy/tunnel/auth semantics. No redirect/retry.
                 with self.lock:
                     old = self.idle; self.idle = []
@@ -178,7 +194,7 @@ class Connections:
                 except urllib.error.HTTPError as error:
                     if success_only:
                         error.close()
-                        raise TransportError('http_status') from None
+                        raise TransportError('http_status', error.code) from None
                     response = error
                 raw = response.read(limit + 1)
                 if len(raw) > limit: raise TransportError('response_size')
@@ -186,14 +202,17 @@ class Connections:
                 result = (response.status, raw, {k: response.headers[k] for k in COST_HEADERS if response.headers.get(k)})
             else:
                 origin = (target.scheme, target.hostname, target.port or (443 if target.scheme == 'https' else 80))
-                stale = []
                 with self.lock:
                     self.check(deadline)
                     while self.idle:
                         previous, candidate, ready = self.idle.pop()
-                        if previous == origin and time.monotonic() - ready < 60 and candidate.sock is not None:
+                        age = time.monotonic() - ready
+                        if (not fresh and previous == origin and age < 10 and candidate.sock is not None
+                                and candidate.sock.usable()):
+                            idle_ms = round(age * 1000)
                             conn = candidate; reused = True; break
-                        stale.append(candidate)
+                        self.dispose(candidate)
+                        self.counts['idle_discarded'] += 1
                     if conn is None:
                         if target.scheme == 'https':
                             conn = http.client.HTTPSConnection(origin[1], origin[2], context=self.context,
@@ -202,7 +221,7 @@ class Connections:
                             conn = http.client.HTTPConnection(origin[1], origin[2], timeout=self.check(deadline))
                         conn.auto_open = 0  # Explicit connect only; stop must never cause an implicit reconnect.
                     self.active.add(conn)
-                for old in stale: self.dispose(old)
+                phase = 'connect'
                 if conn.sock is None:
                     conn.connect()
                     with self.lock: self.counts['connections_created'] += 1
@@ -211,11 +230,14 @@ class Connections:
                 wire.bind(self.check, deadline)
                 with self.lock: self.sockets[conn] = wire
                 wire.settimeout(self.check(deadline))
+                phase = 'send'
                 conn.request('POST' if body is not None else 'GET', target.path or '/', body=body,
                              headers=headers)
+                phase = 'headers'
                 response = conn.getresponse()
                 if success_only and not 200 <= response.status < 300:
-                    raise TransportError('http_status')
+                    raise TransportError('http_status', response.status)
+                phase = 'body'
                 if response.getheader('Content-Encoding', 'identity').lower() != 'identity':
                     raise TransportError('content_encoding')
                 if response.length is not None and response.length > limit:
@@ -239,10 +261,18 @@ class Connections:
                 if reused and reusable: self.counts['reused_requests'] += 1
             return result
         except Exception as error:
-            with self.lock: self.counts['requests_failed'] += 1
             category = str(error) if isinstance(error, TransportError) else 'io'
             if time.monotonic() >= deadline: category = 'timeout'
-            raise TransportError(category) from None
+            if category not in {'stopped','timeout','origin','http_status','content_encoding','response_size','truncated_response','protocol','io'}: category = 'io'
+            status = getattr(error, 'status', None) or (response.status if response is not None else None)
+            if type(status) is not int or not 100 <= status <= 599: status = None
+            name = type(error).__name__
+            if name not in {'TransportError','RemoteDisconnected','IncompleteRead','TimeoutError','SSLError','ConnectionResetError','BrokenPipeError','NotConnected','CannotSendRequest','ResponseNotReady','OSError','ValueError'}: name = 'Exception'
+            with self.lock:
+                self.counts['requests_failed'] += 1
+                self.counts['last_failure'] = dict(category=category, phase=phase, status=status,
+                    error_class=name, reused=reused, idle_ms=idle_ms)
+            raise TransportError(category, status) from None
         finally:
             if response is not None: response.close()
             if conn is not None:
@@ -253,9 +283,9 @@ class Connections:
                 if not keep: self.dispose(conn, wire)
             if acquired: self.slots.release()
 
-    def json(self, base, path, body, credential, *, limit=6_100_000):
+    def json(self, base, path, body, credential, *, limit=6_100_000, timeout=30, fresh=False):
         raw = json.dumps(body, ensure_ascii=False, separators=(',', ':')).encode()
         _, value, _ = self.exchange(base, path, {
             'Authorization': 'Bearer ' + credential, 'Content-Type': 'application/json',
-            'User-Agent': 'local-token-buffet-bridge-relay/0.9.13'}, raw, limit=limit)
+            'User-Agent': 'local-token-buffet-bridge-relay/0.9.14'}, raw, limit=limit, timeout=timeout, fresh=fresh)
         return parse_json(value)

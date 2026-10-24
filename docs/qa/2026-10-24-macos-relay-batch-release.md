@@ -1,6 +1,6 @@
 # Mac 0.9.13：Relay重用與有界批次
 
-2026-10-24。Refs #39／#46，R-26／D-46。此為候選實作與測試紀錄；尚未合併、發布、更新正式Bridge或部署Worker。正式仍0.9.12-mac.1／Worker0.9.4-relay，owner維持4＋4／64／64，Claude cold。Decisions StructuredOutput／thinking／prompt與caller schema不動。
+2026-10-24。Refs #39／#46，R-26／D-46。**0.9.13已合併／發布／從公開ZIP更新，但正式後測51/52通過，一筆結果未交付，已停止64升階並回復原機0.9.12。** 0.9.13 Release已標示驗收失敗／prerelease，原附件保留。後續D-47／0.9.14修正見 [結果交付QA](2026-10-24-macos-result-delivery.md)。owner維持4＋4／64／64，Claude cold，Decisions StructuredOutput／thinking／prompt與caller schema不動。
 
 ## 實作與驗收門檻
 
@@ -41,4 +41,14 @@ CI負面結果：441f635的Windows兩條回歸均在stop active read案例失敗
 
 ## 交付及後測
 
-待本機完整檢查、CI、合併、Release、公開下載安裝、同Worker部署、原機更新與公開後測逐項補證。#39完整warm放行、Windows原生訂閱與真OpenRouter用量對照均不由本次transport測試代替。
+[PR57](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/57)最終748ca8e的5條CI全綠，Mac353 passed／18 skipped；squash來源ab2efe4e23dbd76432582e5cde61729d32da9f0e。[發布run40093880807](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/40093880807)成功。匿名四附件／clean manifest／下載ZIP真安裝／單機互斥與停止、原profile更新通過，ZIP SHA256=bb3346e9d1ffb60d6a3251a1814d9cd14248252d566b228fe5692eb9e6840b36；8個provider／契約檔案byte hash與0.9.12相同。
+
+同Worker第一次部署外層0.9.5但DO仍0.9.4，且預設Python UA health探測403、產品UA200；未放行並已回復原Worker版本。正常停止原Bridge、等25秒舊poll退場、停機部署後，內外0.9.5／batch8-v1與上線poll均驗證。新Worker version ID=19d1c9a8-cd40-438a-95fe-d2e34c56dea3，原config／endpoint／transport credential保留。此觀察不足以分離平台傳播與長輪詢的單一因果，但停機程序確實完成版本核對。
+
+公開後測4筆serial＋3×16=52筆：51有效／1外部408。三輪16 p95=8.7203／27.5444／95.4794秒；本機受理span=2.8004／1.7799／2.8809秒（原16為16.0516／10.7936／13.6588）。第二輪尾端主要在Runtime（p95=25.941秒）；第三輪失敗request本機4.837秒已完成，result transport requests_failed=1／forward_errors=1，未交付外部。該筆11input／6output／USD0.000082牌價等值，完整billing1/1，沒有重跑模型，原UUID與失敗收據保留。其餘15筆及全部51成功的usage／model／profile／DB成本一致。52次CLI全完成，input70919／output8089、牌價等值USD0.1242506，不將外部408計為免費。
+
+未跑64。peak tree RSS=3,118,528 KiB、descendants32、fd3250、running16、pool24，health p95=0.0022秒；原機停機／回復後仍4＋4／64／64、active owner keys3。兩把後測Key已撤銷，前測兩把亦已撤銷，原Key rows／設定／profile保留。
+
+0.9.13單筆Codex500 Chat仍506/6、5.5917秒，CodexDec2789/45、6.7335秒，Claude500 Chat1060/111、3.7183秒，ClaudeDec1545/613、6.9081秒；不能把未改prompt的token差異當作新用量優化。
+
+#39完整warm放行、Windows原生訂閱與真OpenRouter用量對照均不由本次transport測試代替。
