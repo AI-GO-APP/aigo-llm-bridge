@@ -1,5 +1,7 @@
 # 產品文件入口
 
+Mac0.9.13連線重用／batch8實作與交付狀態見 [本輪QA](qa/2026-10-24-macos-relay-batch-release.md)；Decisions StructuredOutput與4＋4／64／64保持原樣。
+
 後續優化研究見 [連線重用／批次輪詢與Claude schema去重](qa/2026-10-24-macos-optimization-probes.md)：真公開health連線重用有收益；批次目前只驗合成RTT原型；Claude去重未證明總用量改善，未套用正式服務。
 
 Mac 0.9.12 的4＋4常駐、公開4／16／64同步與直連16後續測試見 [最新負載收據](qa/2026-10-24-macos-0912-staged-api.md)：112/112正確；64批次尾端延遲與Claude用量波動仍待改善，未當完整效能放行。

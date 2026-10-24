@@ -111,6 +111,7 @@ class Runtime:
                     'queued_requests':sum(t.phase in {'validating','queued'} for t in self.tasks.values()),
                     'running_requests':sum(t.phase=='running' for t in self.tasks.values()),
                     'shared_provider_capacity':True,
+                    'relay_transport': self.relay.snapshot() if getattr(self,'relay',None) else None,
                     'warm_pool':self.cli_pool.snapshot() if self.cli_pool else {'resident_target':0,'idle':0,'total':0},
                     'warm_supported_providers':['codex'] if sys.platform=='darwin' else []}
 

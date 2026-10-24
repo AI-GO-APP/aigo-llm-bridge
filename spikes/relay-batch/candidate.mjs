@@ -7,6 +7,9 @@ export const BATCH_LIMIT = 8;
 
 export async function candidateClass() {
   let source = await readFile(new URL('../../cloudflare/src/worker.js', import.meta.url), 'utf8');
+  // Once integrated, replay the same research invariants against production.
+  if(source.includes('const BATCH_LIMIT=8, BATCH_BYTES=6_100_000;'))
+    return (await import('../../cloudflare/src/worker.js')).DeviceRelay;
   const changes = [
     ['if(path==="/agent/poll") {', `if(path==="/agent/poll") {
           const batch=Object.hasOwn(data,'batch_size');

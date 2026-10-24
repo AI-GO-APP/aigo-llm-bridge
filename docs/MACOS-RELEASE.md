@@ -48,3 +48,5 @@ BRIDGE_APP="$("$BRIDGE_PY" -c 'import json,sys; print(json.load(open(sys.argv[1]
 0.9.10-mac.1 已依 issue 46 精簡 Bridge Codex goals／技能上下文；完整診斷、負面測試與公開發布／原安裝同題對照見 [上下文收據](qa/2026-10-24-macos-codex-context.md)。原 Worker 與 2/64 profile 不因上下文修補重建。
 
 0.9.11-mac.1 已完成 D-42 的合併、發布、公開下載安裝與原 profile 更新。後續 schema 去重／thinking-off 只列研究候選，未加入此已發布程式；狀態見 [本輪收據](qa/2026-10-24-macos-cli-token-release.md)。
+
+Mac0.9.13-mac.1候選加入D-46連線重用／batch8；目前交付階段見 [本輪收據](qa/2026-10-24-macos-relay-batch-release.md)，不能以source測試代替已發布／正式安裝。原機owner目前為4＋4／64／64，下列0.9.12的2常駐是當時歷史配置；更新不覆寫設定。

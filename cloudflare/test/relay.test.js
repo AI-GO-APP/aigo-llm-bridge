@@ -5,6 +5,36 @@ const device='x'.repeat(48);
 const digest=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(v=>v.toString(16).padStart(2,'0')).join('');
 const req=(path,body,token=device)=>new Request('https://test.workers.dev'+path,{method:'POST',headers:{Authorization:'Bearer '+token},body:JSON.stringify(body)});
 
+test('batch FIFO, legacy envelope and invalid sizes preserve at-most-once dispatch',async()=>{
+ const r=new DeviceRelay({storage:{put(){throw Error('payload storage forbidden')}}},{DEVICE_KEY:device});
+ const key='synthetic-batch-key',keys=[await digest(key)];r.keys=new Set(keys);r.lastSeen=Date.now();
+ const external=Array.from({length:16},()=>r.fetch(req('/api/v1/chat/completions',{},key)));
+ await new Promise(resolve=>setTimeout(resolve,20));const ids=[...r.pending.keys()];
+ try{
+  for(const size of [true,1.5,0,9,'8'])assert.equal((await r.fetch(req('/agent/poll',{key_digests:keys,batch_size:size}))).status,400);
+  assert.ok([...r.pending.values()].every(x=>!x.dispatched));
+  const first=(await(await r.fetch(req('/agent/poll',{key_digests:keys,batch_size:8}))).json()).requests;
+  const legacy=(await(await r.fetch(req('/agent/poll',{key_digests:keys}))).json()).request;
+  const rest=(await(await r.fetch(req('/agent/poll',{key_digests:keys,batch_size:8}))).json()).requests;
+  assert.deepEqual([...first,legacy,...rest].map(x=>x.id),ids);
+  assert.equal(new Set([...first,legacy,...rest].map(x=>x.id)).size,16);
+ }finally{for(const item of r.pending.values()){clearTimeout(item.timer);item.resolve(Response.json({ok:true}));}r.pending.clear();await Promise.all(external);}
+});
+
+test('batch byte cap counts encoded escaping and leaves remainder queued',async()=>{
+ const r=new DeviceRelay({}, {DEVICE_KEY:device}),key='synthetic-byte-key',keys=[await digest(key)];
+ r.keys=new Set(keys);r.lastSeen=Date.now();
+ const external=Array.from({length:2},()=>r.fetch(req('/api/v1/chat/completions',{synthetic:'\\'.repeat(900000)},key)));
+ await new Promise(resolve=>setTimeout(resolve,30));
+ try{
+  const raw=await(await r.fetch(req('/agent/poll',{key_digests:keys,batch_size:8}))).text();
+  assert.ok(new TextEncoder().encode(raw).byteLength<=6_100_000);
+  assert.equal(JSON.parse(raw).requests.length,1);
+  assert.equal([...r.pending.values()].filter(x=>x.dispatched).length,1);
+  assert.equal((await(await r.fetch(req('/agent/poll',{key_digests:keys,batch_size:8}))).json()).requests.length,1);
+ }finally{for(const item of r.pending.values()){clearTimeout(item.timer);item.resolve(Response.json({ok:true}));}r.pending.clear();await Promise.all(external);}
+});
+
 test('queue reserves capacity before asynchronous body reads and releases failures',async()=>{
  const relay=new DeviceRelay({}, {DEVICE_KEY:device});const key='synthetic-queue-key';
  relay.keys.add(await digest(key));relay.lastSeen=Date.now();
@@ -31,7 +61,7 @@ test('outer build header preserves the original actor identity and response',asy
  }}};
  const res=await worker.fetch(new Request('https://test.workers.dev/health'),env);
  assert.equal(actor,'primary-device');
- assert.equal(res.headers.get('X-Bridge-Relay-Version'),'0.9.4-relay');
+ assert.equal(res.headers.get('X-Bridge-Relay-Version'),'0.9.5-relay');
  assert.equal(res.headers.get('Cache-Control'),'no-store');
  assert.equal((await res.json()).version,'legacy');
 });

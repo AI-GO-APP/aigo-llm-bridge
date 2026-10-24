@@ -66,3 +66,5 @@ Mac 0.9.9 明確選擇的 Codex 單次常駐試驗：預設 0，允許 0–infer
 0.9.11-mac.1 依 D-42，Codex 精簡 functions／clock 內層宣告；Claude 自有 Decisions 直接走 StructuredOutput formatter，保留 noul／choice／score、caller 指令優先序、JSON／歷史／影像／工具提案、取消／期限與完整成本契約。只可報實測用量下降，不能以單次研究宣稱普遍延遲改善、完全零工具上下文或已完成 issue 39。[候選／發布分層驗收](qa/2026-10-24-macos-cli-token-release.md)。
 
 R-25：Mac 0.9.12 的一般 LLM 純 Chat profile 只對已驗 CLI binary／模型／公開 metadata 啟用；移除無關 agent 與 Bridge 固定提示，保留 caller 全文、原生訂閱登入、單次 ephemeral／工具拒絕、取消／完整計量。Decisions StructuredOutput 不變，外部 schema／tools／images 維持 standard。未知版本／模型／平台在推論前選 standard 並明示，effective config 衝突則拒絕；不重送。多 profile 常駐合計不得超過 resident，所有 provider／profile 共用 workers；升版保留原 URL／KEY／設定。[驗收](qa/2026-10-24-macos-chat-minimal-release.md)。OpenRouter 同題對照須獨立證據，不以 tokenizer 估算代替。
+
+R-26：Relay 重用已驗證 TLS 的同 origin 連線，poll 與 result 分開、有界且可停止；系統代理沿用 urllib、不跟隨 redirect，未知送出結果不重送。Worker 可選每次 1–8 筆、UTF-8 JSON envelope ≤6,100,000 bytes，保留單筆相容、FIFO／已派送不再派送；本機包含 executor 等待的轉送總數 ≤72，原 Runtime 64 共用受理契約不變。批次先全部驗證再轉送；停止／重啟以 session 隔離。不得改 prompt 來製造網路改善；原機 4＋4／64／64、用量／成本、原 Key／URL 與程序資源須獨立核對。[驗收](qa/2026-10-24-macos-relay-batch-release.md)。
