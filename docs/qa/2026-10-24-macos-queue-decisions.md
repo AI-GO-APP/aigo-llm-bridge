@@ -84,3 +84,18 @@ Mac 與 Windows source CI 均通過後，Windows installer 的既有 OSV 閘門�
 ## 真訂閱測試器校準
 
 首次 Haiku 4.5 混合 64 皆 HTTP 200、64 筆完整收據，但測試器誤把 noul 合法機率限定為恆等 0.9，誤列 10 筆不符（54/64）。此輪保留為校準紀錄，未列入效能放行；修正為 API 的固定欄位／finite 0–1 格式檢查，另由回歸驗 bool／非有限值／多餘欄位必須拒絕。不重送原 request ID、不挑最佳輪，也不以不同答案值宣稱機率校準相同。
+
+## 第一組真訂閱：未達效能門檻
+
+原安裝 0.9.5-mac.1 runtime（與計畫 main 5d5e406 僅版本常數不同）對候選 ee11b13，Haiku 4.5、各三輪 32 Chat＋32 單題 Decisions；各輪 64/64 正確、模型／格式／成本與單次呼叫收據一致。這組保留原始 numeric-directive 題目（要求模型指定 noul=0.9，屬自指指令而非標準判真題），兩版輸入相同，無重試。[完整 metadata](../concurrency-evidence/macos-live-numeric-2026-10-24.json)。
+
+| 三輪中位數 | baseline | ee11b13 | 變化 |
+|---|---|---|---|
+| Decisions p95 | 45.0514 s | 43.5857 s | -3.25%（未達 -20%） |
+| Chat p95 | 6.8093 s | 8.2792 s | +21.59%（超過 +10%） |
+| good RPM | 69.836 | 76.301 | +9.26% |
+| 38 秒正確完成數 | 61/64 | 61/64 | 相同 |
+
+因此此來源不放行正式發布。分段計時顯示 burst 重複啟動 auth status 增加 provider_setup；依 D-36 只合併重疊的唯讀 metadata 查詢，並使該查詢可取消、程序群組清理後才回錯，不增加 warm inference CLI。baseline 程序樹 RSS 取樣 9,875,280 KiB、候選 12,181,536 KiB；baseline sampler 從第一輪後才開始，明列較保守的不完整覆蓋，不能冒稱完整首輪峰值。CPU 是 ps 生命期平均取樣而非瞬時峰值。
+
+後續正式固定負載在重跑前明定採產品既有 blue-object factual probe，兩版各三輪、原數值門檻不變。此改動避免把 noul 判真題與改寫機率協定的指令混為一談；numeric-directive 的負面結果完整保留，不與 factual 混算、不外推任意推理長度的收益。近 3 MB 三輪 RAM 收據見 [JSON](../concurrency-evidence/macos-queue-memory-2026-10-24.json)。

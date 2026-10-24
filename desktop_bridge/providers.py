@@ -15,7 +15,7 @@ import tomllib
 
 from .errors import BridgeError
 from .process import Child, check_cancel
-from .execution_budget import current, check, timed
+from .execution_budget import current, check, timed, locked
 
 
 def environment():
@@ -47,21 +47,87 @@ def executable(provider,settings):
     return str(path.resolve())
 
 
-def status(provider,settings,timeout=20):
+def status(provider,settings,timeout=20,*,cancel=None,cwd=None):
     try:
         if budget:=current():timeout=min(timeout,budget.remaining())
         cmd=[executable(provider,settings)]+(["auth","status"] if provider=="claude" else ["login","status"])
-        proc=subprocess.run(cmd,capture_output=True,env=environment(),timeout=timeout,
-                            creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
-        raw=(proc.stdout+proc.stderr).decode("utf-8","replace")
+        if cancel is None:
+            proc=subprocess.run(cmd,capture_output=True,env=environment(),timeout=timeout,
+                                creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
+            stdout,stderr,returncode=proc.stdout,proc.stderr,proc.returncode
+        else:
+            child=Child(cmd,cwd,environment())
+            try:
+                stdout,stderr=child.communicate(b'',cancel,timeout,capture_stderr=True)
+                returncode=child.proc.returncode
+            finally:child.close()
+        raw=(stdout+stderr).decode("utf-8","replace")
         if provider=="claude":
-            data=json.loads(proc.stdout or b"{}")
+            data=json.loads(stdout or b"{}")
             return {"provider":provider,"ready":bool(data.get("loggedIn")) and data.get("authMethod")=="claude.ai",
                     "method":data.get("authMethod"),"plan":data.get("subscriptionType")}
-        return {"provider":provider,"ready":proc.returncode==0 and "ChatGPT" in raw,"method":"ChatGPT" if "ChatGPT" in raw else "其他／未登入"}
-    except (OSError,ValueError,subprocess.SubprocessError,BridgeError):
+        return {"provider":provider,"ready":returncode==0 and "ChatGPT" in raw,"method":"ChatGPT" if "ChatGPT" in raw else "其他／未登入"}
+    except BridgeError:
+        if cancel is not None:raise
         check()
         return {"provider":provider,"ready":False,"method":"CLI 不可用／未登入"}
+    except (OSError,ValueError,subprocess.SubprocessError):
+        check()
+        return {"provider":provider,"ready":False,"method":"CLI 不可用／未登入"}
+
+
+class StatusReads:
+    """Share only overlapping read-only auth checks; no TTL, credentials or warm CLI."""
+    def __init__(self):
+        self.lock=threading.Lock()
+        self.inflight={}
+
+    def read(self,provider,settings,cancel,cwd):
+        def alive():
+            check()
+            if cancel is not None and cancel.is_set():
+                raise BridgeError(499,'cancelled','請求已取消。')
+        alive()
+        generation=auth_generation(provider,settings)
+        key=(provider,generation)
+        with locked(self.lock):
+            entry=self.inflight.get(key)
+            leader=entry is None
+            if leader:
+                entry={'done':threading.Event(),'value':None}
+                self.inflight[key]=entry
+        if leader:
+            try:
+                value=status(provider,settings,timeout=min(20,settings.get('timeout_s')),cancel=cancel,cwd=cwd)
+                alive()
+                if generation!=auth_generation(provider,settings):
+                    raise BridgeError(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
+                entry['value']=value
+                return dict(value)
+            finally:
+                # Cleanup must run even when the leader's budget has expired.
+                with self.lock:
+                    self.inflight.pop(key,None)
+                    entry['done'].set()
+        while not entry['done'].wait(.05):alive()
+        alive()
+        if generation!=auth_generation(provider,settings):
+            raise BridgeError(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
+        if entry['value'] is None:
+            # Another caller's cancellation must not cancel this request. This is
+            # a fresh metadata read, never a retry of an inference call.
+            value=status(provider,settings,timeout=min(20,settings.get('timeout_s')),cancel=cancel,cwd=cwd)
+            alive()
+            if generation!=auth_generation(provider,settings):
+                raise BridgeError(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
+            return value
+        return dict(entry['value'])
+
+
+def inference_status(provider,settings,cancel,cwd):
+    reads=getattr(settings,'status_reads',None)
+    if reads is not None:return reads.read(provider,settings,cancel,cwd)
+    return status(provider,settings,timeout=min(20,settings.get('timeout_s')),cancel=cancel,cwd=cwd)
 
 
 def auth_generation(provider, settings):
@@ -194,7 +260,7 @@ def codex_usage(usage):
 
 def call_claude(spec,settings,cancel,cwd):
     with timed('provider_setup_ms'):
-        ready=status('claude',settings,timeout=min(20,settings.get('timeout_s')))['ready']
+        ready=inference_status('claude',settings,cancel,cwd)['ready']
     check()
     if not ready:
         raise BridgeError(503,"provider_authentication","Claude Code 尚未使用訂閱帳號登入。")
@@ -270,7 +336,7 @@ def codex_command(settings):
 
 def call_codex(spec,settings,cancel,cwd):
     with timed('provider_setup_ms'):
-        ready=status('codex',settings,timeout=min(20,settings.get('timeout_s')))['ready']
+        ready=inference_status('codex',settings,cancel,cwd)['ready']
     check()
     if not ready:
         raise BridgeError(503,"provider_authentication","Codex 尚未使用 ChatGPT 訂閱登入。")

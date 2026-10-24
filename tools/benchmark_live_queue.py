@@ -4,12 +4,14 @@ Run baseline and candidate separately against the same original Mac installation
 This consumes subscription usage. No automatic retries, login or capacity changes.
 """
 import argparse
+import ctypes
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
 import math
 from pathlib import Path
 import ssl
+import subprocess
 import sys
 import threading
 import time
@@ -32,12 +34,52 @@ def valid_answer(value, decisions):
     return value.get('choices', [{}])[0].get('message', {}).get('content', '').strip() == 'OK'
 
 
+class MacResources:
+    def __init__(self, port):
+        self.pid = int(subprocess.check_output(['/usr/sbin/lsof', '-t', f'-iTCP:{port}', '-sTCP:LISTEN']).splitlines()[0])
+        self.lib = ctypes.CDLL('/usr/lib/libproc.dylib')
+        self.stop = threading.Event()
+        self.values = {'peak_tree_rss_kib': 0, 'peak_tree_cpu_percent_one_core': 0,
+                       'peak_descendants': 0, 'peak_bridge_fds': 0, 'samples': 0, 'sampling_errors': 0}
+        self.thread = threading.Thread(target=self.sample, daemon=True)
+
+    def sample(self):
+        while not self.stop.is_set():
+            try:
+                rows = [line.split() for line in subprocess.check_output(['ps', '-axo', 'pid=,ppid=,rss=,%cpu='],
+                    text=True, timeout=2).splitlines()]
+                family = {self.pid}
+                for _ in range(8):
+                    family.update(int(p[0]) for p in rows if len(p) == 4 and int(p[1]) in family)
+                owned = [p for p in rows if len(p) == 4 and int(p[0]) in family]
+                for name, value in [('peak_tree_rss_kib', sum(int(p[2]) for p in owned)),
+                    ('peak_tree_cpu_percent_one_core', sum(float(p[3]) for p in owned)),
+                    ('peak_descendants', len(owned) - 1),
+                    ('peak_bridge_fds', self.lib.proc_pidinfo(self.pid, 1, 0, None, 0) // 8)]:
+                    self.values[name] = max(self.values[name], value)
+                self.values['samples'] += 1
+            except (OSError, ValueError, subprocess.SubprocessError):
+                self.values['sampling_errors'] += 1
+            self.stop.wait(.1)
+
+    def start(self):
+        self.thread.start()
+
+    def finish(self):
+        self.stop.set()
+        self.thread.join(timeout=3)
+        return {**self.values, 'cpu_kind': 'ps lifetime-average sampled maximum; 100% is one logical core',
+                'coverage': 'all benchmark rounds', 'argv_or_content_collected': False}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--install-root', type=Path, default=Path.home() / 'Library/Application Support/AIGO LLM Bridge')
     parser.add_argument('--label', required=True)
     parser.add_argument('--rounds', type=int, default=3)
     parser.add_argument('--public', action='store_true')
+    parser.add_argument('--workload', choices=['factual', 'numeric-directive'], default='factual')
+    parser.add_argument('--sample-resources', action='store_true', help='Sample the Mac service process tree, without argv.')
     parser.add_argument('--apply', action='store_true', help='Actually consume subscription usage.')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
@@ -75,11 +117,11 @@ def main():
             except ValueError:
                 data = {}
             return response.status, data
-    rows = []
+    rows = []; resources = None
     report = {'schema': 1, 'label': args.label, 'transport': 'https' if args.public else 'loopback',
               'version': manifest['version'], 'source_commit': manifest['source_commit'],
               'model': model, 'workers': 64, 'requests_per_round': 64,
-              'synthetic_content_only': True, 'automatic_retries': 0, 'rounds': rows,
+              'synthetic_content_only': True, 'automatic_retries': 0, 'rounds': rows, 'workload': args.workload,
               'runtime_sha256': {str(p.relative_to(manifest['app'])): hashlib.sha256(p.read_bytes()).hexdigest()
                                  for p in sorted((Path(manifest['app']) / 'desktop_bridge').glob('*.py'))}}
     try:
@@ -88,12 +130,17 @@ def main():
         # Discovery GET does not infer; establish route and current model availability.
         status, catalog = http('/api/v1/models')
         assert status == 200 and any(m['id'] == model for m in catalog.get('data', []))
+        if args.sample_resources:
+            resources = MacResources(store.get('port'))
+            resources.start()
         for round_no in range(1, args.rounds + 1):
             barrier = threading.Barrier(64)
             def call(index):
                 decisions = index % 2 == 1
-                body = ({'model': model, 'state': 'Synthetic acceptance. The specified value is exactly 0.9.',
-                         'questions': {'q': {'type': 'noul', 'instructions': 'Set noul to exactly 0.9.'}}}
+                state, instruction = (('A synthetic object is blue.', 'Is the object blue?') if args.workload == 'factual' else
+                    ('Synthetic acceptance. The specified value is exactly 0.9.', 'Set noul to exactly 0.9.'))
+                body = ({'model': model, 'state': state,
+                         'questions': {'q': {'type': 'noul', 'instructions': instruction}}}
                         if decisions else {'model': model, 'messages': [{'role': 'user', 'content': 'Synthetic acceptance. Reply exactly OK.'}]})
                 rid = str(uuid.uuid4())
                 barrier.wait(timeout=10)
@@ -147,11 +194,13 @@ def main():
         report['success'] = False
         report['failure_class'] = type(error).__name__
     finally:
+        if resources is not None:
+            report['resources'] = resources.finish()
         store.revoke(key_id)
         report['temporary_key_revoked'] = store.authenticate(key) is None
         store.close()
         args.output.write_text(json.dumps(report, indent=2) + '\n')
-        print(json.dumps({k: v for k, v in report.items() if k != 'rounds'}), flush=True)
+        print(json.dumps({k: v for k, v in report.items() if k not in {'rounds', 'runtime_sha256'}}), flush=True)
     return 0 if report['success'] and report['temporary_key_revoked'] else 1
 
 

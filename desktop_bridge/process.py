@@ -64,9 +64,9 @@ class Child:
                 try: stream.close()
                 except OSError: pass
 
-    def communicate(self, data, cancel, timeout):
+    def communicate(self, data, cancel, timeout, *, capture_stderr=False):
         # Drain both pipes concurrently and cap retained output. Never create a log file.
-        stdout=bytearray(); exceeded=threading.Event()
+        stdout=bytearray(); stderr=bytearray() if capture_stderr else None; exceeded=threading.Event()
         def drain(stream, target=None):
             while True:
                 part=stream.read(65536)
@@ -76,7 +76,7 @@ class Child:
                         exceeded.set(); break
                     target.extend(part)
         readers=[threading.Thread(target=drain,args=(self.proc.stdout,stdout),daemon=True),
-                 threading.Thread(target=drain,args=(self.proc.stderr,),daemon=True)]
+                 threading.Thread(target=drain,args=(self.proc.stderr,stderr),daemon=True)]
         for reader in readers: reader.start()
         deadline=time.monotonic()+timeout
         self.write(data,cancel,timeout,close_stdin=True)
@@ -87,7 +87,7 @@ class Child:
             time.sleep(.05)
         for reader in readers: reader.join(timeout=3)
         if exceeded.is_set(): raise BridgeError(502,"output_too_large","CLI 輸出超過服務上限。")
-        return bytes(stdout)
+        return (bytes(stdout),bytes(stderr)) if capture_stderr else bytes(stdout)
 
     def write(self,data,cancel,timeout,*,close_stdin=False):
         # A CLI which stops reading stdin must not hold the request indefinitely.

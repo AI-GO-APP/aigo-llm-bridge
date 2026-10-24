@@ -53,6 +53,7 @@ class Runtime:
         self.runner=runner or providers.infer
         self.pricing=pricing or Catalog(store.directory)
         self.models=model_catalog or ModelCatalog(store)
+        self.status_reads=providers.StatusReads()
         workers=store.get('inference_workers') if max_workers is None else max_workers
         pending=store.get('inference_pending') if max_pending is None else max_pending
         self.validate_capacity(workers,pending)
@@ -264,6 +265,7 @@ class Runtime:
             raise BridgeError(503,'provider_authentication','推論期間登入或 CLI 設定已變更；不切換來源繼續執行。')
         store=self.store
         class DeadlineSettings:
+            status_reads=self.status_reads
             def get(self,name):
                 return max(.001,min(store.get(name),task.budget.remaining())) if name=="timeout_s" else store.get(name)
         task.calls_started+=1
