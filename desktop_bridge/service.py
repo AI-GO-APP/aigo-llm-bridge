@@ -54,6 +54,7 @@ class Runtime:
         self.pricing=pricing or Catalog(store.directory)
         self.models=model_catalog or ModelCatalog(store)
         self.status_reads=providers.StatusReads()
+        self.launch_pacer=providers.LaunchPacer()
         workers=store.get('inference_workers') if max_workers is None else max_workers
         pending=store.get('inference_pending') if max_pending is None else max_pending
         self.validate_capacity(workers,pending)
@@ -266,6 +267,7 @@ class Runtime:
         store=self.store
         class DeadlineSettings:
             status_reads=self.status_reads
+            launch_pacer=self.launch_pacer
             def get(self,name):
                 return max(.001,min(store.get(name),task.budget.remaining())) if name=="timeout_s" else store.get(name)
         task.calls_started+=1

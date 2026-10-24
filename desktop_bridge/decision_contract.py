@@ -74,7 +74,7 @@ class DecisionSpec:
         payload = json.dumps({"state": self.state, "type": kind,
             "instructions": question["instructions"], "criteria": criteria}, ensure_ascii=False, allow_nan=False)
         return Inference(self.model, [{"role": "user", "parts": [{"type": "text", "text": payload}]}],
-                         SYSTEM, None, "json_schema", schema)
+                         SYSTEM, None, "json_schema", schema, generated_schema=True)
 
 
 def validate(body, settings, caller):

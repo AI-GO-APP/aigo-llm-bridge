@@ -44,7 +44,7 @@ python tools/benchmark_queue_memory.py --output /tmp/queue-memory.json
 工具只存 aggregate metadata／暫時 SQLite metadata 與 key hash，結束撤銷測試 Key 並刪暫時 profile；ps CPU 是程序生命期平均的取樣峰值（100%=一個 logical core），不是瞬時峰值，sampler 自己也計入 descendant 峰值。須另以真訂閱測 CLI 程序樹。
 
 - deterministic 每輪 64/64 正確且 model／receipt／cost／call counts 一致。同 workers 混合 Decisions p95 中位數至少下降 30%，Chat p95 不增加超過 10%，good RPM 不下降超過 5%。
-- 真訂閱 baseline／candidate 各至少 3 輪混合 64（32 Chat＋32 單題 Decisions），每輪 64/64 正確及收據一致；Decisions p95 中位數至少下降 20%，Chat p95 不增加超過 10%，good RPM 不下降超過 5%，38 秒達成率不下降。不用重試補成功。
+- 真訂閱 baseline／candidate 各至少 3 輪混合 64（32 Chat＋32 單題 Decisions）；**candidate 每輪必須 64/64 正確、完整收據與成本一致**。baseline 的原有失敗也須保留並計入 good RPM／38 秒達成率，不要求舊缺陷先通過才允許修補；p95 以該類全部請求計算，失敗不刪除。Decisions p95 中位數至少下降 20%，Chat p95 不增加超過 10%，good RPM 不下降超過 5%，38 秒達成率不下降。不用重試補成功。此基線規則於發現舊版固定 schema 在滿載會回 400 後明確修訂；未降低候選正確性或數值門檻。
 - 同配置 peak tree RSS 不增加超過 25%，完整報告錯誤／timeout／限流與 max，不挑最佳輪。
 - 32／48 只有 good RPM 提升至少 10%、p95 不差超過 5%、38 秒達成率不下降且安全門檻全過才替換 Mac 新預設，否則維持 64；Windows 預設不依 Mac 結果變更。
 - 真 HTTPS 64 為獨立閘門；Cloudflare 配額／1101 阻擋時記未驗，不買方案、不以本機或 401 代替。

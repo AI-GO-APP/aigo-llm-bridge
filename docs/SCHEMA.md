@@ -155,3 +155,5 @@ source ZIP 的 `source-release.json` 只含 schema=1、format=macos-byo-source�
 ## 排隊與分段耗時（0.9.7-mac.1 候選）
 
 新增十個 INTEGER allowlist 欄位，只在終態一起寫入，不回填歷史數字；timings 以 monotonic 秒量測後四捨五入為毫秒，多題累加。validation_ms 包含入站 schema；output_validation_ms 包含輸出 schema；schema 子耗時與它們重疊，不能相加當總時間。未觀測為 null，不把 CLI spawn 當 ready。驗證中的已保留工作也算 queued；model/provider/question_count 在解析後於開始執行或終態寫入，之前可 null／0。參數拒絕也只保留固定錯誤與耗時，不存原文。API schema／答案格式不增加 debug 欄位。
+
+provider_setup_ms 包含重疊 auth status 查詢等待與 40 ms 啟動間距等待；cli_spawn_ms 只量測實際建立推論子程序。兩者不含登入憑證或查詢原文。內部 generated_schema 標記僅在 RAM，不是 API／DB 欄位。

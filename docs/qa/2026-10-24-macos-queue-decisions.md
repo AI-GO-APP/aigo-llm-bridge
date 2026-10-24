@@ -11,7 +11,7 @@
 | Source | 已實作可取消 FIFO、受理預算、容量設定、numeric timings、固定 Decisions 驗證；原始碼候選 |
 | 回歸／維護 | 最終本機 Bridge＋tools 316 passed／18 skipped；Worker 13 passed；version／branding／product docs／secret scan 通過 |
 | 合成基準 | 完整矩陣＋最終 64 配置＋三波持續負載，共 7,296/7,296 正確；HTTP／真 schema 子程序／替身 runner，未啟動訂閱 CLI |
-| 真訂閱 3 輪混合 64 | 未驗；不將合成數字當訂閱收益 |
+| 真訂閱 3 輪混合 64 | 初版兩組已測，未達放行；D-36–38 修補後另驗，不將合成數字當訂閱收益 |
 | 公開 HTTPS 64 | 未驗；不以 health／401／本機成功替代 |
 | Mac Release／正式更新 | 未執行；保留原正式 profile／URL／KEY／CLI 登入 |
 | Windows | 僅共用 source 回歸；沒有原生安裝／發布證據 |
@@ -99,3 +99,11 @@ Mac 與 Windows source CI 均通過後，Windows installer 的既有 OSV 閘門�
 因此此來源不放行正式發布。分段計時顯示 burst 重複啟動 auth status 增加 provider_setup；依 D-36 只合併重疊的唯讀 metadata 查詢，並使該查詢可取消、程序群組清理後才回錯，不增加 warm inference CLI。baseline 程序樹 RSS 取樣 9,875,280 KiB、候選 12,181,536 KiB；baseline sampler 從第一輪後才開始，明列較保守的不完整覆蓋，不能冒稱完整首輪峰值。CPU 是 ps 生命期平均取樣而非瞬時峰值。
 
 後續正式固定負載在重跑前明定採產品既有 blue-object factual probe，兩版各三輪、原數值門檻不變。此改動避免把 noul 判真題與改寫機率協定的指令混為一談；numeric-directive 的負面結果完整保留，不與 factual 混算、不外推任意推理長度的收益。近 3 MB 三輪 RAM 收據見 [JSON](../concurrency-evidence/macos-queue-memory-2026-10-24.json)。
+
+## Factual 初版與發布前修補
+
+完整 [第一組 factual metadata](../concurrency-evidence/macos-live-factual-initial-2026-10-24.json) 保留 baseline 三輪（46／64、64／64、64／64）與 a265fef 三輪（64／64、63／64、64／64）。baseline 首輪 18 筆自有合法 schema 超過隔離預算，回 400 unsupported_parameter；初始工具在失敗後提早結束，後續只補完原定另外兩輪，未重送那 18 筆，不剔除首輪。效能計畫明確修訂為 baseline 失敗計入統計、candidate 仍須每輪全對；修補舊缺陷不以舊版先全過為前提。
+
+D-36 已使 factual Decisions p95 中位數 17.0286→12.5876 s（-26.08%），Chat 9.1072→6.8898 s（-24.35%），good RPM 215.565→222.993（+3.45%）。但一筆模型格式錯誤回 502，且程序樹 RSS 9,268,592→12,225,440 KiB（+31.90%，超過 +25%），故仍未放行。不得用延遲改善掩蓋正確性／記憶體門檻。
+
+D-37 限定自有 Decisions 使用 Claude CLI 原生固定結構輸出，依 [官方 structured output](https://code.claude.com/docs/en/headless#Get-structured-output) 與本機 CLI help 核對，單筆真訂閱成功，7.862 s；未列入正式三輪。D-38 以 40 ms 冷啟動間距緩和瞬間程序負載；保持既有 64/64、固定期限與不重試。新增 canary 回歸證明 caller state／instructions／criteria 名稱／外部 schema 不進 argv、原生 structured_output 必須存在；取消／期限／generation 在等候後仍核對。兩項修補後必須重驗，未先宣稱通過。

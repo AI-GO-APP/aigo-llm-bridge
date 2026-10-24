@@ -111,3 +111,31 @@ def test_codex_auth_can_read_stderr_without_retaining_it(monkeypatch,tmp_path):
     monkeypatch.setattr(providers,'Child',child)
     monkeypatch.setattr(providers,'executable',lambda *_:sys.executable)
     assert providers.status('codex',{},cancel=threading.Event(),cwd=tmp_path)=={'provider':'codex','ready':True,'method':'ChatGPT'}
+
+
+def test_launch_pacer_spaces_starts_without_reserving_cancelled_future_slots():
+    pacer=providers.LaunchPacer(interval=.01)
+    def enter(_):
+        with scope(Budget(time.monotonic()+3,threading.Event())):
+            pacer.wait(threading.Event());return time.monotonic()
+    with ThreadPoolExecutor(max_workers=64) as clients:starts=sorted(clients.map(enter,range(64)))
+    assert starts[-1]-starts[0]>=.6
+    pacer.next_start=time.monotonic()+.2
+    until=pacer.next_start
+    with scope(Budget(time.monotonic()+.04,threading.Event())),pytest.raises(BridgeError) as error:
+        pacer.wait(threading.Event())
+    assert error.value.status==408 and pacer.next_start==until
+
+
+def test_auth_generation_is_rechecked_after_waiting_to_launch(monkeypatch,tmp_path):
+    generation=['old']
+    monkeypatch.setattr(providers,'auth_generation',lambda *_:generation[0])
+    monkeypatch.setattr(providers,'status',lambda *_,**kwargs:{'ready':True})
+    class Pacer:
+        def wait(self,_):generation[0]='new'
+    class Settings:
+        launch_pacer=Pacer()
+        def get(self,name):return 3
+    with pytest.raises(BridgeError) as error:
+        providers.inference_status('claude',Settings(),threading.Event(),tmp_path)
+    assert error.value.status==503

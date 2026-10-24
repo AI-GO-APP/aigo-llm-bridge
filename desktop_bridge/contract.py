@@ -30,6 +30,7 @@ class Inference:
     schema: dict | None
     tool_proposals: bool = False
     tool_schemas: dict | None = None
+    generated_schema: bool = False
 
 
 def validate(body, settings, caller):

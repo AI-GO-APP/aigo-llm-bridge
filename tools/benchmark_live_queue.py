@@ -186,9 +186,7 @@ def main():
                               for error in {v['error_type'] for v in values} if error is not None}}
             rows.append(row)
             print(json.dumps(row), flush=True)
-            # Failure is evidence; do not reissue inference to manufacture success.
-            if row['correct'] != 64:
-                break
+            # Complete every planned round, retaining failures; never reissue a request.
         report['success'] = len(rows) == args.rounds and all(r['correct'] == 64 for r in rows)
     except Exception as error:
         report['success'] = False
