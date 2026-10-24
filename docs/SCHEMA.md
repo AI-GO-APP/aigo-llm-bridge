@@ -31,6 +31,7 @@ profile 下 `bridge.sqlite`，WAL 模式、`secure_delete=ON`；並行存取用 
 | timeout_s | integer 180 | 10–1800；實際請求 deadline 可更短。 |
 | inference_workers | integer 64 | 執行上限 1–64，且不得大於 inference_pending；兩來源共用，既有明確值保留。 |
 | inference_pending | integer 64 | 受理中的驗證＋排隊＋執行總數，workers–64。舊 profile 缺此欄位且有明確 workers 時沿用該值，直到明確選擇排隊；paused＋idle 原子修改，重啟保留。 |
+| inference_resident | integer 0 | Mac Codex initialize-only 常駐總數；0–inference_workers，預設關閉。與 workers/pending 原子修改，owner 明確選擇後重啟保留；Windows 只接受 0。 |
 | public_url | string 空值 | HTTPS origin，不含 API path、query、fragment、帳密。 |
 | default_model | string `openai/gpt-6-astra` | 省略／auto 使用此值；保留有效既有預設，失效優先找 Codex 再找第一筆。 |
 | models | array DEFAULT_MODELS | 1–100 個唯一 id；每筆 `{id,provider,native}`，provider 為 claude／codex。 |
@@ -99,6 +100,8 @@ startup 不在 settings 表，是 Windows HKCU Run／平台啟動設定；隔離
 | cli_ready_ms | INTEGER | Codex initialize 握手累積耗時；Claude 無等價觀測；舊列或未觀測時 null |
 | inference_ms | INTEGER | Claude communicate／Codex turn 至完成的累積耗時；舊列或未觀測時 null |
 | output_validation_ms | INTEGER | 輸出結構／工具及 Decisions 語意驗證累積耗時；舊列或未觀測時 null |
+| warm_hits | INTEGER | 本請求取得已完成初始化的單次使用 CLI 次數；多題 Decisions 加總，舊列 null。 |
+| cold_starts | INTEGER | 本請求取得冷啟動推論名額次數，含 Claude；不是供應商內部 RPC 數，舊列 null。 |
 | total_ms | INTEGER | 從受理保留名額到終態的 monotonic 耗時；舊列或未觀測時 null |
 | client_request_id | TEXT | 選用 UUID request 識別碼，用於去重／receipt；不納入一般 CSV |
 | request_digest | TEXT | 帶 key id 的 canonical JSON SHA256，僅檢查識別碼內容衝突；不存原文、不納入 CSV |

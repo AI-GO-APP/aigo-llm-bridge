@@ -164,6 +164,10 @@ def main():
                             name = f'macos-{feature}-{theme}-{width}.png'
                             snapshot(window, output / name)
                             results['screens'].append(name)
+                        window.run_js('navigate("settings"); document.querySelector("#capacity-form").scrollIntoView({block:"center"})')
+                        name = f'macos-capacity-{theme}-{width}.png'
+                        snapshot(window, output / name)
+                        results['screens'].append(name)
                         window.run_js('navigate("settings"); document.querySelector(".macos-update-card").scrollIntoView({block:"center"})')
                         name = f'macos-platform-card-{theme}-{width}.png'
                         snapshot(window, output / name)
@@ -182,6 +186,18 @@ def main():
                             snapshot(window, output / name)
                             results['screens'].append(name)
                         window.run_js('document.querySelector("#ob-defer").click()')
+                window.run_js('navigate("settings"); document.querySelector("#capacity-form").scrollIntoView({block:"center"})')
+                results['capacity_requires_pause'] = window.run_js('document.querySelector("#save-capacity").disabled')
+                window.run_js('document.querySelector("#pause").click()')
+                wait_js(window, 'state.accepting === false && !document.querySelector("#save-capacity").disabled')
+                window.run_js('document.querySelector("#capacity-resident").value="2"; document.querySelector("#capacity-workers").value="1"; document.querySelector("#capacity-form").requestSubmit()')
+                wait_js(window, 'document.querySelector("#toast").textContent.includes("0 ≤")')
+                results['capacity_rejects_invalid_pair'] = store.get('inference_resident') == 0 and store.get('inference_workers') == 64
+                window.run_js('document.querySelector("#capacity-resident").value="0"; document.querySelector("#capacity-workers").value="64"; document.querySelector("#capacity-pending").value="64"; document.querySelector("#capacity-form").requestSubmit()')
+                wait_js(window, 'document.querySelector("#toast").textContent.includes("常駐與併發已套用")')
+                results['capacity_zero_saved'] = store.get('inference_resident') == 0 and store.get('inference_workers') == 64
+                window.run_js('document.querySelector("#pause").click()')
+                wait_js(window, 'state.accepting === true')
                 # Keep personal clipboard only in memory and restore it after the native round-trip.
                 clipboard = subprocess.run(['/usr/bin/pbpaste'], capture_output=True, timeout=5).stdout
                 window.run_js('window.__probeCopy=false; window.BridgePlatform.copyText("BRIDGE_NATIVE_COPY_測試").then(()=>window.__probeCopy=true)')

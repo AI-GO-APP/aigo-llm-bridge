@@ -1,6 +1,6 @@
 # #39：單次使用 warm CLI 原型
 
-2026-10-24 owner 授權開始試作。初次試作以 0.9.7-mac.1 為正式基線，沒有建立產品常駐池。owner 後續明確授權合併、發布 Mac 0.9.8 與小量公開 API 實測；本次交付包含預設關閉的實驗工具與 cold transport，production Runtime 仍不建立 warm pool，正式啟用與後台控制項繼續受本文件門檻限制。原型只納入 Codex initialize／initialized 握手，請求到達後才建立 ephemeral thread 及 turn，完成即銷毀程序。Claude restricted print 的同等可觀測 ready 邊界仍待驗，不將「程序還活著／stdin 尚未關閉」視為 ready。
+2026-10-24 owner 授權開始試作。初次試作以 0.9.7-mac.1 為正式基線，沒有建立產品常駐池。owner 後續明確授權合併、發布 Mac 0.9.8 與小量公開 API 實測；本次交付包含預設關閉的實驗工具與 cold transport，0.9.8 production Runtime 未建立 warm pool。owner 隨後明確要求正式 API 接入、2 個常駐／64 併發與小量開關實測；0.9.9 提供此 Mac operator 試驗，預設仍為零。此明確試驗不冒充完整效能放行。原型只納入 Codex initialize／initialized 握手，請求到達後才建立 ephemeral thread 及 turn，完成即銷毀程序。Claude restricted print 的同等可觀測 ready 邊界仍待驗，不將「程序還活著／stdin 尚未關閉」視為 ready。
 
 ## 後台設定契約
 
@@ -12,15 +12,15 @@ owner 補充：成功後後台須讓使用者依機器能力手動設定常駐�
 - 兩值必須原子驗證／套用，先 pause、停止補池、清理待命並 drain，再變更。降低上限不得暫時超額；常駐改為零後清空所有待命程序，保留一般 cold 執行。未通過能力／效能驗收的 provider 不提供啟用控制；預設零。
 - 不依 CPU 核心數猜測訂閱吞吐，不自動覆寫 owner 設定；後台須呈現有效配置及 active／warm／refill 狀態。控制項真正開放時，另補六頁深淺色／窄版／Windows 適配卡驗收。
 
-本次只在原型 RAM 中提供 resident／concurrency 及 pause/drain/configure；**尚無新的 SQLite setting、管理 API 或後台 UI**。這些控制項以本節為後續實作及驗收契約，不能聲稱現在管理台已提供。
+0.9.9 將 inference_resident 存入 SQLite，管理台「常駐與併發」提供三值專用套用；須先暫停、排空，API 原子寫入並調整 live limit。Mac CLI 的 workers --resident 同樣保留原 profile，先驗參數再暫停／排空／重啟。其他安裝者不自動啟用；Windows 常駐尚未開放。
 
 ## 程式與邊界
 
 `desktop_bridge/codex_session.py` 封裝既有 cold protocol 的有界 stdio transport：單行 4 MB、未處理原始事件合計 8 MB 且最多 4096 筆；stderr 持續丟棄。claim 前只可 initialize／initialized，其他工作事件令程序失效。claim 只可一次且 cwd 相同；模型／ephemeral／事件 thread ID 仍核對。清理後移除事件 buffer，不將原文、事件或 stderr 寫入報告。
 
-`tools/warm_cli_pool.py` 只供實驗使用，production Runtime 不建立它。單個 bounded refill thread、3 秒握手期限、100 ms–5 秒失敗退避、待命 TTL 最多 600 秒。auth／CLI 設定 stat generation 改變淘汰待命，provider 在 auth status 後、thread/start 前再次核對。pause 清理待命，包括 pause 時仍在建立的程序。清理失敗保留 counted quarantined slot 並停止補池，不釋出虛假容量。
+`desktop_bridge/warm_pool.py` 由正式 Runtime 擁有；tools/warm_cli_pool.py 為原型相容 import。`warm_runtime.py` 僅初始化 Codex，不讀 caller 內容。單個 bounded refill thread、3 秒握手期限、100 ms–5 秒失敗退避、待命 TTL 最多 600 秒。auth／CLI 設定 stat generation 改變淘汰待命，provider 在 auth status 後、thread/start 前再次核對。pause 清理待命，包括 pause 時仍在建立的程序。清理失敗保留 counted quarantined slot 並停止補池，不釋出虛假容量。
 
-現階段上限是原型自身的 CLI root 數；**尚未整合正式 Runtime 的全裝置推論／控制程序預算，也沒有 Mac 的 RSS／CPU hard limit**。RSS、fd、子孫程序及跨 provider 的整體 admission 是整合前的必要門檻，不能將 root 數或小量測試當作通過。CLI 自身可能還有 metadata／上游活動，零 turn 不能宣稱所有網路流量為零。
+0.9.9 中兩來源推論 root、idle、refill、closing 共用 inference_workers 名額。Claude cold 呼叫也先取同一名額，必要時淘汰 idle Codex；補池讓位於等候請求。唯讀 auth／model 控制程序及四個外部 schema 子程序仍屬既有獨立控制預算。此 root 上限不是全程序樹 RSS／CPU hard limit；子孫程序、RSS／fd／CPU 與完整尖峰收益仍須量測，不能將小量對照當作通過。CLI 自身可能還有 metadata／上游活動，零 turn 不能宣稱所有網路流量為零。
 
 ## 執行原型
 
@@ -32,7 +32,7 @@ python tools/benchmark_warm_cli.py --apply --idle-seconds 600 --requests 3 --res
 
 ## 固定放行門檻（不因試作結果降低）
 
-沿用 [#39](https://github.com/AI-GO-APP/local-token-buffet-bridge/issues/39)：至少 100 對跨 Key／model／system 的真合成隔離請求，含多題 Decisions；取消／逾時只終止自己程序，開始後 crash／斷線不增加推論，保留 known／unknown receipt。每 provider cold／warm 各三輪單筆、64 burst、三波連續 64，完整計入補池與全部 usage。burst p95 至少改善 15%、持續 good RPM 不下降超過 5%、正確率／timeout／38 秒達成率不變差、peak tree RSS 不增加超過 25%，另明定全裝置程序／fd／CPU 預算。idle 十分鐘零推論、stop 五秒內無自有程序／pipe／cwd。Mac／Windows 分別實測，未通過維持零。
+沿用 [#39](https://github.com/AI-GO-APP/local-token-buffet-bridge/issues/39)：至少 100 對跨 Key／model／system 的真合成隔離請求，含多題 Decisions；取消／逾時只終止自己程序，開始後 crash／斷線不增加推論，保留 known／unknown receipt。每 provider cold／warm 各三輪單筆、64 burst、三波連續 64，完整計入補池與全部 usage。burst p95 至少改善 15%、持續 good RPM 不下降超過 5%、正確率／timeout／38 秒達成率不變差、peak tree RSS 不增加超過 25%，另明定全裝置程序／fd／CPU 預算。idle 十分鐘零推論、stop 五秒內無自有程序／pipe／cwd。Mac／Windows 分別實測；其他安裝者預設零。owner 明確授權的 Mac 2/64 operator 小量試驗是本輪限定範圍；一般效能推薦與完整驗收仍須上述門檻。
 
 原型的 100 對 fake CLI transport 測試不是上述真訂閱放行證明。不要用 mock、單筆 p95、未收到 usage event 或程序存活代替對應門檻。[本輪收據](qa/2026-10-24-macos-warm-cli-pilot.md)區分已驗與待驗。
 
@@ -41,3 +41,9 @@ python tools/benchmark_warm_cli.py --apply --idle-seconds 600 --requests 3 --res
 ## 已授權的 Mac 0.9.8 發布
 
 發布收據見 [Mac 0.9.8](qa/2026-10-24-macos-warm-cli-release.md)。小量端到端工具為 `python tools/benchmark_api_latency.py --apply --label after --rounds 3 --output /tmp/api-latency.json`；每輪 Codex／Claude 各一筆 Chat 與一題 noul，序列執行、短輸出、零推論重送，公開 HTTPS 時間含 Relay／網路。數字 usage 可能包含 CLI 固定指令開銷，不宣稱全部輸入只有使用者提示長度。此測試不是 warm/cold 或尖峰效能放行。
+
+## Mac 0.9.9 operator 試驗
+
+正式 Chat 與 Decisions 共用 Runtime pool，每題各用新程序。取消、逾時、登出世代變更或程序失效均不重送推論；空目錄／管線清理完成才釋放名額，失敗保留 quarantined 並停止補池／拒絕新租用。暫停停止補池並清 idle；已受理工作可排空，停止時取消並關閉全部自有程序。TTL 120 秒，初始化期限 3 秒，補池退避 0.1–5 秒。
+
+公開端對照用同版程式、同模型短輸入，以 resident=0 與 2 各做三筆 Chat、三筆 Decisions。每筆核對 receipt.execution、實際模型、成本及完整計量；warm arm 每筆前確認 idle=2。工具 `benchmark_api_latency.py --provider codex` 不重送推論；不支援任意 token 上限，CLI 固定指令／reasoning 用量全數列入。公開 HTTPS 延遲含網路／Relay，另記 Bridge 分段，不能從六筆單一模型宣稱 64 burst 收益或推廣至 Claude。最終保留 owner 指定 2/64，供後續外部使用者獨立基準。

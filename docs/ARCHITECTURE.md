@@ -103,6 +103,6 @@ Mac 發布由 `packaging/macos/build.py` 以 tracked 公開來源 allowlist 建�
 
 Runtime 擁有 StatusReads 與 LaunchPacer：前者僅合併時間重疊的唯讀登入查詢，完成即移除；後者僅以 20 ms 間距緩和 Claude 自有 Decisions 冷 CLI 啟動，兩者等待均計入既有預算。啟動前重新核對 auth generation。DecisionSpec 的內部 generated_schema 標記只由程式生成固定結構；Claude 使用原生 structured_output，再獨立執行 typed validator；Codex 沿用 stdin outputSchema。外部 schema 不設該標記。[D-36–38](DECISIONS.md)。
 
-## #39 單次使用 CLI 試驗
+## #39 單次使用 CLI
 
-Codex stdio 的一次性生命週期移至 `codex_session.py`；既有正式 Runtime 仍 cold 建立。獨立 `tools/warm_cli_pool.py` 只做 initialize／initialized 預熱，沒有呼叫端內容、thread 或 turn；lease 後新建 ephemeral 工作並銷毀。production Runtime 未建立 pool。active＋warm＋refill＋closing 共用原型 root 上限；全裝置與雙 provider 整合仍待驗。詳見 [warm CLI 計畫](WARM-CLI-PLAN.md)。
+0.9.9 Runtime 擁有 `warm_pool.py`／`warm_runtime.py`，預設 target=0。Mac 可明確設定 Codex initialize／initialized 常駐，caller 模型／內容只在租用後的 ephemeral thread／turn 進入；一程序只供一題，完成即銷毀。兩 provider 的 active＋idle＋starting＋closing 共用 inference_workers；Claude 取得 cold 名額，滿載先移除 idle Codex。waiting lease 優先於補池。pause 清 idle 並停止補池，stop 清理全部；auth generation／TTL／健康檢查不符則淘汰，清理失敗隔離並 fail closed。Budget 累計每請求 warm_hits／cold_starts，終態寫 metadata 並由 receipt.execution 揭露。管理 API／UI／Mac CLI 依 paused＋idle 原子設定三值；數量不代表完整效能門檻通過。詳見 [warm CLI 計畫](WARM-CLI-PLAN.md)。

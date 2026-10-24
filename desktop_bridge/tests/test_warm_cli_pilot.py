@@ -414,3 +414,108 @@ def test_pool_default_is_zero_resident():
         time.sleep(.1)
         assert pool.snapshot()['total']==0 and pool.target==0
     finally:pool.close()
+
+
+def test_cold_provider_evicts_idle_without_exceeding_shared_budget(monkeypatch):
+    from desktop_bridge.execution_budget import Budget, scope
+    with pool_fixture(target=1, limit=1) as (pool, resources):
+        wait_for(lambda:pool.snapshot()['idle']==1)
+        idle=resources[0]
+        def claude(spec, settings, cancel, cwd):
+            assert pool.snapshot()['total']==pool.snapshot()['active']==1
+            assert idle.session.closed and idle.session.sent['turn/start']==0
+            return 'cold',{},'stop','synthetic'
+        monkeypatch.setattr(providers,'call_claude',claude)
+        class Settings:
+            cli_pool=pool
+            def get(self,name):return 2
+        spec=spec_for('synthetic');spec.model['provider']='claude'
+        budget=Budget(time.monotonic()+3,threading.Event())
+        with scope(budget):
+            assert providers.infer(spec,Settings(),budget.cancel)[0]=='cold'
+        assert budget.leases=={'cold_starts':1}
+        assert pool.snapshot()['peak']==1
+
+
+def test_runtime_real_infer_path_records_warm_chat_and_each_decision(tmp_path,monkeypatch):
+    import json
+    import uuid
+    from desktop_bridge.service import Runtime
+    from desktop_bridge.store import Store
+    monkeypatch.setattr('desktop_bridge.service.sys.platform','darwin')
+    monkeypatch.setattr(providers,'inference_status',lambda *_:{'ready':True})
+    resources=[]
+    def resource(settings,cancel,deadline):
+        value=FakeResource(cancel,deadline);resources.append(value);return value
+    monkeypatch.setattr('desktop_bridge.warm_runtime.CodexResource',resource)
+    store=Store(tmp_path);store.set('inference_resident',2)
+    store.set('inference_workers',2);store.set('inference_pending',2)
+    kid,key=store.create_key('synthetic');caller=store.authenticate(key)
+    rt=Runtime(store)
+    try:
+        bodies=[('chat',{'model':'openai/gpt-6-astra','messages':[{'role':'user','content':'unique-marker'}]}),
+                ('decisions',{'model':'openai/gpt-6-astra','state':'synthetic',
+                 'questions':{n:{'type':'noul','instructions':'Synthetic?'} for n in ('a','b')}})]
+        for protocol,body in bodies:
+            wait_for(lambda:rt.cli_pool.snapshot()['idle']==2)
+            rid=str(uuid.uuid4());task=rt.submit(body,caller,20,rid,protocol=protocol)
+            assert task.done.wait(5)
+            assert task.error is None, task.error.category if task.error else None
+            receipt=rt.receipt(rid,caller)
+            expected=1 if protocol=='chat' else 2
+            assert receipt['execution']=={'warm_hits':expected,'cold_starts':0}
+            assert receipt['billing_status']=={'complete':True,'calls_started':expected,'calls_completed':expected}
+        assert sum(r.session.sent['turn/start'] for r in resources)==3
+        assert all(r.session.sent['turn/start']<=1 for r in resources)
+        store.set('accepting',False)
+        rt.configure_capacity(2,2,0)
+        wait_for(lambda:rt.cli_pool.snapshot()['total']==0)
+        store.set('accepting',True)
+        wait_for(lambda:not rt.cli_pool.paused)
+        task=rt.submit(bodies[0][1],caller,20,str(uuid.uuid4()))
+        assert task.done.wait(5) and task.error is None
+        row=store.request(task.id,kid)
+        assert row['warm_hits']==0 and row['cold_starts']==1
+        assert rt.cli_pool.snapshot()['peak']<=2
+        assert 'unique-marker' not in json.dumps(row)
+    finally:
+        rt.stop();store.close()
+    assert all(r.session.closed and not Path(r.cwd).exists() for r in resources)
+
+
+@pytest.mark.parametrize('resident',[-1,3,True,1.5])
+def test_runtime_resident_validation_before_mutation(tmp_path,resident):
+    from desktop_bridge.service import Runtime
+    from desktop_bridge.store import Store
+    store=Store(tmp_path);store.set('accepting',False)
+    rt=Runtime(store,lambda *_:None,max_workers=2,max_pending=2)
+    try:
+        with pytest.raises(ValueError):rt.configure_capacity(2,2,resident)
+        assert store.get('inference_resident')==0 and rt.max_workers==2
+    finally:rt.stop();store.close()
+
+
+def test_paused_runtime_can_drain_already_accepted_calls_without_refill():
+    with pool_fixture(target=1,limit=1) as (pool,resources):
+        wait_for(lambda:pool.snapshot()['idle']==1)
+        pool.pause()
+        before=len(resources)
+        with pool.lease(threading.Event(),time.monotonic()+3,allow_paused=True) as resource:
+            assert not getattr(resource,'warm_hit',False)
+            assert pool.snapshot()['total']==1
+        time.sleep(.1)
+        assert len(resources)==before+1 and pool.snapshot()['total']==0
+
+
+def test_refill_yields_to_runtime_admission_without_blocking_request_lease():
+    allowed=threading.Event();resources=[]
+    def factory(cancel,deadline):
+        value=FakeResource(cancel,deadline);resources.append(value);return value
+    pool=SingleUsePool(factory,lambda:'a',target=1,limit=1,refill_allowed=allowed.is_set)
+    try:
+        time.sleep(.1);assert not resources
+        with pool.lease(threading.Event(),time.monotonic()+3):
+            assert pool.snapshot()['active']==1
+        assert len(resources)==1
+        allowed.set();wait_for(lambda:pool.snapshot()['idle']==1)
+    finally:pool.close()

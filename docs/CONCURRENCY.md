@@ -49,3 +49,9 @@ Mac 0.9.4-mac.1 整合與基本流程驗收另見 [Mac 併發交付](qa/2026-10-
 ## #39 常駐數量與併發上限
 
 owner 要求成功後後台可手動設定常駐數量及執行併發；常駐預設零、零即關閉，整數範圍 `0 ≤ 常駐總數 ≤ inference_workers ≤ inference_pending ≤ 64`。兩 provider 的常駐合計共用配額，active／warm／refill／closing 共用同一程序預算，滿載時不額外補池。變更須 pause、清理待命及 drain 後原子套用。現階段僅 RAM 試驗提供 resident／concurrency，沒有正式管理 UI／API／設定；[開放門檻](WARM-CLI-PLAN.md)通過後才整合。
+
+## Mac 0.9.9 的可選常駐
+
+`0 ≤ inference_resident ≤ inference_workers ≤ inference_pending ≤ 64`，預設 resident=0；Mac 目前僅 Codex 可常駐。執行中推論 root、初始化中的補池、ready idle 與 closing 共用 workers 上限，Claude cold 名額亦計入；滿載冷來源可先清 idle Codex。清理完成才釋出容量，不另開 2 個常駐超過 64。補池檢查 Runtime 的 validating／queued／執行滿載及租用等待，優先讓已受理工作取得名額。控制及 schema 子程序仍依既有獨立預算，不把 root 上限冒充全程序樹資源限制。
+
+UI／本機管理 API／Mac workers --resident 的三值改動須暫停、清待命、排空；設 0 停止補池但一般 cold 請求照常。已受理工作在暫停後仍可 cold 租用以排空；stop 取消後清理全部。每題 Decisions 各租一次，receipt.execution 揭露真正 warm/cold 次數。owner 明確選擇的 2/64 小量對照並非 64 burst／三波持續吞吐驗收；完整門檻見 [計畫](WARM-CLI-PLAN.md)。

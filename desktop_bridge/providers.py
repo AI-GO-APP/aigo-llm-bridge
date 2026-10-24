@@ -448,6 +448,17 @@ def call_codex(spec,settings,cancel,cwd,*,session=None):
 
 
 def infer(spec,settings,cancel):
+    pool = getattr(settings, 'cli_pool', None)
+    if pool is not None:
+        deadline = time.monotonic() + settings.get('timeout_s')
+        with pool.lease(cancel, deadline, cold_only=spec.model['provider'] != 'codex', allow_paused=True) as resource:
+            if budget := current():
+                name = 'warm_hits' if getattr(resource, 'warm_hit', False) else 'cold_starts'
+                budget.leases[name] = budget.leases.get(name, 0) + 1
+            if spec.model['provider'] == 'codex':
+                return call_codex(spec, settings, cancel, resource.cwd, session=resource.session)
+            with tempfile.TemporaryDirectory(prefix='aigo-inference-') as cwd:
+                return call_claude(spec, settings, cancel, cwd)
     # Only empty working directories touch disk. Request content stays in pipes/RAM.
     with tempfile.TemporaryDirectory(prefix="aigo-inference-") as cwd:
         return (call_claude if spec.model["provider"]=="claude" else call_codex)(spec,settings,cancel,cwd)

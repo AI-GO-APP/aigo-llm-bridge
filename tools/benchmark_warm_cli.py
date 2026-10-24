@@ -66,31 +66,7 @@ class Resources:
                               'includes': 'experiment, all owned descendants, refill and sampler ps process'}
 
 
-class Resource:
-    def __init__(self, settings, cancel, deadline):
-        began = time.monotonic()
-        self.directory = tempfile.TemporaryDirectory(prefix='aigo-warm-pilot-')
-        self.cwd = self.directory.name
-        self.session = None
-        try:
-            self.session = CodexSession(providers.codex_command(settings), self.cwd,
-                providers.environment(), cancel, max(.001, deadline - time.monotonic()),
-                generation=providers.auth_generation('codex', settings))
-            self.handshake_seconds = time.monotonic() - began
-        except BaseException:
-            self.directory.cleanup()
-            raise
-
-    def healthy(self):
-        return self.session.healthy()
-
-    def close(self):
-        try:
-            if self.session:
-                self.session.close()
-        finally:
-            self.directory.cleanup()
-
+from desktop_bridge.warm_runtime import CodexResource as Resource
 
 def settings_from_install(root):
     manifest = json.loads((root / 'source-install.json').read_text())

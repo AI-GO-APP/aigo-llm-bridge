@@ -7,6 +7,7 @@ import json
 import hashlib
 import select
 import socket
+import sys
 import threading
 import time
 import uuid
@@ -69,8 +70,24 @@ class Runtime:
         self.tasks={}
         self.rate=defaultdict(deque)
         self.stopped=False
+        resident=store.get('inference_resident')
+        self.validate_resident(resident,workers)
+        if resident and sys.platform != 'darwin':
+            raise ValueError('Resident CLI currently requires macOS.')
+        self.cli_pool=None
+        if runner is None:
+            from .warm_pool import SingleUsePool
+            from .warm_runtime import CodexResource
+            self.cli_pool=SingleUsePool(lambda cancel,deadline: CodexResource(store,cancel,deadline),
+                lambda:providers.auth_generation('codex',store),target=resident,limit=workers,
+                paused=not store.get('accepting'),refill_allowed=self._can_refill)
         self.monitor=threading.Thread(target=self._monitor,daemon=True,name='bridge-queue-monitor')
         self.monitor.start()
+
+    def _can_refill(self):
+        with self.lock:
+            return (not self.stopped and not self.waiting and self.running_tasks<self.max_workers
+                    and not any(t.phase=='validating' for t in self.tasks.values()))
 
     @staticmethod
     def validate_capacity(workers,pending):
@@ -79,22 +96,46 @@ class Runtime:
         if type(pending) is not int or not workers<=pending<=STANDARD_CONCURRENCY:
             raise ValueError('inference_pending must be an integer between workers and 64.')
 
+    @staticmethod
+    def validate_resident(resident,workers):
+        if type(resident) is not int or not 0<=resident<=workers:
+            raise ValueError('Require integer 0 <= inference_resident <= inference_workers.')
+
     def capacity(self):
         with self.lock:
             return {'max_concurrent_requests':self.max_pending,'max_execution_workers':self.max_workers,
                     'queued_requests':sum(t.phase in {'validating','queued'} for t in self.tasks.values()),
                     'running_requests':sum(t.phase=='running' for t in self.tasks.values()),
-                    'shared_provider_capacity':True}
+                    'shared_provider_capacity':True,
+                    'warm_pool':self.cli_pool.snapshot() if self.cli_pool else {'resident_target':0,'idle':0,'total':0},
+                    'warm_supported_providers':['codex'] if sys.platform=='darwin' else []}
 
-    def configure_capacity(self,workers,pending):
+    def configure_capacity(self,workers,pending,resident=None):
         self.validate_capacity(workers,pending)
+        if resident is None:resident=self.store.get('inference_resident')
+        self.validate_resident(resident,workers)
+        if resident and sys.platform!='darwin':raise ValueError('Resident CLI requires macOS.')
         with self.condition:
             if self.stopped or self.store.get('accepting') or any(not t.done.is_set() for t in self.tasks.values()):
                 raise ValueError('Pause and drain before changing inference capacity.')
+            if self.cli_pool:
+                self.cli_pool.pause()
+                with self.cli_pool.condition:
+                    until=time.monotonic()+4
+                    while self.cli_pool.entries and time.monotonic()<until:
+                        self.cli_pool.condition.wait(.05)
+                    if self.cli_pool.entries:raise ValueError('CLI pool has not drained.')
             # No outstanding reservation: settings and live limits change together.
-            with self.store.lock,self.store.db:
-                self.store.db.executemany('insert or replace into settings values (?,?)',
-                    [('inference_workers',json.dumps(workers)),('inference_pending',json.dumps(pending))])
+            previous=(self.cli_pool.target,self.cli_pool.limit) if self.cli_pool else None
+            try:
+                with self.store.lock,self.store.db:
+                    self.store.db.executemany('insert or replace into settings values (?,?)',
+                        [('inference_workers',json.dumps(workers)),('inference_pending',json.dumps(pending)),('inference_resident',json.dumps(resident))])
+                    if self.cli_pool:self.cli_pool.configure(resident,workers)
+            except BaseException:
+                if self.cli_pool and (self.cli_pool.target,self.cli_pool.limit)!=previous:
+                    self.cli_pool.configure(*previous)
+                raise
             self.max_workers,self.max_pending=workers,pending
             self.slots=threading.BoundedSemaphore(pending)
             self.condition.notify_all()
@@ -115,6 +156,15 @@ class Runtime:
 
     def _monitor(self):
         while not self.stop_event.wait(.05):
+            if self.cli_pool and not self.stopped:
+                try:
+                    if self.store.get('accepting'):
+                        if self.cli_pool.paused and not self.cli_pool.stop_event.is_set():self.cli_pool.resume()
+                    elif not self.cli_pool.paused:self.cli_pool.pause()
+                except Exception:
+                    # Pool cleanup quarantines its slot and fails closed. Keep
+                    # monitoring request cancellation/deadlines independently.
+                    pass
             with self.condition:
                 for task in list(self.tasks.values()):
                     if task.done.is_set():continue
@@ -268,6 +318,7 @@ class Runtime:
         class DeadlineSettings:
             status_reads=self.status_reads
             launch_pacer=self.launch_pacer
+            cli_pool=self.cli_pool
             def get(self,name):
                 return max(.001,min(store.get(name),task.budget.remaining())) if name=="timeout_s" else store.get(name)
         task.calls_started+=1
@@ -388,6 +439,7 @@ class Runtime:
         if not terminal:
             # Billing and state must use the same snapshot, even if the task just finished.
             result['status']=row['status'];result.pop('result',None)
+        result['execution']={name:row[name] or 0 for name in ('warm_hits','cold_starts')}
         result['billing_status']={'complete':bool(row['billing_complete']) and terminal,
                                   'calls_started':row['calls_started'],'calls_completed':row['calls_completed']}
         if row['cost_usd'] is not None:
@@ -416,7 +468,9 @@ class Runtime:
                 if task.phase=='queued':self._fail(task,BridgeError(499,'cancelled','請求已取消。'))
             self.condition.notify_all()
             while any(t.phase=='validating' for t in self.tasks.values()):self.condition.wait(.05)
+        if self.cli_pool:self.cli_pool.pause()
         for thread in self.worker_threads:thread.join()
+        if self.cli_pool:self.cli_pool.close()
         self.stop_event.set();self.monitor.join()
         self.tasks.clear()
 

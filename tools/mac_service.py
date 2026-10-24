@@ -28,7 +28,7 @@ def setup(manifest, action, timeout=180):
     return result.stdout.decode()
 
 
-def control(action, root, timeout=180, workers=None, accepting=True, pending=None):
+def control(action, root, timeout=180, workers=None, accepting=True, pending=None, resident=None):
     if sys.platform != 'darwin': raise ValueError('This command requires macOS.')
     m = manifest_at(root)
     sys.path.insert(0, m['app'])
@@ -45,6 +45,8 @@ def control(action, root, timeout=180, workers=None, accepting=True, pending=Non
             # the old command's behavior without shrinking an explicit queue.
             if pending is None:effective_pending=max(workers,effective_pending) if type(workers) is int else effective_pending
             Runtime.validate_capacity(workers,effective_pending)
+            effective_resident=store.get('inference_resident') if resident is None else resident
+            Runtime.validate_resident(effective_resident,workers)
         finally:store.close()
     from desktop_bridge.windows import mac_startup_path, set_startup
     data = m['data_dir']; agent = mac_startup_path(data)
@@ -72,7 +74,7 @@ def control(action, root, timeout=180, workers=None, accepting=True, pending=Non
         try:
             with store.lock,store.db:
                 store.db.executemany('insert or replace into settings values (?,?)',
-                    [('inference_workers',json.dumps(workers)),('inference_pending',json.dumps(effective_pending))])
+                    [('inference_workers',json.dumps(workers)),('inference_pending',json.dumps(effective_pending)),('inference_resident',json.dumps(effective_resident))])
         finally: store.close()
     if action == 'disable': set_startup(False, data)
     if action == 'rollback':
@@ -177,12 +179,13 @@ def main():
     parser.add_argument('action', choices=['status','enable','disable','start','stop','restart','rollback','workers','update','onboarding-open','onboarding-status'])
     parser.add_argument('--source', help='Explicit local Bridge source checkout for update.')
     parser.add_argument('--count',type=int,help='Parallel isolated inference processes (workers action, 1–64; default profile is 64).')
+    parser.add_argument('--resident',type=int,help='Initialize-only Codex residents (0–count); zero disables prewarm.')
     parser.add_argument('--pending',type=int,help='Total admitted running plus queued requests (workers action, count–64).')
     parser.add_argument('--install-root', default=str(Path.home() / 'Library/Application Support/AIGO LLM Bridge'))
     parser.add_argument('--timeout', type=int, default=180)
     args = parser.parse_args()
     try:
-        if args.pending is not None and args.action!='workers':raise ValueError('--pending requires workers.')
+        if (args.pending is not None or args.resident is not None) and args.action!='workers':raise ValueError('--pending/--resident require workers.')
         if args.action == 'update':
             if not args.source: raise ValueError('update requires --source.')
             value = update(args.install_root, args.source, args.timeout)
@@ -195,7 +198,7 @@ def main():
                 path = Path(m['data_dir']) / 'macos-onboarding.json'
                 value = json.loads(path.read_text()) if path.exists() else {'completed_at': None}
         else:
-            value = control(args.action, args.install_root, args.timeout, args.count,pending=args.pending)
+            value = control(args.action, args.install_root, args.timeout, args.count,pending=args.pending,resident=args.resident)
         print(json.dumps(value, ensure_ascii=False)); return 0
     except (OSError, ValueError, subprocess.SubprocessError):
         print('Mac service operation incomplete. Check this installation and drain/stop only its Bridge.', file=sys.stderr)
