@@ -1,5 +1,7 @@
 # 驗收與交付矩陣
 
+Mac 0.9.12 後續以 owner 指定 **4＋4 常駐／64** 完成112/112真推論（公開96＋直連16）；公開64單波正確性通過，但p95=55.6066秒、38秒內38/64，完整warm速度門檻未過。Runtime外等待與Claude Decisions用量波動的分層證據見 [後續測試](qa/2026-10-24-macos-0912-staged-api.md)。測試Key全撤銷、原設定／Key保留，未重發產品版本。
+
 Mac **0.9.12-mac.1 已合併、公開發布、匿名四附件／ZIP真安裝、原profile更新與同Key公開API驗收通過**。50個core及公開data／license吻合，原58筆Key rows／3把有效Key保留，唯一測試Key已撤銷；純Chat input3129→506，Decisions保留，原2/64/64及乾淨重啟通過。相容範圍、清理腳本負面紀錄與完整數據見 [本輪收據](qa/2026-10-24-macos-chat-minimal-release.md)。
 
 Mac **0.9.8-mac.1 已合併、公開發布、匿名下載／ZIP 安裝及完成原安裝更新**。同一測試 Key 跨升級、公開 Chat／JSON／工具提案／去重與設定、裝置、owner Key、64/64 保留通過；少量 Chat／Decisions 延遲與完整發布證據見 [0.9.8 收據](qa/2026-10-24-macos-warm-cli-release.md)。warm pool 未啟用，#39 仍 open；不以小量測速代替 warm／64 併發門檻。
