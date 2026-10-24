@@ -1,6 +1,8 @@
 """Bounded, origin-scoped HTTP connections. Never retry a submitted request."""
 import http.client
+import io
 import json
+import select
 import socket
 import ssl
 import threading
@@ -30,6 +32,70 @@ def parse_json(raw):
     if not isinstance(value, dict):
         raise TransportError('protocol')
     return value
+
+
+class Reader(io.RawIOBase):
+    def __init__(self, wire):
+        self.wire = wire
+        self.released = False
+        with wire.lock: wire.readers += 1
+    def readable(self): return True
+    def readinto(self, buffer): return self.wire.receive(buffer)
+    def close(self):
+        with self.wire.lock:
+            if not self.released:
+                self.released = True
+                self.wire.readers -= 1
+                if self.wire.closed and not self.wire.readers: self.wire.raw.close()
+        super().close()
+
+
+class Wire:
+    """Nonblocking I/O checks cancellation without depending on OS close wakeups.
+
+    HTTPResponse can own its reader after HTTPConnection closes (Connection: close).
+    Keep that reader valid until it closes, matching socket.makefile semantics.
+    """
+    def __init__(self, raw):
+        self.raw = raw
+        self.lock = threading.Lock()
+        self.readers = 0; self.closed = False
+        raw.setblocking(False)
+
+    def bind(self, check, deadline): self.check, self.deadline = check, deadline
+    def settimeout(self, _): self.check(self.deadline)
+    def makefile(self, mode, *args, **kwargs):
+        if mode != 'rb': raise TransportError('protocol')
+        return io.BufferedReader(Reader(self))
+    def close(self):
+        with self.lock:
+            self.closed = True
+            if not self.readers: self.raw.close()
+    def shutdown(self, how): self.raw.shutdown(how)
+
+    def wait(self, read):
+        while True:
+            delay = min(.05, self.check(self.deadline))
+            readable, writable, _ = select.select([self.raw] if read else [], [] if read else [self.raw], [], delay)
+            if readable or writable: return
+
+    def receive(self, buffer):
+        while True:
+            self.check(self.deadline)
+            try: return self.raw.recv_into(buffer)
+            except ssl.SSLWantWriteError: self.wait(False)
+            except (ssl.SSLWantReadError, BlockingIOError): self.wait(True)
+
+    def sendall(self, data):
+        remaining = memoryview(data)
+        while remaining:
+            self.check(self.deadline)
+            try:
+                sent = self.raw.send(remaining)
+                if not sent: raise TransportError('io')
+                remaining = remaining[sent:]
+            except ssl.SSLWantReadError: self.wait(True)
+            except (ssl.SSLWantWriteError, BlockingIOError): self.wait(False)
 
 
 class Connections:
@@ -81,9 +147,6 @@ class Connections:
         deadline = time.monotonic() + timeout
         acquired = False
         conn = wire = response = None
-        timer = None
-        timer_lock = threading.Lock()
-        timer_done = False
         reusable = reused = False
         try:
             while not acquired:
@@ -143,15 +206,10 @@ class Connections:
                 if conn.sock is None:
                     conn.connect()
                     with self.lock: self.counts['connections_created'] += 1
+                    conn.sock = Wire(conn.sock)
                 wire = conn.sock
+                wire.bind(self.check, deadline)
                 with self.lock: self.sockets[conn] = wire
-                # A socket timeout alone can be extended indefinitely by slowly
-                # arriving headers. Bound the entire direct exchange as well.
-                def expire():
-                    with timer_lock:
-                        if not timer_done: self.dispose(conn, wire)
-                timer = threading.Timer(self.check(deadline), expire)
-                timer.daemon = True; timer.start()
                 wire.settimeout(self.check(deadline))
                 conn.request('POST' if body is not None else 'GET', target.path or '/', body=body,
                              headers=headers)
@@ -186,8 +244,6 @@ class Connections:
             if time.monotonic() >= deadline: category = 'timeout'
             raise TransportError(category) from None
         finally:
-            with timer_lock: timer_done = True
-            if timer is not None: timer.cancel()
             if response is not None: response.close()
             if conn is not None:
                 with self.lock:

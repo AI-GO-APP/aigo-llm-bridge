@@ -14,7 +14,7 @@ import pytest
 
 from desktop_bridge import relay as module
 from desktop_bridge.relay import Relay, decode_work, MAX_FORWARD
-from desktop_bridge.relay_transport import Connections, TransportError
+from desktop_bridge.relay_transport import Connections, TransportError, Wire
 from desktop_bridge.store import Store
 
 
@@ -46,10 +46,11 @@ def server():
             self.send_header('Content-Length', str(900 if self.path == '/truncated' else len(body)))
             self.send_header('X-Bridge-Cost-Source', 'fixture')
             self.send_header('X-Private-Fixture', 'must-not-forward')
-            if self.path in ('/close', '/truncated'): self.send_header('Connection', 'close')
+            if self.path in ('/close', '/truncated', '/body-stall'): self.send_header('Connection', 'close')
             self.end_headers()
+            if self.path == '/body-stall': entered.set(); release.wait(3)
             try: self.wfile.write(body); self.wfile.flush()
-            except (BrokenPipeError, ConnectionResetError): pass
+            except OSError: pass
             if self.path == '/stale': self.close_connection = True
     http = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
     http.daemon_threads = True
@@ -115,10 +116,13 @@ def test_failed_submission_is_never_replayed(server, path, kwargs, category):
     finally: pool.close()
 
 
-def test_stop_interrupts_active_read_and_slot_waiter(server):
+@pytest.mark.parametrize('path', ['/stall', '/body-stall'])
+def test_stop_interrupts_active_read_and_slot_waiter(server, monkeypatch, path):
+    # Model platforms where shutdown/close does not wake a blocking read/select.
+    monkeypatch.setattr(Wire, 'shutdown', lambda *_: None)
     stop = threading.Event(); pool = Connections(1, stop, local=True); failures = []
     def run():
-        try: pool.exchange(server.base, '/stall', {}, b'{}')
+        try: pool.exchange(server.base, path, {}, b'{}')
         except TransportError as error: failures.append(str(error))
     first = threading.Thread(target=run); first.start()
     assert server.entered.wait(2)

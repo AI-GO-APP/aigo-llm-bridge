@@ -10,11 +10,15 @@
 
 ## 候選本機檢查
 
-- Bridge pytest：351 passed／18 skipped；包含15項新transport／Relay案例，真本機TLS重用／不信任憑證拒絕、慢速標頭總期限、stale socket不隱式重連實際執行。
+- Bridge pytest：351 passed／18 skipped；包含當時15項新transport／Relay案例，真本機TLS重用／不信任憑證拒絕、慢速標頭總期限、stale socket不隱式重連實際執行。
 - tools＋Windows packaging：161 passed／5 skipped；Mac歷史核心回歸33 passed；Windows platform JS 3 passed。這些不是Windows原生訂閱或發布證據。
 - Worker＋研究回歸39 passed（正式Worker16、重播16、原型7）；凍結0.9.4 baseline，避免整合後比較到自己。
 - 真Cocoa probe通過65張六頁／狀態／五步／Windows卡深淺×1200／480矩陣、native clipboard／NSSavePanel取消及儲存／CSV／關窗Key清除與服務保留。抽查窄版容量卡及寬版overview可讀。
 - 文件覆蓋、branding、版本一致、diff檢查通過。本機`lint_terms --require`因沒有BANNED_TERMS／.banned-terms以exit1拒絕；不要求owner貼secret，首輪repo CI已帶secret執行通過；最終head仍須全CI通過才合併。
+
+CI負面結果：441f635的Windows兩條回歸均在stop active read案例失敗（1秒後讀取執行緒仍活著），因此沒有合併／部署。不能將Mac的socket shutdown喚醒行為推及Windows。修正為連線建立後nonblocking HTTP讀寫，每≤50ms檢查停止與總deadline，HTTPResponse持有的Connection:close reader仍安全延後釋放；取消測試刻意令shutdown無效，並同時驗證header等待與close-response body等待。新增後共有16項transport案例；最終CI與完整回歸結果另補，不靠放寬1秒門檻繞過。
+
+取消範圍：上述測試驗已建立連線的HTTP讀寫；尚在DNS／TLS建立或系統代理urllib中的等待仍依既有網路timeout，不聲稱所有平台／所有網路狀態均能50ms退出。模型開始後的未知結果仍不重送。
 
 ## 更新前正式基準
 
