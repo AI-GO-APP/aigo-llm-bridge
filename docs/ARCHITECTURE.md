@@ -101,4 +101,4 @@ Mac 發布由 `packaging/macos/build.py` 以 tracked 公開來源 allowlist 建�
 
 0.9.7-mac.1 的 Request Budget 以 contextvars 綁定當前 request 的 monotonic deadline／cancel／timings，跨 schema、provider 與輸出驗證傳遞，離開 scope 即清除。Runtime 用可移除 deque＋Condition＋lazy worker threads，monitor 每 50 ms 檢查 queued 期限／撤 Key／本機斷線；只喚醒需要的 worker，避免滿載喚醒風暴。每筆仍有獨立 CLI，不建立常駐池。容量改動僅 paused＋idle，設定與 live limits 原子更新。[具體門檻](PERFORMANCE-PLAN.md)。
 
-Runtime 擁有 StatusReads 與 LaunchPacer：前者僅合併時間重疊的唯讀登入查詢，完成即移除；後者以 40 ms 間距緩和冷 CLI 啟動，兩者等待均計入既有預算。啟動前重新核對 auth generation。DecisionSpec 的內部 generated_schema 標記只由程式生成固定結構；Claude 使用原生 structured_output，再獨立執行 typed validator；Codex 沿用 stdin outputSchema。外部 schema 不設該標記。[D-36–38](DECISIONS.md)。
+Runtime 擁有 StatusReads 與 LaunchPacer：前者僅合併時間重疊的唯讀登入查詢，完成即移除；後者以 20 ms 間距緩和冷 CLI 啟動，兩者等待均計入既有預算。啟動前重新核對 auth generation。DecisionSpec 的內部 generated_schema 標記只由程式生成固定結構；Claude 使用原生 structured_output，再獨立執行 typed validator；Codex 沿用 stdin outputSchema。外部 schema 不設該標記。[D-36–38](DECISIONS.md)。

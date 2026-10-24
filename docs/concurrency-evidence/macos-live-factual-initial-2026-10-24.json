@@ -181,7 +181,8 @@
         "cost_usd": 0.149091,
         "prompt_tokens": 41776,
         "completion_tokens": 21463,
-        "errors": {}
+        "errors": {},
+        "known_billed_cost_usd": 0.149091
       },
       {
         "round": 2,
@@ -207,7 +208,8 @@
         "completion_tokens": 20909,
         "errors": {
           "invalid_structured_output": 1
-        }
+        },
+        "known_billed_cost_usd": 0.148161
       },
       {
         "round": 3,
@@ -230,7 +232,8 @@
         "cost_usd": 0.162975,
         "prompt_tokens": 41770,
         "completion_tokens": 24241,
-        "errors": {}
+        "errors": {},
+        "known_billed_cost_usd": 0.162975
       }
     ],
     "workload": "factual",
@@ -304,5 +307,6 @@
     "chat_p95_s": -24.35,
     "good_rpm": 3.45,
     "within_38s": 0.0
-  }
+  },
+  "billing_note": "Known-billed costs recovered from allowlisted receipts, including the one 502; original response-only cost_usd fields retained as collected."
 }

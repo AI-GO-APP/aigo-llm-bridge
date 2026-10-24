@@ -126,7 +126,7 @@ class StatusReads:
 
 class LaunchPacer:
     """Bound cold CLI startup bursts, without keeping a CLI alive between calls."""
-    def __init__(self,interval=.04):
+    def __init__(self,interval=.02):
         self.interval=interval
         self.lock=threading.Lock()
         self.next_start=0.
@@ -302,6 +302,9 @@ def call_claude(spec,settings,cancel,cwd):
         # Only repo-generated shapes/counts may enter argv. Caller schemas,
         # state, labels and instructions continue to travel exclusively in stdin.
         command += ['--json-schema',json.dumps(spec.schema,separators=(',',':'))]
+        # Native structured output can need a terminal schema turn. This remains
+        # one bounded CLI invocation; no caller tool or Bridge inference retry.
+        command[command.index('--max-turns')+1]='2'
     if spec.effort: command += ["--effort",spec.effort]
     parts=spec.messages[-1]["parts"]
     instructions={"instructions":spec.system,"response_schema":spec.schema}

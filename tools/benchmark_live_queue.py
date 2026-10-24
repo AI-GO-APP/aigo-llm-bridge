@@ -122,6 +122,7 @@ def main():
               'version': manifest['version'], 'source_commit': manifest['source_commit'],
               'model': model, 'workers': 64, 'requests_per_round': 64,
               'synthetic_content_only': True, 'automatic_retries': 0, 'rounds': rows, 'workload': args.workload,
+              'started_at_unix': time.time(),
               'runtime_sha256': {str(p.relative_to(manifest['app'])): hashlib.sha256(p.read_bytes()).hexdigest()
                                  for p in sorted((Path(manifest['app']) / 'desktop_bridge').glob('*.py'))}}
     try:
@@ -159,9 +160,9 @@ def main():
                     valid = valid_answer(value, decisions)
                 return {'kind': 'decisions' if decisions else 'chat', 'seconds': elapsed, 'valid': bool(valid),
                         'status': code, 'error_type': value.get('error', {}).get('metadata', {}).get('error_type'),
-                        'cost': cost if valid_cost else 0,
-                        'prompt_tokens': value.get('usage', {}).get('prompt_tokens', value.get('usage', {}).get('input_tokens', 0)),
-                        'completion_tokens': value.get('usage', {}).get('completion_tokens', value.get('usage', {}).get('output_tokens', 0)),
+                        'cost': billing.get('cost') if type(billing.get('cost')) in (int, float) else 0,
+                        'prompt_tokens': billing.get('prompt_tokens', 0),
+                        'completion_tokens': billing.get('completion_tokens', 0),
                         'receipt_valid': receipt_code == 200 and billing_status.get('complete') is True}
             began = time.monotonic()
             with ThreadPoolExecutor(max_workers=64) as clients:
@@ -195,6 +196,7 @@ def main():
         if resources is not None:
             report['resources'] = resources.finish()
         store.revoke(key_id)
+        report['finished_at_unix'] = time.time()
         report['temporary_key_revoked'] = store.authenticate(key) is None
         store.close()
         args.output.write_text(json.dumps(report, indent=2) + '\n')

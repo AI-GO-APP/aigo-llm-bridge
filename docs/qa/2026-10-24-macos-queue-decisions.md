@@ -107,3 +107,7 @@ Mac 與 Windows source CI 均通過後，Windows installer 的既有 OSV 閘門�
 D-36 已使 factual Decisions p95 中位數 17.0286→12.5876 s（-26.08%），Chat 9.1072→6.8898 s（-24.35%），good RPM 215.565→222.993（+3.45%）。但一筆模型格式錯誤回 502，且程序樹 RSS 9,268,592→12,225,440 KiB（+31.90%，超過 +25%），故仍未放行。不得用延遲改善掩蓋正確性／記憶體門檻。
 
 D-37 限定自有 Decisions 使用 Claude CLI 原生固定結構輸出，依 [官方 structured output](https://code.claude.com/docs/en/headless#Get-structured-output) 與本機 CLI help 核對，單筆真訂閱成功，7.862 s；未列入正式三輪。D-38 以 40 ms 冷啟動間距緩和瞬間程序負載；保持既有 64/64、固定期限與不重試。新增 canary 回歸證明 caller state／instructions／criteria 名稱／外部 schema 不進 argv、原生 structured_output 必須存在；取消／期限／generation 在等候後仍核對。兩項修補後必須重驗，未先宣稱通過。
+
+943b789 的原生結構＋40 ms 首版三輪為 47／49／50 正確，CLI provider_error 17／15／14；不是放行證據。[metadata](../concurrency-evidence/macos-live-native40-2026-10-24.json)。RSS 降至 5,536,960 KiB，但 Chat p95 約 11 秒，未通過速度／正確性。調為原生結構 CLI turn 上限 2，容納其結構終結步驟；每題仍僅一次 Bridge CLI 呼叫，無本機工具或 Bridge 重送，usage／cost 依 CLI 合計。另將啟動間距改為 20 ms，須重新核實。單筆協定 probe 的 CLI result 可回 num_turns=2，metadata 未含原文；不把 CLI turn 計數冒稱實際供應商 RPC 次數。
+
+完整本機回歸於 943b789 為 403 passed／23 skipped；後續 native turn／pacer 參數的針對性回歸 22 passed。格式缺失可拒絕，但已核對的模型用量／成本須先保存；另有回歸確認 502 的 calls_started=calls_completed=1、billing_complete=1、cost>0。benchmark 成本改從 receipt 加總，包含已知成本的失敗，不把失敗當作零費用。

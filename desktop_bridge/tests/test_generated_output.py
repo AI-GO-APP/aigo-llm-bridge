@@ -34,6 +34,7 @@ def test_only_fixed_structure_and_count_enter_claude_argv(monkeypatch,tmp_path,k
     assert answer(text,question,spec.schema)['type']==kind
     command=captured['command'];schema=json.loads(command[command.index('--json-schema')+1])
     assert schema==spec.schema and 'private-' not in ' '.join(command)
+    assert command[command.index('--max-turns')+1]=='2'
     assert 'private-state' in captured['payload'] and 'private-instruction' in captured['payload']
     assert '--no-session-persistence' in command and '--tools' in command and '--restricted' in command
 
