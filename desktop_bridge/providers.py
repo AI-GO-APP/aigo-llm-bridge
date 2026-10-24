@@ -372,68 +372,25 @@ def codex_command(settings):
     return command
 
 
-def call_codex(spec,settings,cancel,cwd):
+def call_codex(spec,settings,cancel,cwd,*,session=None):
     with timed('provider_setup_ms'):
         ready=inference_status('codex',settings,cancel,cwd)['ready']
     check()
     if not ready:
         raise BridgeError(503,"provider_authentication","Codex 尚未使用 ChatGPT 訂閱登入。")
-    with timed('cli_spawn_ms'):
-        child=Child(codex_command(settings),cwd,environment())
-    messages=queue.Queue(maxsize=4096); overflow=threading.Event()
-    def reader():
-        try:
-            for line in child.proc.stdout:
-                if len(line)>4_000_000: overflow.set(); break
-                try: message=json.loads(line)
-                except ValueError: continue
-                try: messages.put_nowait(message)
-                except queue.Full: overflow.set(); break
-        except (OSError,ValueError): pass  # Own pipes may close during cancellation.
-        finally:
-            try: messages.put_nowait({"_eof":True})
-            except queue.Full: pass
-    def drain():
-        try:
-            while child.proc.stderr.read(65536): pass
-        except (OSError,ValueError): pass
-    threading.Thread(target=reader,daemon=True).start()
-    threading.Thread(target=drain,daemon=True).start()
+    from .codex_session import CodexSession
     deadline=time.monotonic()+settings.get("timeout_s")
-    next_id=0
+    if session is None:
+        session=CodexSession(codex_command(settings),cwd,environment(),cancel,
+                             max(.001,deadline-time.monotonic()))
     def send(method,params=None,notification=False):
-        nonlocal next_id
-        next_id+=1
-        message={"method":method,"params":params or {}}
-        if not notification: message["id"]=next_id
-        child.write((json.dumps(message)+"\n").encode(),cancel,max(.001,deadline-time.monotonic()))
-        return next_id
-    def receive():
-        while True:
-            check_cancel(cancel,deadline)
-            if overflow.is_set(): raise BridgeError(502,"output_too_large","CLI 事件佇列超過上限。")
-            try:
-                value=messages.get(timeout=.1)
-            except queue.Empty: continue
-            if value.get("_eof"): raise BridgeError(502,"provider_error","Codex 提前結束。")
-            # No public request may drive a local tool or approval flow.
-            if "method" in value and "id" in value:
-                raise BridgeError(502,"tool_execution_blocked","此服務未開放本機工具或權限問答。")
-            if value.get("method")=="item/started":
-                kind=value.get("params",{}).get("item",{}).get("type")
-                if kind not in {"userMessage","agentMessage","reasoning","plan"}:
-                    raise BridgeError(502,"tool_execution_blocked","此服務未開放本機工具。")
-            return value
-    def response(rid):
-        while True:
-            m=receive()
-            if m.get("id")==rid:
-                if "error" in m: raise classify(str(m["error"].get("message","")))
-                return m.get("result",{})
+        return session.send(method,params or {},cancel,deadline,notification=notification)
+    def receive():return session.receive(cancel,deadline)
+    def response(rid):return session.response(rid,cancel,deadline)
     try:
-        with timed('cli_ready_ms'):
-            response(send("initialize",{"clientInfo":{"name":"aigo_llm_bridge","version":"0.2.0"},"capabilities":{"experimentalApi":True}}))
-            send("initialized",notification=True)
+        if session.generation is not None and session.generation!=auth_generation('codex',settings):
+            raise BridgeError(503,'provider_authentication','待命 CLI 的登入或設定世代已變更。')
+        session.claim(cwd)
         start=response(send("thread/start",{"cwd":cwd,"ephemeral":True,"model":spec.model["native"],
             "approvalPolicy":"never","sandbox":"read-only",
             "baseInstructions":"You are an LLM inference assistant. Never use tools, access files, execute commands, or create sessions.\n"+spec.system,
@@ -468,6 +425,8 @@ def call_codex(spec,settings,cancel,cwd):
         chunks=[]; size=0; usage={}; final=None
         while True:
             m=receive(); method=m.get("method"); p=m.get("params",{})
+            if p.get('threadId') is not None and p['threadId']!=tid:
+                raise BridgeError(502,'session_isolation','CLI 事件不屬於本次 thread。')
             if m.get("id")==rid and "error" in m: raise classify(str(m["error"].get("message","")))
             if method=="item/agentMessage/delta":
                 delta=p.get("delta",""); size+=len(delta)
@@ -485,7 +444,7 @@ def call_codex(spec,settings,cancel,cwd):
     finally:
         if 'inference_started' in locals() and (budget:=current()):
             budget.timings['inference_ms']=budget.timings.get('inference_ms',0)+time.monotonic()-inference_started
-        child.close()
+        session.close()
 
 
 def infer(spec,settings,cancel):

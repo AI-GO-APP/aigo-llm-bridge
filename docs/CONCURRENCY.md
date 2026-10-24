@@ -45,3 +45,7 @@ Mac 0.9.4-mac.1 整合與基本流程驗收另見 [Mac 併發交付](qa/2026-10-
 ## 0.9.7-mac.1 內部排隊候選
 
 原安裝更新後可用 `mac_service.py workers --count 32 --pending 64` 選擇 32 執行／64 總受理。先驗兩值，再 pause/drain/stop，原子儲存並保留原 accepting 狀態啟動。省略 pending 保留既有值，若增加 workers 則一併提高不足的相容容量；舊 profile 不被更新自動加大。新預設先維持 64/64，不能以 Windows 歷史數字推定 Mac 應採 32。[量測與回復](PERFORMANCE-PLAN.md)。
+
+## #39 常駐數量與併發上限
+
+owner 要求成功後後台可手動設定常駐數量及執行併發；常駐預設零、零即關閉，整數範圍 `0 ≤ 常駐總數 ≤ inference_workers ≤ inference_pending ≤ 64`。兩 provider 的常駐合計共用配額，active／warm／refill／closing 共用同一程序預算，滿載時不額外補池。變更須 pause、清理待命及 drain 後原子套用。現階段僅 RAM 試驗提供 resident／concurrency，沒有正式管理 UI／API／設定；[開放門檻](WARM-CLI-PLAN.md)通過後才整合。

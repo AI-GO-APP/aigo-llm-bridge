@@ -54,3 +54,5 @@ Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [最新 Mac 
 Mac 0.9.4-mac.1 整合與基本流程驗收另見 [Mac 併發交付](qa/2026-10-23-macos-concurrency.md)；Claude 真實 64 併發須以該收據的實際結果為準。
 
 Mac #36 階段 0–2 的排隊、期限、固定 Decisions 驗證與量化門檻見 [效能計畫](PERFORMANCE-PLAN.md)，候選／正式狀態分層見 [本輪 QA](qa/2026-10-24-macos-queue-decisions.md)；warm CLI 另列 #39。
+
+#39 已開始單次使用 warm CLI 試作，仍預設關閉；常駐零關閉／不得超過執行併發及後台開放條件見 [原型計畫](WARM-CLI-PLAN.md)，已驗與未驗見 [Mac 原型收據](qa/2026-10-24-macos-warm-cli-pilot.md)。

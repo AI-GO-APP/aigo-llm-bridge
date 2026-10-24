@@ -13,10 +13,12 @@ ROOT = Path(__file__).resolve().parents[2]
 PUBLIC_ROOTS = ('desktop_bridge/', 'cloudflare/src/', 'skills/byo-cloudflare/', 'docs/')
 PUBLIC_FILES = {'VERSION', 'LICENSE', 'AGENTS.md', 'CLAUDE.md', 'README.md', 'README-LEGACY.md',
                 'CONTEXT.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'tools/install.py',
-                'tools/byo_setup.py', 'tools/mac_service.py', 'tools/mac_key_handoff.py'}
+                'tools/byo_setup.py', 'tools/mac_service.py', 'tools/mac_key_handoff.py',
+                'tools/benchmark_api_latency.py', 'tools/benchmark_warm_cli.py', 'tools/warm_cli_pool.py'}
 REQUIRED = {'tools/install.py', 'desktop_bridge/__main__.py', 'desktop_bridge/macos_instance.py',
             'desktop_bridge/macos_console.py', 'desktop_bridge/requirements-macos.txt',
-            'cloudflare/src/worker.js', 'docs/MACOS-SETUP.md', 'docs/AI-AGENT-SETUP.md'}
+            'cloudflare/src/worker.js', 'docs/MACOS-SETUP.md', 'docs/AI-AGENT-SETUP.md',
+            'tools/benchmark_api_latency.py', 'tools/benchmark_warm_cli.py', 'tools/warm_cli_pool.py'}
 PREFIX = 'aigo-llm-bridge/'
 INSTALL = '''#!/bin/sh
 set -eu

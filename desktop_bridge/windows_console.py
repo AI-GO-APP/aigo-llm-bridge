@@ -71,17 +71,29 @@ def clipboard_text(text):
     kernel.GlobalLock.argtypes=[wintypes.HGLOBAL];kernel.GlobalLock.restype=ctypes.c_void_p
     kernel.GlobalUnlock.argtypes=[wintypes.HGLOBAL]
     kernel.GlobalFree.argtypes=[wintypes.HGLOBAL]
+    user.CreateWindowExW.argtypes=[wintypes.DWORD,wintypes.LPCWSTR,wintypes.LPCWSTR,wintypes.DWORD,
+        ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,wintypes.HWND,wintypes.HMENU,
+        wintypes.HINSTANCE,ctypes.c_void_p]
+    user.CreateWindowExW.restype=wintypes.HWND
+    user.DestroyWindow.argtypes=[wintypes.HWND]
+    user.OpenClipboard.argtypes=[wintypes.HWND]
     user.SetClipboardData.argtypes=[wintypes.UINT,wintypes.HANDLE];user.SetClipboardData.restype=wintypes.HANDLE
     raw=(text+'\0').encode('utf-16-le')
-    memory=kernel.GlobalAlloc(2,len(raw))
-    if not memory:raise OSError('Clipboard memory unavailable.')
+    # EmptyClipboard after OpenClipboard(NULL) leaves a NULL owner and makes
+    # SetClipboardData fail. A message-only window belongs to this calling
+    # thread, without borrowing another app's foreground window or UI input.
+    window=user.CreateWindowExW(0,'STATIC','',0,0,0,0,0,wintypes.HWND(-3),None,None,None)
+    if not window:raise OSError('Clipboard owner unavailable.')
+    memory=None
     transferred=False
     try:
+        memory=kernel.GlobalAlloc(2,len(raw))
+        if not memory:raise OSError('Clipboard memory unavailable.')
         pointer=kernel.GlobalLock(memory)
         if not pointer:raise OSError('Clipboard memory unavailable.')
         ctypes.memmove(pointer,raw,len(raw));kernel.GlobalUnlock(memory)
         for _ in range(20):
-            if user.OpenClipboard(None):break
+            if user.OpenClipboard(window):break
             time.sleep(.025)
         else:raise OSError('Clipboard is busy.')
         try:
@@ -89,7 +101,8 @@ def clipboard_text(text):
             transferred=True
         finally:user.CloseClipboard()
     finally:
-        if not transferred:kernel.GlobalFree(memory)
+        if memory and not transferred:kernel.GlobalFree(memory)
+        user.DestroyWindow(window)
 
 
 class NativeApi:

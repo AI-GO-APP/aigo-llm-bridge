@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+## [0.9.8-mac.1] - 2026-10-24
+
+- Mac source 整合預設關閉的實驗工具：Codex 單次使用有界 stdio transport、獨立 initialize-only warm pool 與 Mac opt-in 合成實驗工具；正式 Runtime 不建立池。
+- 納入常駐零關閉、常駐不得大於併發上限的 RAM 規則與後台契約；完整真實隔離／吞吐／資源門檻通過後才開放管理 UI。詳見 docs/WARM-CLI-PLAN.md。
+- 修正 Windows 原生剪貼簿使用 NULL owner 導致寫入失敗；改為本程序 message-only window，保留實際複製／讀回驗收。不發布 Windows 安裝包或改更新政策。
+- 新增 opt-in 公開 HTTPS 小量 Chat／Decisions 延遲工具，核對模型、用量、receipt 與原 Key／設定保留，原始內容不落磁碟。
+
 ## [0.9.7-mac.1] - 2026-10-24
 
 - Mac source 交付 #36 階段 0–2：固定受理期限、可移除 FIFO、排隊取消／撤 Key／逾時及時釋放，新增受理總數與執行數的獨立設定及 health metadata。

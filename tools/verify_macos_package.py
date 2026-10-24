@@ -32,6 +32,10 @@ def verify(package):
         receipt=json.loads((source/'source-release.json').read_text())
         assert manifest['source_commit']==receipt['commit'] and manifest['version']==receipt['version']
         assert Path(manifest['app'],'desktop_bridge/macos_instance.py').is_file()
+        for name in ('benchmark_api_latency.py','benchmark_warm_cli.py'):
+            result=subprocess.run([manifest['python'],str(Path(manifest['app'])/'tools'/name),'--help'],
+                                  capture_output=True,timeout=15)
+            assert result.returncode==0
         # Source-install.json is the stable launcher path; use the real installed runtime.
         wrapper='''
 from desktop_bridge import __main__ as app

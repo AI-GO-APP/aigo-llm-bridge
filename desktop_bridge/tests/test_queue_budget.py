@@ -75,7 +75,12 @@ def test_terminal_queued_jobs_release_prompt_and_capacity_while_first_still_runs
     try:
         first=rt.submit(CHAT,other,20);assert started.wait(1)
         request_id=str(uuid.uuid4())
-        task=rt.submit(CHAT,caller,20,request_id,deadline=time.time()+.15 if cause=='deadline' else None)
+        task=rt.submit(CHAT,caller,20,request_id)
+        # This test exercises a queued expiry. A tiny admission deadline may
+        # expire during validation on a loaded runner, where queue_wait is
+        # correctly unobserved/null. Expire only after verifying queue entry.
+        assert task.phase=='queued'
+        if cause=='deadline':task.budget.until=time.monotonic()
         if cause=='revoke':store.revoke(kid)
         if cause=='cancel':task.cancel.set()
         assert task.done.wait(.9)
