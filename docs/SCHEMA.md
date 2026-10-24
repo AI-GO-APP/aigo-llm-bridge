@@ -172,3 +172,5 @@ calls_started 在進入每題 provider 準備前記錄一次推論 CLI 執行嘗
 0.9.13／D-46只新增RAM Relay session狀態：≤72在途ID、≤4096有效期限內去重ID、1／8／72有界連線與固定數字計數；停止丟棄，無DB migration／新設定／歷史內容。`relay_transport`是health metadata，不是requests表欄位或billing receipt；不記錄任何原始request／response／憑證。
 
 0.9.14／D-47不做DB migration。RAM新增result_delivery_retries、idle_discarded、固定enum／numeric last_failure；同一已計算result只保留至最多兩次交付或原deadline＋2秒，不持久化原始內容。所有既有裝置設定／Key rows與provider context保留。
+
+0.9.15不做DB／登入檔案遷移；只新增RAM冷Claude metadata重新驗證的兩種固定數字計數。stat仍不讀取credential內容，沒有保存原生status stdout／stderr。推論及成本原契約維持；已失敗的歷史收據不回填零或覆寫。

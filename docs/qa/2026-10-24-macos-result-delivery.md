@@ -1,6 +1,6 @@
 # Mac 0.9.14：已計算結果交付
 
-2026-10-24，R-27／D-47，refs #39／#46。候選0.9.14尚未合併、發布或正式安裝。原機目前已回復0.9.12-mac.1、Worker0.9.5-relay，4＋4／64／64保留；0.9.13驗收失敗的[完整收據](2026-10-24-macos-relay-batch-release.md)及immutable附件保留，不重新送出失敗推論。
+2026-10-24，R-27／D-47，refs #39／#46。0.9.14已合併／發布／從公開ZIP更新，但正式後測20筆18有效，2筆Claude推論前預檢503；全部20筆結果皆交付，傳輸錯誤與結果補送均0。停止後續升階、撤銷測試Key並回復原機0.9.12-mac.1。後續[0.9.15冷Claude預檢修正](2026-10-24-macos-auth-preflight.md)另記。Worker0.9.5-relay及4＋4／64／64保留，沒有重送失敗推論。
 
 ## 問題與修正
 
@@ -22,3 +22,11 @@
 - 原機先正常停止，以只允許專用Key＋UUID的metadata-only loopback fixture暫代agent；其他請求回503 maintenance，沒有啟動Runtime／CLI。真原Worker先接受同ID result，外部已得到200 fixture；受控丟棄該ACK後補送一次，新TLS連線回accepted:false。local fixture1次、result2次、同work ID、外部body正確，DB requests列數不變，0推論；retries1／forward_errors0／not_pending1。這是結果去重／ACK遺失證據，不是模型或模型目錄能力證據。臨時Key撤銷，原服務／設定恢復。
 
 原機回復0.9.12時，首次立即健康探測早於API啟動而ConnectionRefused；隨後正常start／readiness確認版號、4＋4／64／64，不以rollback命令exit0當正式恢復證據。CI／Release與正式真LLM後測仍待逐項補證。
+
+## 0.9.14實際交付及正式失敗收據
+
+[PR58](https://github.com/AI-GO-APP/local-token-buffet-bridge/pull/58) head4df32e2的5條CI全綠；來源00390bfd82660a9ce0ddfd9a937fece2a1585c2f。[發布run40097195424](https://github.com/AI-GO-APP/local-token-buffet-bridge/actions/runs/40097195424)成功，匿名四附件／ZIP真安裝／原profile更新與八檔hash保留通過。ZIP SHA256=d645493822e18988adb151e5eb2eb46125feadc15643f184675ab83dcf257f59；不再部署Worker。
+
+4筆serial全有效：Codex500 Chat506/6、6.5483秒；CodexDec2787/39（cached2048）、8.4711秒；Claude500 Chat1059/103、6.2991秒；ClaudeDec1547/358、5.1472秒。第一輪16為14/16，p50=6.9945／p95=10.0236秒，受理span2.9104秒。兩筆Claude503的provider_setup為230／229ms，cli_spawn／inference均null、total236／238ms；API billing仍unknown（calls_started1/completed0），不回填零。其餘18筆完整計量／語意／profile／model／DB成本一致；已知input23429/output2223、USD0.0385174牌價等值，另2筆unknown，不當全部成本。
+
+result transport20/20、local20/20、forward_errors0／protocol_errors0／result_delivery_retries0，傳輸失敗未重現。peak RSS2,365,008 KiB、descendants22／fd2300／running13、health p95=0.002秒。第二／三輪16及64未執行。臨時2 Key撤銷、原70 rows／所有設定／profile保留，active owner keys3。

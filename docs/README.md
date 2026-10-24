@@ -1,5 +1,7 @@
 # 產品文件入口
 
+0.9.15冷Claude預檢重新驗證及最新交付狀態見 [本輪QA](qa/2026-10-24-macos-auth-preflight.md)；0.9.13／14的失敗均保留，尚未通過完整負載時不宣稱已放行。
+
 0.9.13正式後測抓到結果交付失敗，原機已回復0.9.12；D-47／0.9.14修正與當前交付狀態見 [結果交付QA](qa/2026-10-24-macos-result-delivery.md)。
 
 Mac0.9.13連線重用／batch8實作與交付狀態見 [本輪QA](qa/2026-10-24-macos-relay-batch-release.md)；Decisions StructuredOutput與4＋4／64／64保持原樣。

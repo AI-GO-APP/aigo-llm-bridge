@@ -122,3 +122,5 @@ CodexSession.profile 與 Entry.profile 對應 startup model manager；不靠 thr
 R-26／D-46：`relay_transport.py` 管理同 origin 的直連 keep-alive（certifi、拒絕 redirect、失敗不重送）。poll／result／loopback 分別限制1／8／72連線；系統代理走原urllib，無重用承諾。`relay.py` 每poll要求 min(8,72−inflight) 筆，收到完整受限 envelope 並驗證整批後才提交，inflight包含executor等待直到result完成／失敗；session停止關閉自有socket與取消待送工作。Worker依FIFO在序列化成功後標記已派送，新session不重播已派送工作。模型／容量／常駐／計量路徑保持原契約。[實機證據與限制](qa/2026-10-24-macos-relay-batch-release.md)。
 
 D-47補充：HTTP exchange本身仍單次送出；有效idle TTL改為10秒，先檢查可讀／EOF並在任何新payload送出前丟棄。僅Relay.forward的已計算result階段可在暫時失敗後，以同一work ID／body／cost headers、新連線補送一次；local.exchange與CLI完全不再呼叫。Worker原子移除pending後resolve caller，重複result回accepted:false，不另排工作。缺失ACK保持未確認，不把timeout當免費。[證據](qa/2026-10-24-macos-result-delivery.md)。
+
+D-48在StatusReads之外的冷Claude推論預檢，僅對尚未spawn推論Child的負值／讀取中GenerationChanged做一次fresh metadata revalidation；不是TTL快取或模型重送。新世代重新走原重疊查詢與認證，任何pacer後變動仍fail closed，Codex warm不沿用新狀態續用舊session。CLI輸入／system／flags／schema與D-47結果交付路徑不變。
