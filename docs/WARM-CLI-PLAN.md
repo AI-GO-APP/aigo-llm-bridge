@@ -6,7 +6,7 @@
 
 owner 補充：成功後後台須讓使用者依機器能力手動設定常駐數量與併發上限，常駐設為零即關閉。
 
-- `0 ≤ 常駐總數 ≤ 執行併發上限 ≤ 受理總數 ≤ 64`，各值為整數，不能接受 bool。併發上限是 inference_workers，不是較大的 inference_pending。
+- `0 ≤ 常駐總數 ≤ 執行併發上限 ≤ 受理總數 ≤ 64`，各值為整數，執行併發至少 1，不能接受 bool。併發上限是 inference_workers，不是較大的 inference_pending。
 - Claude、Codex 的常駐配額合計不得超過常駐總數；不能讓兩 provider 各自取得整份裝置配額。模型、Key 及 system instructions 不參與預熱；同一程序只屬於一筆推論，多題 Decisions 每題用新程序。
 - active、warm、refill、closing 共同占用同一份程序名額。滿載時優先處理已受理請求，不另外補滿常駐；沒有 warm 時可在空餘名額 cold 啟動。已可能開始推論後不補送。
 - 兩值必須原子驗證／套用，先 pause、停止補池、清理待命並 drain，再變更。降低上限不得暫時超額；常駐改為零後清空所有待命程序，保留一般 cold 執行。未通過能力／效能驗收的 provider 不提供啟用控制；預設零。

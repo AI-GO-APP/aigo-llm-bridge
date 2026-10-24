@@ -49,6 +49,7 @@ class SingleUsePool:
         self.backoff = backoff
         self.condition = threading.Condition(threading.RLock())
         self.entries = set()
+        self.waiting_leases = 0
         self.paused = False
         self.stop_event = threading.Event()
         self.created = self.hits = self.cold = self.failures = self.peak = 0
@@ -61,7 +62,8 @@ class SingleUsePool:
                     for state in ('starting', 'idle', 'active', 'closing', 'quarantined')} | {
                 'total': len(self.entries), 'limit': self.limit, 'peak': self.peak,
                 'created': self.created, 'warm_hits': self.hits, 'cold_starts': self.cold,
-                'refill_failures': self.failures, 'paused': self.paused}
+                'refill_failures': self.failures, 'paused': self.paused,
+                'waiting_leases': self.waiting_leases}
 
     def _reserve(self, generation):
         entry = Entry(generation)
@@ -119,7 +121,8 @@ class SingleUsePool:
                     for old in stale:
                         old.state = 'retiring'
                     idle = sum(e.state in {'idle', 'starting'} for e in self.entries)
-                    if not stale and not self.paused and idle < self.target and len(self.entries) < self.limit:
+                    if (not stale and not self.paused and not self.waiting_leases
+                            and idle < self.target and len(self.entries) < self.limit):
                         entry = self._reserve(generation)
                 for old in stale:
                     self._dispose(old)
@@ -146,6 +149,9 @@ class SingleUsePool:
     @contextmanager
     def lease(self, cancel, deadline):
         entry = None
+        waiting = True
+        with self.condition:
+            self.waiting_leases += 1
         try:
             while entry is None:
                 check_cancel(cancel, deadline)
@@ -173,6 +179,9 @@ class SingleUsePool:
                         self.condition.wait(min(.05, max(.001, deadline - time.monotonic())))
                 for old in stale:
                     self._dispose(old)
+            with self.condition:
+                self.waiting_leases -= 1
+                waiting = False
             if entry.resource is None:
                 self._create(entry, cancel, deadline)
                 with self.condition:
@@ -182,6 +191,10 @@ class SingleUsePool:
                 raise BridgeError(503, 'provider_authentication', '待命 CLI 世代已失效。')
             yield entry.resource
         finally:
+            if waiting:
+                with self.condition:
+                    self.waiting_leases -= 1
+                    self.condition.notify_all()
             if entry:
                 self._dispose(entry)
 
@@ -206,7 +219,7 @@ class SingleUsePool:
         if type(target) is not int or type(limit) is not int or not 0 <= target <= limit <= 64 or limit < 1:
             raise ValueError('Require 0 <= resident <= concurrency <= 64 and concurrency >= 1.')
         with self.condition:
-            if not self.paused or self.entries or self.stop_event.is_set():
+            if not self.paused or self.entries or self.waiting_leases or self.stop_event.is_set():
                 raise ValueError('Pause and drain before changing experimental capacity.')
             self.target, self.limit = target, limit
             self.condition.notify_all()
@@ -218,7 +231,7 @@ class SingleUsePool:
             self.condition.notify_all()
         self.thread.join(timeout=max(0, until - time.monotonic()))
         with self.condition:
-            while any(e.state == 'starting' for e in self.entries) and time.monotonic() < until:
+            while (any(e.state == 'starting' for e in self.entries) or self.waiting_leases) and time.monotonic() < until:
                 self.condition.wait(min(.05, max(0, until - time.monotonic())))
         with self.condition:
             entries = [e for e in self.entries if e.state != 'starting']

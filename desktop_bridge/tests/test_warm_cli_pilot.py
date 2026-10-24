@@ -376,3 +376,28 @@ def test_stop_cancels_cold_startup_without_waiting_for_request_deadline():
         began=time.monotonic();pool.close()
         future.result(timeout=1)
         assert time.monotonic()-began<1 and not pool.entries
+
+
+def test_waiting_request_takes_free_capacity_before_background_refill():
+    acquired=threading.Event();release=threading.Event();threads=[]
+    def factory(cancel,deadline):
+        resource=FakeResource(cancel,deadline)
+        resource.factory_thread=threading.current_thread().name
+        return resource
+    pool=SingleUsePool(factory,lambda:'a',target=1,limit=1)
+    def request():
+        with pool.lease(threading.Event(),time.monotonic()+5) as resource:
+            threads.append(resource.factory_thread)
+            acquired.set();assert release.wait(2)
+    try:
+        wait_for(lambda:pool.snapshot()['idle']==1)
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            with pool.lease(threading.Event(),time.monotonic()+5):
+                future=executor.submit(request)
+                wait_for(lambda:pool.snapshot()['waiting_leases']==1)
+            assert acquired.wait(2)
+            assert threads[0]!='warm-cli-pilot'
+            assert pool.snapshot()['peak']==1
+            release.set();future.result(timeout=2)
+    finally:
+        release.set();pool.close()

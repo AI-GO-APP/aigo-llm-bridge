@@ -4,9 +4,13 @@ No owner key or request body is written; the report contains numeric metadata.
 This is a pilot, not the #39 release gate matrix or receipt acceptance.
 """
 import argparse
+import ctypes
+import hashlib
 import json
+import os
 from pathlib import Path
 import sqlite3
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -23,6 +27,43 @@ from desktop_bridge.errors import BridgeError
 from desktop_bridge.execution_budget import Budget, scope
 from desktop_bridge.store import DEFAULTS
 from tools.warm_cli_pool import SingleUsePool
+
+
+class Resources:
+    """Sample this experiment tree only; never collect argv or process content."""
+    def __init__(self):
+        self.pid = os.getpid()
+        self.lib = ctypes.CDLL('/usr/lib/libproc.dylib')
+        self.stop = threading.Event()
+        self.values = {'peak_tree_rss_kib': 0, 'peak_tree_cpu_percent_lifetime_average': 0,
+                       'peak_descendants': 0, 'peak_tree_fds': 0, 'samples': 0, 'sampling_errors': 0}
+        self.thread = threading.Thread(target=self.sample, daemon=True)
+
+    def sample(self):
+        while not self.stop.is_set():
+            try:
+                rows = [r.split() for r in subprocess.check_output(
+                    ['ps', '-axo', 'pid=,ppid=,rss=,%cpu='], text=True, timeout=2).splitlines()]
+                family = {self.pid}
+                for _ in range(8):
+                    family.update(int(r[0]) for r in rows if len(r) == 4 and int(r[1]) in family)
+                owned = [r for r in rows if len(r) == 4 and int(r[0]) in family]
+                for name, value in (
+                    ('peak_tree_rss_kib', sum(int(r[2]) for r in owned)),
+                    ('peak_tree_cpu_percent_lifetime_average', sum(float(r[3]) for r in owned)),
+                    ('peak_descendants', len(owned) - 1),
+                    ('peak_tree_fds', sum(self.lib.proc_pidinfo(int(r[0]), 1, 0, None, 0) // 8 for r in owned))):
+                    self.values[name] = max(self.values[name], value)
+                self.values['samples'] += 1
+            except (OSError, ValueError, subprocess.SubprocessError):
+                self.values['sampling_errors'] += 1
+            self.stop.wait(.1)
+
+    def finish(self):
+        self.stop.set()
+        self.thread.join(timeout=3)
+        return self.values | {'cpu_kind': 'ps lifetime-average sampled maximum; 100% is one logical core',
+                              'includes': 'experiment, all owned descendants, refill and sampler ps process'}
 
 
 class Resource:
@@ -84,7 +125,10 @@ def main():
     report = {'schema': 1, 'experiment': 'single-use Codex initialize-only pilot',
         'installed_version': installed_version, 'production_changed': False, 'release_gates_passed': False,
         'resident': args.resident, 'concurrency': args.concurrency, 'automatic_inference_retries': 0,
-        'raw_content_saved': False, 'rows': [], 'resources': []}
+        'raw_content_saved': False, 'rows': [], 'source_sha256': {
+            str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in (ROOT/'desktop_bridge/providers.py', ROOT/'desktop_bridge/codex_session.py',
+                      ROOT/'tools/warm_cli_pool.py', Path(__file__).resolve())}}
     report['cli_version'] = subprocess.run([providers.executable('codex',settings),'--version'],
         capture_output=True, text=True, timeout=10, env=providers.environment(), check=True).stdout.strip()
     created = []
@@ -96,6 +140,8 @@ def main():
         args.output.write_text(json.dumps(report, indent=2) + '\n')
     pool = None
     experiment_start = time.monotonic()
+    resources = Resources()
+    resources.thread.start()
     try:
         pool = SingleUsePool(factory, lambda: providers.auth_generation('codex', settings),
             target=args.resident, limit=args.concurrency, ttl=600)
@@ -167,6 +213,11 @@ def main():
         report['cleanup_seconds'] = round(time.monotonic() - began, 4)
         report['owned_clis_stopped'] = all(r.session.child.proc.poll() is not None for r in created)
         report['owned_cwds_removed'] = all(not Path(r.cwd).exists() for r in created)
+        report['resources'] = resources.finish()
+        report['single_request_summary'] = {
+            arm: {'requests': len(rows), 'correct': sum(r.get('correct',False) for r in rows),
+                  'median_seconds': statistics.median(r['seconds'] for r in rows) if rows else None}
+            for arm in ('cold','warm') if (rows := [r for r in report['rows'] if r['arm']==arm])}
         save()
     print(json.dumps({key: report[key] for key in ('release_gates_passed', 'cleanup_seconds',
                                                   'owned_clis_stopped', 'owned_cwds_removed')}))
