@@ -38,7 +38,7 @@ Mac 公開 Decisions／模型探索上線及本機／Worker／真實推論證據
 
 ## 維護約定
 
-Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [最新 Mac Release／公開 API 收據](qa/2026-10-24-macos-codex-context.md)（[0.9.7 階段 0–2](qa/2026-10-24-macos-queue-release.md)）（[0.9.3 公開 API](qa/2026-10-23-macos-public-api.md)、[先前 Release](qa/2026-10-23-macos-release.md)、[parity QA](qa/2026-10-23-macos-parity.md) 為歷史證據）分別定義契約與獨立證據，不以 Windows 結果代替。
+Mac source 的 [設定、常駐與來源更新](MACOS-SETUP.md) 及 [最新 Mac Release／公開 API 收據](qa/2026-10-24-macos-cli-token-release.md)（[0.9.7 階段 0–2](qa/2026-10-24-macos-queue-release.md)）（[0.9.3 公開 API](qa/2026-10-23-macos-public-api.md)、[先前 Release](qa/2026-10-23-macos-release.md)、[parity QA](qa/2026-10-23-macos-parity.md) 為歷史證據）分別定義契約與獨立證據，不以 Windows 結果代替。
 
 修改功能時，同一 PR 更新需求／API、資料字典、決策或設計文件中受影響的部分，並在 ACCEPTANCE 指向具體證據。新功能不能只留在聊天。文件的日期是維護日期，不是驗收通過證明。
 
@@ -63,6 +63,8 @@ issue 46 的 Mac Codex 固定輸入調查與 0.9.10-mac.1 goals／技能精簡�
 
 Mac 0.9.10 已發布並更新原 profile，goals／技能精簡的真實 token 對照與剩餘成本見 [收據](qa/2026-10-24-macos-codex-context.md)；延遲小樣本未改善，2/64 設定保留。
 
-Codex namespace／exec 與 Claude CLI、原生 StructuredOutput 多回合的進一步拆解見 [CLI 上下文續測](qa/2026-10-24-macos-cli-context-followup.md)。本輪只測試、未部署候選，正式仍為 0.9.10／2/64。
+Codex namespace／exec 與 Claude CLI、原生 StructuredOutput 多回合的進一步拆解見 [CLI 上下文續測](qa/2026-10-24-macos-cli-context-followup.md)。該收據記錄當時的測試候選；後續兩項已於 0.9.11 部署，最新狀態見下方本輪收據。
 
 Mac 0.9.11 的 namespace／Claude formatter 精簡、發布狀態與持續降低 token 研究見 [本輪收據](qa/2026-10-24-macos-cli-token-release.md)；前版與候選的數據分開記錄。
+
+目前正式 Mac 為 [0.9.11-mac.1](qa/2026-10-24-macos-cli-token-release.md)：namespace／formatter 已上線、原 profile 2/64/64；PR49所記候選後續已採用。schema去重／thinking-off則維持研究狀態，不能將簡單合成題結果當實務品質或SLA。
