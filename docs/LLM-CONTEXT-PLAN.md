@@ -27,7 +27,7 @@ Claude 2.1.306 在 tools／MCP 皆空、替換 system prompt 後，仍加入環�
 ### 研究段：已完成的小量可行性
 
 - credential-free loopback 拆出工具／context；只存 allowlist metadata、長度與 hash，原始 request／response／event／stderr 不落檔。
-- 原生訂閱 Codex 12 次、Claude 4 次，串行、無推論重送；同模型、完整 usage、固定語意及程序清理通過。
+- 原生訂閱 Codex 12 次、Claude 4 次，串行、無 Bridge 推論重送；同模型、完整 usage、固定語意及程序清理通過。
 - Codex 歷史／指令隔離、caller JSON schema、initialize-only 待命後單次領取均有正面小樣本。這不是完整 API／常駐／品質矩陣。
 - 確認 catalog **在 app-server 啟動載入**；只放 thread/start config 時仍留下 CodeMode 工具。不能把此候選直接塞進現有無 profile 的池。
 

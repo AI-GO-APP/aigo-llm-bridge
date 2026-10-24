@@ -6,7 +6,7 @@
 
 ## 原生 CLI 真實用量
 
-直接啟動獨立的已登入訂閱 CLI，每次一程序一題、全程串行、零推論重送。模型為 gpt-6.1-sol／claude-haiku-4-5-20251001；CLI Codex 0.163.0-alpha.11、Claude 2.1.306。不是公開 Bridge receipt、不是正式 pool 效能基準。
+直接啟動獨立的已登入訂閱 CLI，每次一程序一題、全程串行、零 Bridge 推論重送。模型為 gpt-6.1-sol／claude-haiku-4-5-20251001；CLI Codex 0.163.0-alpha.11、Claude 2.1.306。不是公開 Bridge receipt、不是正式 pool 效能基準。
 
 | 模型／固定案例 | caller 估算 | 現行 input → 候選 | output | 秒數現行 → 候選 |
 |---|---:|---:|---:|---:|
@@ -23,7 +23,7 @@ Codex 另驗歷史訊息 71 input／18 output（reasoning 10）、不可信工�
 
 caller-only 另驗不可信工具指令 42 input／6 output、歷史 30／20（reasoning 12），語意簡檢通過，所有 caller 訊息仍送出。system／歷史的訊息邊界有不同 overhead，不能將單一 user 題的差 6 外推到每種請求。
 
-16 次真 CLI 合計 **10,901 input／405 output**；其中 Codex 12 次 7,726／107、Claude 4 次 3,175／298。全部 cache read=0，Claude cache write=0；沒有隱藏重試、失敗刪樣或原生輸出不計費。Codex 兩段 history reasoning 分別為 10／12，其餘均 0；Claude 未提供同型 reasoning 拆帳，不臆填零。Claude output 可能含推理，不能只用答案字數估 usage。單題時間受模型／網路波動，第一段 Codex 短題還略慢，本輪沒有延遲改善或費用比例保證。
+16 次真 CLI 合計 **10,901 input／405 output**；其中 Codex 12 次 7,726／107、Claude 4 次 3,175／298。全部 cache read=0，Claude cache write=0；沒有 Bridge 推論重送或失敗刪樣，原生輸出完整計量。Codex 兩段 history reasoning 分別為 10／12，其餘均 0；Claude 未提供同型 reasoning 拆帳，不臆填零。Claude output 可能含推理，不能只用答案字數估 usage。單題時間受模型／網路波動，第一段 Codex 短題還略慢，本輪沒有延遲改善或費用比例保證。
 
 ## credential-free mock 與根因
 
