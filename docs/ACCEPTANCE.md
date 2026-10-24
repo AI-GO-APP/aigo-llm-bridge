@@ -83,4 +83,4 @@ owner 授權合併／發布 cold transport 與預設關閉的原型工具。交�
 
 Mac 0.9.9 正式 API 的單次 Codex 常駐 operator 試驗／容量卡與後續公開開關對照狀態見 [本輪收據](qa/2026-10-24-macos-runtime-warm-pool.md)。預設零，Claude cold；完整 #39 放行另列，不將 UI／fake CLI 通過冒充真尖峰收益。
 
-Mac 0.9.10-mac.1 的 issue 46 goals／技能精簡候選與受控 Mac payload 證據見 [收據](qa/2026-10-24-macos-codex-context.md)。正式發布、公開 ZIP、原 profile 更新與真實同題 token 對照另在該收據補驗，不由 mock 估算推定完成；完整 issue 39 尖峰門檻仍獨立。
+Mac 0.9.10-mac.1 已合併、公開發布、匿名下載／ZIP 安裝並更新原 profile。issue 46 的 goals／技能精簡令短 Chat／單題 Decisions 真實 input 分別減少 25.57%／24.76%；兩筆小樣本延遲未改善。原 2/64/64、Key、個人 config 保留，11 次 CLI 完整計量、臨時 Key 撤銷；剩餘內建上下文及診斷工具 cache=null 的 SQLite 補證見 [收據](qa/2026-10-24-macos-codex-context.md)。完整 issue 39 門檻仍獨立。
