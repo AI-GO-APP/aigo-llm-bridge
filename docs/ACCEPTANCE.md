@@ -1,5 +1,7 @@
 # 驗收與交付矩陣
 
+Mac後續 [優化研究](qa/2026-10-24-macos-optimization-probes.md)：24次原生Claude語意／格式通過、12次完整stream usage吻合、17次公開health通過、批次原型20項通過。去重候選total未改善，連線重用與batch尚未整合／部署；不把研究當成新版或完整#39放行。
+
 Mac 0.9.12 後續以 owner 指定 **4＋4 常駐／64** 完成112/112真推論（公開96＋直連16）；公開64單波正確性通過，但p95=55.6066秒、38秒內38/64，完整warm速度門檻未過。Runtime外等待與Claude Decisions用量波動的分層證據見 [後續測試](qa/2026-10-24-macos-0912-staged-api.md)。測試Key全撤銷、原設定／Key保留，未重發產品版本。
 
 Mac **0.9.12-mac.1 已合併、公開發布、匿名四附件／ZIP真安裝、原profile更新與同Key公開API驗收通過**。50個core及公開data／license吻合，原58筆Key rows／3把有效Key保留，唯一測試Key已撤銷；純Chat input3129→506，Decisions保留，原2/64/64及乾淨重啟通過。相容範圍、清理腳本負面紀錄與完整數據見 [本輪收據](qa/2026-10-24-macos-chat-minimal-release.md)。

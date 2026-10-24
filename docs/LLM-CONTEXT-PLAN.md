@@ -1,5 +1,7 @@
 # 一般 LLM 接近原生 API token 用量的計畫
 
+後續D-45 [實測](qa/2026-10-24-macos-optimization-probes.md)：owner目前設4＋4常駐／64；下段合計2為0.9.12發布時歷史配置。Claude去掉重複schema文字只降低input，10對total反而多0.64%，本輪不採用；原生partial usage有助區分num_turns與模型message，正式Decisions維持原樣，偶發額外input仍待追蹤。
+
 2026-10-24，Refs #46，D-43研究及D-44實作。**0.9.12-mac.1 已整合、發布並更新原安裝**，常駐合計2／workers64／pending64；實際交付見 [發布收據](qa/2026-10-24-macos-chat-minimal-release.md)。前段數字是0.9.11時的研究基線，本計畫不改Decisions的StructuredOutput、formatter、thinking、schema或typed validator。[原研究](qa/2026-10-24-macos-llm-structural-context.md)保留當時候選狀態；真OpenRouter對照仍待驗。
 
 ## 目標及計量
