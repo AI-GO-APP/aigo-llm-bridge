@@ -19,6 +19,7 @@ class Entry:
     resource: object = None
     ready_at: float = 0
     state: str = 'starting'
+    profile: str = 'standard'
 
 
 class StartupCancel:
@@ -39,13 +40,15 @@ class StartupCancel:
 
 
 class SingleUsePool:
-    def __init__(self, factory, generation, *, target=0, limit=8, ttl=120, backoff=.1, paused=False, refill_allowed=lambda: True):
+    def __init__(self, factory, generation, *, target=0, limit=8, ttl=120, backoff=.1, paused=False, refill_allowed=lambda: True,
+                 profile_factory=None, resident_profiles=lambda: ('standard',)):
         if type(target) is not int or type(limit) is not int or not 0 <= target <= limit <= 64 or limit < 1:
             raise ValueError('Require 0 <= target <= limit <= 64 and limit >= 1.')
         if not 0 < ttl <= 600 or not .01 <= backoff <= 5:
             raise ValueError('Invalid TTL or backoff.')
         self.factory, self.generation = factory, generation
         self.refill_allowed = refill_allowed
+        self.profile_factory, self.resident_profiles = profile_factory, resident_profiles
         self.target, self.limit, self.ttl = target, limit, ttl
         self.backoff = backoff
         self.condition = threading.Condition(threading.RLock())
@@ -64,10 +67,12 @@ class SingleUsePool:
                 'unavailable': self.stop_event.is_set(), 'resident_target': self.target, 'total': len(self.entries), 'limit': self.limit, 'peak': self.peak,
                 'created': self.created, 'warm_hits': self.hits, 'cold_starts': self.cold,
                 'refill_failures': self.failures, 'paused': self.paused,
-                'waiting_leases': self.waiting_leases}
+                'waiting_leases': self.waiting_leases,
+                'idle_profiles': {p: sum(e.state == 'idle' and e.profile == p for e in self.entries)
+                                  for p in sorted({e.profile for e in self.entries})}}
 
-    def _reserve(self, generation):
-        entry = Entry(generation)
+    def _reserve(self, generation, profile='standard'):
+        entry = Entry(generation, profile=profile)
         self.entries.add(entry)
         self.peak = max(self.peak, len(self.entries))
         return entry
@@ -93,8 +98,11 @@ class SingleUsePool:
 
     def _create(self, entry, cancel, deadline):
         try:
-            entry.resource = self.factory(StartupCancel(cancel, self.stop_event),
-                                          min(deadline, time.monotonic() + 3))
+            args = (StartupCancel(cancel, self.stop_event), min(deadline, time.monotonic() + 3))
+            entry.resource = (self.profile_factory(*args, entry.profile) if self.profile_factory
+                              else self.factory(*args))
+            if prepare := getattr(entry.resource, 'prepare', None):
+                prepare(*args)
             with self.condition:
                 self.created += 1
             if self.stop_event.is_set() or entry.generation != self.generation():
@@ -116,16 +124,28 @@ class SingleUsePool:
                         continue
                 generation = self.generation()
                 allowed = self.refill_allowed()  # Outside pool lock: Runtime owns its admission lock.
+                profiles = tuple(self.resident_profiles())
+                if not profiles or any(p not in {'standard', 'codex-chat-minimal-v1'} for p in profiles):
+                    raise ValueError('Invalid resident profiles.')
                 with self.condition:
+                    desired = [profiles[i % len(profiles)] for i in range(self.target)]
                     stale = [e for e in self.entries if e.state == 'idle' and (
                         self.paused or e.generation != generation or
-                        time.monotonic() - e.ready_at >= self.ttl or not e.resource.healthy())]
+                        e.profile not in profiles or time.monotonic() - e.ready_at >= self.ttl
+                        or not e.resource.healthy())]
+                    # Balance the *total* resident target, never one target per profile.
+                    for profile in profiles:
+                        idle_group = [e for e in self.entries if e.state == 'idle'
+                                      and e.profile == profile and e not in stale]
+                        stale.extend(idle_group[desired.count(profile):])
                     for old in stale:
                         old.state = 'retiring'
                     idle = sum(e.state in {'idle', 'starting'} for e in self.entries)
                     if (allowed and not stale and not self.paused and not self.waiting_leases
                             and idle < self.target and len(self.entries) < self.limit):
-                        entry = self._reserve(generation)
+                        profile = next((p for p in desired if sum(e.state in {'idle', 'starting'}
+                            and e.profile == p for e in self.entries) < desired.count(p)), profiles[0])
+                        entry = self._reserve(generation, profile)
                 for old in stale:
                     self._dispose(old)
                 if entry:
@@ -149,7 +169,9 @@ class SingleUsePool:
                 self.condition.wait(.05)
 
     @contextmanager
-    def lease(self, cancel, deadline, *, cold_only=False, allow_paused=False):
+    def lease(self, cancel, deadline, *, cold_only=False, allow_paused=False, profile='standard'):
+        if profile not in {'standard', 'codex-chat-minimal-v1'} or (profile != 'standard' and not self.profile_factory):
+            raise ValueError('Unsupported CLI profile.')
         entry = None
         waiting = True
         with self.condition:
@@ -165,21 +187,26 @@ class SingleUsePool:
                     for candidate in self.entries:
                         if candidate.state != 'idle':
                             continue
-                        if cold_only and len(self.entries) < self.limit:
-                            break
-                        if (cold_only or candidate.generation != generation or time.monotonic() - candidate.ready_at >= self.ttl
+                        if (candidate.generation != generation or time.monotonic() - candidate.ready_at >= self.ttl
                                 or not candidate.resource.healthy()):
                             candidate.state = 'retiring'
                             stale.append(candidate)
-                            if cold_only:break
+                            continue
+                        if cold_only or candidate.profile != profile:
                             continue
                         entry = candidate
                         entry.state = 'active'
                         entry.resource.warm_hit = True
                         self.hits += 1
                         break
+                    # A mismatched idle root may be retired to free a shared slot.
+                    if entry is None and not stale and len(self.entries) >= self.limit:
+                        mismatch = next((e for e in self.entries if e.state == 'idle'), None)
+                        if mismatch:
+                            mismatch.state = 'retiring'
+                            stale.append(mismatch)
                     if entry is None and not stale and len(self.entries) < self.limit:
-                        entry = self._reserve(generation)
+                        entry = self._reserve(generation, profile)
                         self.cold += 1
                     if entry is None and not stale:
                         self.condition.wait(min(.05, max(.001, deadline - time.monotonic())))

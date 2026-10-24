@@ -135,3 +135,9 @@ Schema aggregate ≤256 KiB／8192 nodes／深度 24，不接受任何 $ref／$d
 ## Codex 輸入上下文（0.9.10-mac.1）
 
 Chat／Decisions 的外部 body、模型、schema 與 receipt 計量不變。Bridge 專用 Codex 子程序停用 goals，並在每題 ephemeral thread 停用唯讀列出的技能，不改個人 CLI 設定；此查詢不是推論，納入 provider_setup_ms。技能清單結構無法確認時回 503 `codex_context_unavailable`，在 thread／turn 前停止；取消、逾時及 provider RPC 錯誤沿用既有分類。warm 仍只省初始化，不攤薄每題上下文。usage.prompt_tokens／input_tokens 包含 CLI 真實回報的全部輸入；剩餘工具／環境上下文尚未消除，cached_tokens 是其中子集，不可再加回總輸入。多題 Decisions 仍逐題、逐程序計量，不能當作單次推論或共享 thread。小樣本延遲與 mock token 估算的限制見 [驗收](qa/2026-10-24-macos-codex-context.md)。
+
+## 純 Chat 執行模式（0.9.12-mac.1）
+
+`receipt.execution` 另含已觀測的 `inference_profile`／`profile_reason`（固定值見 SCHEMA）；舊列省略兩欄，不冒充曾精簡。Mac 已驗 CLI binary／catalog／gpt-6.1-sol 的純文字 Chat 自動選 `codex-chat-minimal-v1`，不增加 caller 參數；其他模型／CLI／平台／外部 schema／tools／images 走 standard 並揭露原因。Decisions 一律 standard，StructuredOutput 與計量保持。`codex_profile_unavailable` 為 503：有效設定、profile 或版本在啟動／領取前無法確認，停止且不重送；不得把失敗當 near-parity 成功。[驗收](qa/2026-10-24-macos-chat-minimal-release.md)。
+
+`warm_pool.idle_profiles` 按固定 profile 名稱提供 idle 數量；常駐合計仍為 resident_target。兩模式可用時交替分配（target=2 各 1、target=1 優先純 Chat），未驗 CLI 只保留 standard。沒有變更 caller 抽樣／輸出控制。兩個 profile 欄位是所選模式與原因，是否開始／完成及 billing 仍看原有獨立收據欄位；不是 OpenRouter 一比一用量保證。

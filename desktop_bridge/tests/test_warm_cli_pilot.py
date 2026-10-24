@@ -446,6 +446,7 @@ def test_runtime_real_infer_path_records_warm_chat_and_each_decision(tmp_path,mo
     from desktop_bridge.store import Store
     monkeypatch.setattr('desktop_bridge.service.sys.platform','darwin')
     monkeypatch.setattr(providers,'inference_status',lambda *_:{'ready':True})
+    monkeypatch.setattr('desktop_bridge.inference_profile.availability',lambda *_:'cli_unverified')
     resources=[]
     def resource(settings,cancel,deadline):
         value=FakeResource(cancel,deadline);resources.append(value);return value
@@ -465,7 +466,8 @@ def test_runtime_real_infer_path_records_warm_chat_and_each_decision(tmp_path,mo
             assert task.error is None, task.error.category if task.error else None
             receipt=rt.receipt(rid,caller)
             expected=1 if protocol=='chat' else 2
-            assert receipt['execution']=={'warm_hits':expected,'cold_starts':0}
+            assert receipt['execution']=={'warm_hits':expected,'cold_starts':0,
+                'inference_profile':'standard','profile_reason':'model_unverified' if protocol == 'chat' else 'request_standard'}
             assert receipt['billing_status']=={'complete':True,'calls_started':expected,'calls_completed':expected}
         assert sum(r.session.sent['turn/start'] for r in resources)==3
         assert all(r.session.sent['turn/start']<=1 for r in resources)

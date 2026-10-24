@@ -102,6 +102,8 @@ startup 不在 settings 表，是 Windows HKCU Run／平台啟動設定；隔離
 | output_validation_ms | INTEGER | 輸出結構／工具及 Decisions 語意驗證累積耗時；舊列或未觀測時 null |
 | warm_hits | INTEGER | 本請求取得已完成初始化的單次使用 CLI 次數；多題 Decisions 加總，舊列 null。 |
 | cold_starts | INTEGER | 本請求取得冷啟動推論名額次數，含 Claude；不是供應商內部 RPC 數，舊列 null。 |
+| inference_profile | TEXT | 固定 allowlist：standard／codex-chat-minimal-v1；所選執行模式，舊列或自訂 runner 未觀測為 null，不存 caller／CLI config。 |
+| profile_reason | TEXT | 固定路由原因：verified、request_standard、model_unverified、platform_unverified、cli_unverified、catalog_unavailable、provider_standard、pool_standard；舊列 null。 |
 | total_ms | INTEGER | 從受理保留名額到終態的 monotonic 耗時；舊列或未觀測時 null |
 | client_request_id | TEXT | 選用 UUID request 識別碼，用於去重／receipt；不納入一般 CSV |
 | request_digest | TEXT | 帶 key id 的 canonical JSON SHA256，僅檢查識別碼內容衝突；不存原文、不納入 CSV |

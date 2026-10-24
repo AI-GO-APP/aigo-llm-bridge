@@ -74,3 +74,9 @@ Mac 使用相同的拒絕 Relay redirect、回應讀取上限、provider 環境 
 管理台「連線與設定 → 常駐與併發」可設定常駐、執行併發及受理總數。先按「暫停接單」並等待工作結束，再套用並恢復接單。必須 `0 ≤ 常駐 ≤ 執行併發 ≤ 受理總數 ≤ 64`；常駐 0 關閉，預設 0。Mac 目前僅 Codex 支援初始化常駐，Claude 保持按需啟動。畫面顯示有效配置與待命／啟動／使用中／清理數量。這是明確選擇的 operator 試驗，完整效能門檻見 [計畫](WARM-CLI-PLAN.md)。
 
 也可從 source-install.json 解析目前 python／app 後執行 `tools/mac_service.py workers --count 64 --pending 64 --resident 2`；參數先驗證，接著排空／更新設定／重啟，保留先前接單狀態。關閉改 `--resident 0`，不改裝置、Worker、KEY 或訂閱登入。
+
+## 純 Chat 路由與常駐分配（0.9.12）
+
+Mac 已驗 CLI binary 的 gpt-6.1-sol 普通文字 Chat 會自動使用精簡模式；保留所有 caller 內容。Decisions StructuredOutput 與外部 schema／tools／images 走原模式。CLI 更新或其他模型會明確走 standard，詳細原因可查 receipt.execution，不需要更換 Key／endpoint。相容表與驗收見 [收據](qa/2026-10-24-macos-chat-minimal-release.md)。
+
+常駐數量仍是全機總數，2 在已驗配置分為純 Chat／standard 各1；0 停用常駐，仍可冷啟動精簡。兩模式與 Claude 共用同一個 worker 上限，沒有每模式各開一倍。原三值修改仍需 pause/drain；不重跑首次設定或 Cloudflare 部署。
