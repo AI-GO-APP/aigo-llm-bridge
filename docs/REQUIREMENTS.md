@@ -72,3 +72,5 @@ R-26：Relay 重用已驗證 TLS 的同 origin 連線，poll 與 result 分開�
 R-27：模型已完成而結果網路交付失敗，不能為了取得外部200重跑推論。只可在RAM保留同一result／work ID，暫時I/O／timeout／truncated或HTTP408／5xx最多補送一次，使用新連線且受原deadline＋既有2秒回覆寬限限制。明確拒絕、停止／到期、schema／body錯誤不補送；Worker刪除pending ID後才回覆caller，重複result不得二次交付。遺失ACK後accepted:false只表示不再pending，不能冒稱已確認交付。已知失效idle連線應在送新request前淘汰，任何本機推論送出後未知仍不重送。[驗收](qa/2026-10-24-macos-result-delivery.md)。
 
 R-28：冷Claude只讀預檢負值或StatusReads讀取中世代變動時，推論CLI尚未啟動前可重新取得一次metadata；必須檢查取消／原期限，丟棄舊判定，確認新讀取的Ready及穩定世代才啟動一次CLI。第二次仍不通過、啟動等待後世代改變、Codex warm世代不符或模型已開始均不得重送／跳過。不得自動登入／切換訂閱／修改憑證，只存固定數字原因。[驗收](qa/2026-10-24-macos-auth-preflight.md)。
+
+R-29：依D-49，本輪Mac owner明確設定Codex文字LLM／Decisions各4常駐、inference_workers=inference_pending=32，API／provider共享，0≤8≤32≤32≤64。原設定工具須排空／停止／原子套用並保留接單狀態；常駐初始化不產生模型推論。僅要求零推論簡易驗證與同profile發布更新／失敗回復，不改其他安裝設定／Windows預設，不宣稱完整warm／32負載穩定度或#60修復。[限定驗收](qa/2026-10-24-macos-32-operator-release.md)。

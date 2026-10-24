@@ -147,3 +147,5 @@ R-26：本機 `/health` 與 `/manage/state` 新增 nullable `relay_transport`，
 0.9.14／R-27新增`relay_transport.result_delivery_retries`；三個connection snapshot新增`idle_discarded`與nullable `last_failure`。後者只有固定category、phase(slot/origin/proxy/connect/send/headers/body)、nullable HTTP status、固定error_class、reused boolean及idle_ms；不含URL／Key／原始例外／內容。requests_failed保留每次HTTP嘗試，結果補送可能使results requests_started大於works_dispatched；CLI calls_started／billing不因此增加。結果最多補送一次不代表自動重送推論；accepted:false仍只表示不pending，不能當確認交付。舊版metadata只有數值的敘述由此補充固定枚舉診斷。
 
 0.9.15／R-28在本機health／manage state新增`claude_metadata_rechecks:{not_ready:int,generation_changed:int}`，只計已開始的邏輯metadata重新驗證，重疊查詢仍可共用同一CLI status程序，並非模型呼叫／token計數。上限每個冷Claude請求1次；原budget／cancel、第二次負值／世代不穩、pacer後變動與Codex warm拒絕保持。既有provider_authentication與usage未知契約不變；calls_started是provider介面進入，不可當成已送出模型的證明，未取得用量不填0。
+
+Mac owner D-49 profile的health max_execution_workers與max_concurrent_requests均32，LLM／Decisions、Claude／Codex合計共享；常駐合計8。原公開Worker health的64仍是relay層ceiling，effective本機容量以原機health／已驗handoff為準。本輪preflight與models只是零推論驗證，不等於訂閱推論穩定度。[收據](qa/2026-10-24-macos-32-operator-release.md)。
