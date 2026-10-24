@@ -1,5 +1,7 @@
 # #39：單次使用 warm CLI 原型
 
+下一個優先候選是D-45的 [連線重用／有界批次交付](qa/2026-10-24-macos-optimization-probes.md)，先處理Runtime外等待；原型與健康檢查不是正式推論A/B或全64資源證據，沒有修改下列固定放行門檻。
+
 2026-10-24 後續：0.9.12正式版依owner要求設總常駐8（minimal／standard各4），64/64維持；公開96筆與直連16筆全通過。公開64單波p95=55.6066秒、38秒內38/64，Runtime外等待明顯，尚不能放行完整效能門檻。實際本機peak running為公開10／直連16，不能把公開64起跑當本機64同時推論；詳見 [後續負載收據](qa/2026-10-24-macos-0912-staged-api.md)。下方2/64為先前operator試驗的歷史配置。
 
 2026-10-24 owner 授權開始試作。初次試作以 0.9.7-mac.1 為正式基線，沒有建立產品常駐池。owner 後續明確授權合併、發布 Mac 0.9.8 與小量公開 API 實測；本次交付包含預設關閉的實驗工具與 cold transport，0.9.8 production Runtime 未建立 warm pool。owner 隨後明確要求正式 API 接入、2 個常駐／64 併發與小量開關實測；0.9.9 提供此 Mac operator 試驗，預設仍為零。此明確試驗不冒充完整效能放行。原型只納入 Codex initialize／initialized 握手，請求到達後才建立 ephemeral thread 及 turn，完成即銷毀程序。Claude restricted print 的同等可觀測 ready 邊界仍待驗，不將「程序還活著／stdin 尚未關閉」視為 ready。

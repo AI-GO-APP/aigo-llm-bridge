@@ -1,5 +1,7 @@
 # 產品決策紀錄
 
+**D-45 研究取捨 2026-10-24：優先驗證連線重用／有界批次，Claude schema文字去重暫不採用。** 實際公開health重用HTTPS中位0.9082→0.322秒，僅是17筆無模型的網路證據；batch8原型在固定RTT／真Worker狀態機減少64→8次poll，尚未接入Python Relay或部署。維持舊協定、6.1MB envelope、FIFO／已分派不重送、64＋8容量，正式移植須分離poll／result連線並保留代理與TLS契約，另驗真公開與程序資源。Claude10對候選input少4.19%，但total多0.64%、耗時未改善，不能只看input上線；正式Decisions的StructuredOutput／thinking／formatter保持原樣。num_turns2不直接等於兩次模型推論，依完整stream／result計量；未重現不抹除先前異常。見 [研究收據](qa/2026-10-24-macos-optimization-probes.md)，#39／#46門檻不變。
+
 **D-30 採用 2026-10-23：Windows 全機 runtime 所有權。** 固定 Winsock exclusive reservation 在 DB／HTTP／relay 前取得，跨 profile／安裝路徑／API port／OS 使用者／TS session；同 profile event 只負責喚回視窗。忙碌 exit 3，controller 不重試；一般權限、無 UAC、無新增系統服務或管理憑證分享。LocalProbe 可測試隔離，正式不可切換鎖通道。跨使用者／session 僅在可拋棄 runner 以真 token／程序驗證，不動 owner 帳號；證據與限制見 [QA](qa/2026-10-23-windows-machine-runtime.md)。
 
 **D-29 採用 2026-10-23：獨立產品識別。** 產品使用 Local Token Buffet Bridge，repo 改名為 `local-token-buffet-bridge`，UI／文件／專案描述移除歷史平台品牌與部署依賴說明。保留舊安裝的技術 namespace、profile、更新簽章與 immutable 資產，避免外觀改名改變裝置身分、URL 或 KEY；細節見 [BRANDING](BRANDING.md)。
