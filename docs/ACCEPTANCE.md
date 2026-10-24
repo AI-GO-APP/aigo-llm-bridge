@@ -70,3 +70,7 @@ Mac 0.9.4-mac.1 整合與基本流程驗收另見 [Mac 併發交付](qa/2026-10-
 Mac 0.9.5-mac.1：在 256 描述符上限下 64 個真實子程序經 HTTP 全數完成為必要回歸（未修正時約 40／64）。
 
 0.9.7-mac.1／#36 的固定門檻見 [效能計畫](PERFORMANCE-PLAN.md)，source／自動化／合成／真訂閱／HTTPS／Release／正式安裝實際狀態見 [Mac 排隊 QA](qa/2026-10-24-macos-queue-decisions.md)。不得以候選基準或 401 代替正式公開 64 推論；warm CLI 另列 #39。
+
+## #39 warm CLI 原型（未放行）
+
+[Mac 原型收據](qa/2026-10-24-macos-warm-cli-pilot.md)區分 fake CLI 隔離、真 Codex 待命與小量對照，以及仍待完成的全量門檻。正式服務保持 0.9.7-mac.1 cold CLI；沒有管理 UI／常駐設定或 Windows 驗收。owner 的常駐零關閉及不得超過併發上限規則見 [計畫](WARM-CLI-PLAN.md)。

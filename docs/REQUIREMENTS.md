@@ -52,3 +52,7 @@ R-23：管理台及串接訊息分別呈現本機支援、公開 Worker 路由�
 Windows 0.8.1 的安全邊界、依賴與 Schema／CLI 傳輸限制見 [SECURITY](SECURITY.md)；更新不重新授權 CLI、不重建 endpoint 或 KEY，也不自動部署 Worker。
 
 R-24：#36 階段 0–2 在昂貴驗證前保留有界受理名額；執行數可低於受理數。queued 取消／撤 Key／逾時 1 秒內釋放，CLI 零呼叫；同步總期限含驗證與排隊。僅自有 Decisions 固定結構採型別驗證，外部 schema 仍隔離，timings 不含原文。量化門檻及未達時保留正式預設的規則見 [計畫](PERFORMANCE-PLAN.md)。
+
+## #39 常駐池條件功能
+
+通過 [warm CLI 放行門檻](WARM-CLI-PLAN.md)後，後台須提供機器可調的常駐總數及執行併發上限，整數 `0 ≤ 常駐總數 ≤ 執行併發 ≤ 受理總數 ≤ 64`；常駐零關閉。兩 provider 共用配額，變更 pause/drain 後原子套用。這是尚未開放的條件功能，原型不新增正式 API／DB／UI。
