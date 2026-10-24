@@ -29,7 +29,8 @@ profile 下 `bridge.sqlite`，WAL 模式、`secure_delete=ON`；並行存取用 
 | accepting | boolean true | 暫停／恢復接單；更新最低版本亦可限制新工作。 |
 | retention_days | integer 30 | 1–365，只刪過期已結束 metadata。 |
 | timeout_s | integer 180 | 10–1800；實際請求 deadline 可更短。 |
-| inference_workers | integer 64 | runtime 驗 1–64；兩來源共用總容量。既有明確設定保留，未設定者採 64。 |
+| inference_workers | integer 64 | 執行上限 1–64，且不得大於 inference_pending；兩來源共用，既有明確值保留。 |
+| inference_pending | integer 64 | 受理中的驗證＋排隊＋執行總數，workers–64。舊 profile 缺此欄位且有明確 workers 時沿用該值，直到明確選擇排隊；paused＋idle 原子修改，重啟保留。 |
 | public_url | string 空值 | HTTPS origin，不含 API path、query、fragment、帳密。 |
 | default_model | string `openai/gpt-6-astra` | 省略／auto 使用此值；保留有效既有預設，失效優先找 Codex 再找第一筆。 |
 | models | array DEFAULT_MODELS | 1–100 個唯一 id；每筆 `{id,provider,native}`，provider 為 claude／codex。 |
@@ -73,7 +74,7 @@ startup 不在 settings 表，是 Windows HKCU Run／平台啟動設定；隔離
 | status | TEXT | queued、running、completed、failed、rejected、cancelled、interrupted |
 | http_status | INTEGER | 最終 HTTP code，尚未結束可 null |
 | error_code | TEXT | 固定分類，不存原始 exception／stderr |
-| duration_ms | INTEGER | 執行耗時，前置拒絕等可 null |
+| duration_ms | INTEGER | 執行耗時；不含受理及排隊，總耗時另看 total_ms；前置拒絕等可 null |
 | input_bytes | INTEGER | 收到的 body bytes 數，不是 body |
 | output_bytes | INTEGER | 模型回覆文字 UTF-8 bytes 數，不是回覆 |
 | prompt_tokens | INTEGER | CLI 回報輸入；未知為 null |
@@ -89,12 +90,22 @@ startup 不在 settings 表，是 Windows HKCU Run／平台啟動設定；隔離
 | calls_started | INTEGER | 已開始 CLI 呼叫數；不是題數成功證明，舊列可 null |
 | calls_completed | INTEGER | 已核對模型與用量的 CLI 呼叫數；舊列可 null |
 | billing_complete | INTEGER | 1 表示目前已開始呼叫的計量已核對，0 表示尚有未知用量；receipt 還需終態才 complete；舊列 null 不假定完整 |
+| validation_ms | INTEGER | 受理參數／schema 驗證總耗時；舊列或未觀測時 null |
+| schema_wait_ms | INTEGER | 外部 schema 等名額的累積耗時；舊列或未觀測時 null |
+| schema_execution_ms | INTEGER | 外部 schema 子程序啟動與驗證累積耗時；舊列或未觀測時 null |
+| queue_wait_ms | INTEGER | 驗證完成後等待推論 worker 的耗時；舊列或未觀測時 null |
+| provider_setup_ms | INTEGER | CLI 訂閱狀態檢查累積耗時；舊列或未觀測時 null |
+| cli_spawn_ms | INTEGER | 推論 Child 建立累積耗時；不是 ready；舊列或未觀測時 null |
+| cli_ready_ms | INTEGER | Codex initialize 握手累積耗時；Claude 無等價觀測；舊列或未觀測時 null |
+| inference_ms | INTEGER | Claude communicate／Codex turn 至完成的累積耗時；舊列或未觀測時 null |
+| output_validation_ms | INTEGER | 輸出結構／工具及 Decisions 語意驗證累積耗時；舊列或未觀測時 null |
+| total_ms | INTEGER | 從受理保留名額到終態的 monotonic 耗時；舊列或未觀測時 null |
 | client_request_id | TEXT | 選用 UUID request 識別碼，用於去重／receipt；不納入一般 CSV |
 | request_digest | TEXT | 帶 key id 的 canonical JSON SHA256，僅檢查識別碼內容衝突；不存原文、不納入 CSV |
 
 所有非主鍵欄位在 SQL 層可 null，應用於各階段補入。索引 `requests_time(created_ts)`；`request_dedupe(key_id,client_request_id)` 是 client_request_id 非 null 時的 UNIQUE partial index。沒有原文／訊息／附件／完整 key 欄位。
 
-`LOG_COLUMNS` 是一般寫入／更新／管理讀取／CSV 的 allowlist：上表除 client_request_id、request_digest 的 26 個欄位。只有專用 request_identity 路徑可寫入兩個內部去重欄位。管理匯出用 UTF-8 BOM，對 `= + - @` 開頭字串前置單引號避免 CSV formula injection。最多 10,000 列，UI 最多 500 列；clear 保留 queued／running。
+`LOG_COLUMNS` 是一般寫入／更新／管理讀取／CSV 的 allowlist：上表除 client_request_id、request_digest 的欄位。只有專用 request_identity 路徑可寫入兩個內部去重欄位。管理匯出用 UTF-8 BOM，對 `= + - @` 開頭字串前置單引號避免 CSV formula injection。最多 10,000 列，UI 最多 500 列；clear 保留 queued／running。
 
 ## 非 SQLite 狀態
 
@@ -140,3 +151,11 @@ onboarding／power 使用 atomic replace，與 SQLite／DPAPI 同放原 profile 
 ## Mac 發布來源收據
 
 source ZIP 的 `source-release.json` 只含 schema=1、format=macos-byo-source、version、40位 Git commit。無 .git 的下載安裝使用此收據核對 VERSION 並填入 source-install.json.source_commit。外部 macos-source-manifest.json 另含 target、dirty、redistributable、package、size、sha256、requires_python、architecture、signed、entrypoint；公開來源 metadata，不包含使用者／KEY／裝置憑證。
+
+## 排隊與分段耗時（0.9.7-mac.1 候選）
+
+新增十個 INTEGER allowlist 欄位，只在終態一起寫入，不回填歷史數字；timings 以 monotonic 秒量測後四捨五入為毫秒，多題累加。validation_ms 包含入站 schema；output_validation_ms 包含輸出 schema；schema 子耗時與它們重疊，不能相加當總時間。未觀測為 null，不把 CLI spawn 當 ready。驗證中的已保留工作也算 queued；model/provider/question_count 在解析後於開始執行或終態寫入，之前可 null／0。參數拒絕也只保留固定錯誤與耗時，不存原文。API schema／答案格式不增加 debug 欄位。
+
+provider_setup_ms 包含重疊 auth status 查詢等待與 Claude 自有 Decisions 的 20 ms 啟動間距等待；cli_spawn_ms 只量測實際建立推論子程序。兩者不含登入憑證或查詢原文。內部 generated_schema 標記僅在 RAM，不是 API／DB 欄位。
+
+calls_started／calls_completed 計算 Bridge 啟動的 CLI 呼叫；Claude 原生固定結構模式可在該次 CLI 內使用最多 2 的 turn 上限，usage／cost 按 CLI 回報合計。這些計數不宣稱供應商內部 RPC 次數，Bridge 不重送推論。

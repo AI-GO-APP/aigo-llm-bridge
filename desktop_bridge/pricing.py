@@ -15,6 +15,7 @@ import urllib.request
 import certifi
 
 from .errors import BridgeError
+from .execution_budget import current, check, locked
 
 CATALOG_URL='https://openrouter.ai/api/v1/models'
 TTL=900
@@ -40,8 +41,10 @@ def catalog_model(model):
 def fetch_catalog():
     opener=urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=certifi.where())))
     request=urllib.request.Request(CATALOG_URL,headers={'User-Agent':'local-token-buffet-bridge-pricing/1.0','Accept':'application/json'})
-    with opener.open(request,timeout=12) as response:
+    budget=current()
+    with opener.open(request,timeout=min(12,budget.remaining()) if budget else 12) as response:
         raw=response.read(20_000_001)
+    check()
     if len(raw)>20_000_000:raise ValueError('Catalog too large')
     return json.loads(raw)
 
@@ -128,7 +131,7 @@ class Catalog:
 
     def quote(self,model):
         name=catalog_model(model)
-        with self.lock:
+        with locked(self.lock):
             now=self.clock()
             if not self.models or not 0<=now-self.fetched_at<TTL:
                 try:
@@ -144,6 +147,7 @@ class Catalog:
                     pending=self.path.with_suffix('.pending')
                     pending.write_text(json.dumps(saved,separators=(',',':')),encoding='utf-8');os.replace(pending,self.path)
                 except Exception:
+                    check()
                     raise BridgeError(503,'pricing_unavailable','OpenRouter 牌價暫時不可用；未執行推論，請稍後再試。') from None
             if name not in self.models:
                 raise BridgeError(503,'pricing_unavailable','OpenRouter 沒有此實際模型的可用牌價；未執行推論。','model')

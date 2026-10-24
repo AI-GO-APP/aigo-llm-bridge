@@ -92,9 +92,13 @@ Mac 發布由 `packaging/macos/build.py` 以 tracked 公開來源 allowlist 建�
 
 `model_catalog.ModelCatalog` 是依 provider scope 的 RAM cache：CLI 登入／設定 stat hash 識別世代，模型目錄 30 秒、推論證據 60 秒，重複 refresh 至少間隔 5 秒。Codex 的獨立 app-server 只做 model/list、不建立 thread／turn；Claude 沒有等價目錄，以登錄及近期證據呈現。查詢不寫 inference log，不傳原始憑證。
 
-`decision_contract` 只接受明確 model 與有限 state／questions，生成不含 caller 自訂引用的 bounded schema；`Runtime` 用既有 queue／RPM／deadline 依題順序執行，每題 payload 只含本題與 state，透過既有 stdin 與無工具 provider。`decisions` 經隔離 validator 後計算答案／confidence；不是 Jev 原模型校準結果。逐次 quote.usage 後聚合，先保存已知計量再驗語意或執行後續題目；receipt 揭露未完整計量，不保存題目或答案。外部新增路徑只在 Worker 範本 allowlist，不隨 Windows 更新部署。
+`decision_contract` 只接受明確 model 與有限 state／questions，生成不含 caller 自訂引用的 bounded schema；`Runtime` 用既有 queue／RPM／deadline 依題順序執行，每題 payload 只含本題與 state，透過既有 stdin 與無工具 provider。`decisions` 對自身固定結構執行有 bytes／depth 預算的型別驗證後計算答案／confidence；不是 Jev 原模型校準結果。逐次 quote.usage 後聚合，先保存已知計量再驗語意或執行後續題目；receipt 揭露未完整計量，不保存題目或答案。外部新增路徑只在 Worker 範本 allowlist，不隨 Windows 更新部署。
 
 啟動入口以 ExitStack 保管已建立的 Store／Runtime／API／relay／management；中途初始化失敗與正常停止都先清理服務，再釋放 profile／全機鎖，避免已開 HTTP／推論仍活著卻允許第二套接手。
 
 
-推論 Runtime 預設 64 workers／64 未完成名額，兩 provider 共用。Relay 使用 64 推論及 8 控制 worker，Worker 在讀 body 前原子保留對應名額（64／8）；models、preflight、receipt 不被滿載推論阻塞。Schema 驗證維持 4 個隔離程序與原時間／記憶體預算，名額在服務內部最多等待 30 秒。POSIX 啟動時把檔案描述符軟上限提高到 4096，避免 macOS LaunchAgent 的 256 預設限制 64 筆推論。詳見 [併發規格](CONCURRENCY.md)。
+推論 Runtime 新 profile 預設 64 workers／64 受理名額，兩 provider 共用；驗證、FIFO 排隊及執行共用同一上限，昂貴 schema 前先保留名額。可設較少 workers 配合 pending=64；舊 profile 未設定 pending 時保留原明確 workers 容量。獨立 monitor 移除已取消／逾時／撤 Key 的 queued 工作，釋放內容引用與容量，不依賴前方 CLI 結束。Relay 使用 64 推論及 8 控制 worker，Worker 在讀 body 前原子保留對應名額（64／8）；models、preflight、receipt 不被滿載推論阻塞。外部 Schema 驗證維持 4 個隔離程序與原平台預算，名額等待至多 30 秒且不得超過剩餘 request deadline；Decisions 自有 noul／probabilities 不開驗證程序。POSIX 啟動時把檔案描述符軟上限提高到 4096，避免 macOS LaunchAgent 的 256 預設限制 64 筆推論。詳見 [併發規格](CONCURRENCY.md)。
+
+0.9.7-mac.1 的 Request Budget 以 contextvars 綁定當前 request 的 monotonic deadline／cancel／timings，跨 schema、provider 與輸出驗證傳遞，離開 scope 即清除。Runtime 用可移除 deque＋Condition＋lazy worker threads，monitor 每 50 ms 檢查 queued 期限／撤 Key／本機斷線；只喚醒需要的 worker，避免滿載喚醒風暴。每筆仍有獨立 CLI，不建立常駐池。容量改動僅 paused＋idle，設定與 live limits 原子更新。[具體門檻](PERFORMANCE-PLAN.md)。
+
+Runtime 擁有 StatusReads 與 LaunchPacer：前者僅合併時間重疊的唯讀登入查詢，完成即移除；後者僅以 20 ms 間距緩和 Claude 自有 Decisions 冷 CLI 啟動，兩者等待均計入既有預算。啟動前重新核對 auth generation。DecisionSpec 的內部 generated_schema 標記只由程式生成固定結構；Claude 使用原生 structured_output，再獨立執行 typed validator；Codex 沿用 stdin outputSchema。外部 schema 不設該標記。[D-36–38](DECISIONS.md)。

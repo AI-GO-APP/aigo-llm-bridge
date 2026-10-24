@@ -49,7 +49,7 @@ def test_claude_actual_model_is_checked_before_pricing(tmp_path,monkeypatch,actu
     events=[{'type':'result','result':'synthetic','usage':{'input_tokens':1,'output_tokens':1}}]
     if actual:events.insert(0,{'type':'system','subtype':'init','model':actual})
     raw=b''.join((json.dumps(e)+'\n').encode() for e in events)
-    monkeypatch.setattr(providers,'status',lambda *_:{'ready':True})
+    monkeypatch.setattr(providers,'status',lambda *_,**kwargs:{'ready':True})
     monkeypatch.setattr(providers,'executable',lambda *_:'test-cli')
     monkeypatch.setattr(providers,'Child',lambda *_:SimpleNamespace(proc=SimpleNamespace(returncode=0),
                                                                    communicate=lambda *_:raw,close=lambda:None))

@@ -5,6 +5,7 @@ import threading
 import time
 
 from .errors import BridgeError
+from .execution_budget import current, check, timed
 
 MAX_SCHEMA_BYTES=262144
 MAX_NODES=8192
@@ -43,21 +44,33 @@ def run(payload,cancel=None):
     raw=json.dumps(payload,separators=(',',':')).encode()
     if len(raw)>MAX_PAYLOAD:return 'limit'
     # Keep four disposable validators, but absorb normal API concurrency internally.
+    budget=current()
+    cancel=cancel if cancel is not None else budget.cancel if budget else threading.Event()
     until=time.monotonic()+CAPACITY_WAIT_SECONDS
-    while not CAPACITY.acquire(timeout=.05):
-        if cancel is not None and cancel.is_set():
-            raise BridgeError(499,'cancelled','請求已取消。')
-        if time.monotonic()>=until:return 'busy'
+    with timed('schema_wait_ms'):
+        while True:
+            check()
+            if cancel.is_set():raise BridgeError(499,'cancelled','請求已取消。')
+            wait=min(.05,max(0,until-time.monotonic()),budget.remaining() if budget else .05)
+            if CAPACITY.acquire(timeout=wait):break
+            if time.monotonic()>=until:
+                check()
+                return 'busy'
     # Isolated cwd is unnecessary: no file/tool/remote reference is accepted.
     from pathlib import Path
     from .providers import environment
     env=environment();env['PYINSTALLER_RESET_ENVIRONMENT']='1'
     child=None
     try:
-        child=Child(command,str(Path(__file__).resolve().parent.parent),env,memory_limit=256*1024*1024)
-        answer=json.loads(child.communicate(raw,cancel or threading.Event(),VALIDATION_SECONDS))
+        with timed('schema_execution_ms'):
+            check()
+            child=Child(command,str(Path(__file__).resolve().parent.parent),env,memory_limit=256*1024*1024)
+            seconds=min(VALIDATION_SECONDS,budget.remaining()) if budget else VALIDATION_SECONDS
+            answer=json.loads(child.communicate(raw,cancel,seconds))
+            check()
         return answer.get('status','invalid')
     except BridgeError as error:
+        check()
         if error.category=='cancelled':raise
         return 'limit'
     except (OSError,ValueError):return 'limit'

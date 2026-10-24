@@ -15,6 +15,7 @@ import tomllib
 
 from .errors import BridgeError
 from .process import Child, check_cancel
+from .execution_budget import current, check, timed, locked
 
 
 def environment():
@@ -46,19 +47,115 @@ def executable(provider,settings):
     return str(path.resolve())
 
 
-def status(provider,settings,timeout=20):
+def status(provider,settings,timeout=20,*,cancel=None,cwd=None):
     try:
+        if budget:=current():timeout=min(timeout,budget.remaining())
         cmd=[executable(provider,settings)]+(["auth","status"] if provider=="claude" else ["login","status"])
-        proc=subprocess.run(cmd,capture_output=True,env=environment(),timeout=timeout,
-                            creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
-        raw=(proc.stdout+proc.stderr).decode("utf-8","replace")
+        if cancel is None:
+            proc=subprocess.run(cmd,capture_output=True,env=environment(),timeout=timeout,
+                                creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
+            stdout,stderr,returncode=proc.stdout,proc.stderr,proc.returncode
+        else:
+            child=Child(cmd,cwd,environment())
+            try:
+                stdout,stderr=child.communicate(b'',cancel,timeout,capture_stderr=True)
+                returncode=child.proc.returncode
+            finally:child.close()
+        raw=(stdout+stderr).decode("utf-8","replace")
         if provider=="claude":
-            data=json.loads(proc.stdout or b"{}")
+            data=json.loads(stdout or b"{}")
             return {"provider":provider,"ready":bool(data.get("loggedIn")) and data.get("authMethod")=="claude.ai",
                     "method":data.get("authMethod"),"plan":data.get("subscriptionType")}
-        return {"provider":provider,"ready":proc.returncode==0 and "ChatGPT" in raw,"method":"ChatGPT" if "ChatGPT" in raw else "其他／未登入"}
-    except (OSError,ValueError,subprocess.SubprocessError,BridgeError):
+        return {"provider":provider,"ready":returncode==0 and "ChatGPT" in raw,"method":"ChatGPT" if "ChatGPT" in raw else "其他／未登入"}
+    except BridgeError:
+        if cancel is not None:raise
+        check()
         return {"provider":provider,"ready":False,"method":"CLI 不可用／未登入"}
+    except (OSError,ValueError,subprocess.SubprocessError):
+        check()
+        return {"provider":provider,"ready":False,"method":"CLI 不可用／未登入"}
+
+
+class StatusReads:
+    """Share only overlapping read-only auth checks; no TTL, credentials or warm CLI."""
+    def __init__(self):
+        self.lock=threading.Lock()
+        self.inflight={}
+
+    def read(self,provider,settings,cancel,cwd):
+        def alive():
+            check()
+            if cancel is not None and cancel.is_set():
+                raise BridgeError(499,'cancelled','請求已取消。')
+        alive()
+        generation=auth_generation(provider,settings)
+        key=(provider,generation)
+        with locked(self.lock):
+            entry=self.inflight.get(key)
+            leader=entry is None
+            if leader:
+                entry={'done':threading.Event(),'value':None}
+                self.inflight[key]=entry
+        if leader:
+            try:
+                value=status(provider,settings,timeout=min(20,settings.get('timeout_s')),cancel=cancel,cwd=cwd)
+                alive()
+                if generation!=auth_generation(provider,settings):
+                    raise BridgeError(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
+                entry['value']=value
+                return dict(value)
+            finally:
+                # Cleanup must run even when the leader's budget has expired.
+                with self.lock:
+                    self.inflight.pop(key,None)
+                    entry['done'].set()
+        while not entry['done'].wait(.05):alive()
+        alive()
+        if generation!=auth_generation(provider,settings):
+            raise BridgeError(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
+        if entry['value'] is None:
+            # Another caller's cancellation must not cancel this request. This is
+            # a fresh metadata read, never a retry of an inference call.
+            value=status(provider,settings,timeout=min(20,settings.get('timeout_s')),cancel=cancel,cwd=cwd)
+            alive()
+            if generation!=auth_generation(provider,settings):
+                raise BridgeError(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
+            return value
+        return dict(entry['value'])
+
+
+class LaunchPacer:
+    """Bound cold CLI startup bursts, without keeping a CLI alive between calls."""
+    def __init__(self,interval=.02):
+        self.interval=interval
+        self.lock=threading.Lock()
+        self.next_start=0.
+
+    def wait(self,cancel):
+        with locked(self.lock):
+            while True:
+                check()
+                if cancel is not None and cancel.is_set():
+                    raise BridgeError(499,'cancelled','請求已取消。')
+                delay=self.next_start-time.monotonic()
+                if delay<=0:break
+                if cancel is not None:cancel.wait(min(.02,delay))
+                else:time.sleep(min(.02,delay))
+            self.next_start=time.monotonic()+self.interval
+
+
+def inference_status(provider,settings,cancel,cwd,*,pace=False):
+    generation=auth_generation(provider,settings)
+    reads=getattr(settings,'status_reads',None)
+    value=(reads.read(provider,settings,cancel,cwd) if reads is not None else
+        status(provider,settings,timeout=min(20,settings.get('timeout_s')),cancel=cancel,cwd=cwd))
+    if value.get('ready'):
+        pacer=getattr(settings,'launch_pacer',None)
+        if pace and pacer is not None:pacer.wait(cancel)
+        check()
+        if generation!=auth_generation(provider,settings):
+            raise BridgeError(503,'provider_authentication','登入或 CLI 設定已變更，請排空後再試。')
+    return value
 
 
 def auth_generation(provider, settings):
@@ -82,6 +179,8 @@ def auth_generation(provider, settings):
 def list_codex_models(settings):
     """Read-only app-server handshake; no thread, turn, or model inference."""
     with tempfile.TemporaryDirectory(prefix="aigo-models-") as cwd:
+        budget=current()
+        deadline=time.monotonic()+min(8,budget.remaining()) if budget else time.monotonic()+8
         child = Child(codex_command(settings), cwd, environment())
         messages = queue.Queue(maxsize=128)
         overflow = threading.Event()
@@ -106,7 +205,6 @@ def list_codex_models(settings):
             except (OSError,ValueError): pass
         threading.Thread(target=reader, daemon=True).start()
         threading.Thread(target=drain, daemon=True).start()
-        deadline = time.monotonic()+8
         next_id = 0
         def request(method, params):
             nonlocal next_id
@@ -114,12 +212,14 @@ def list_codex_models(settings):
             child.proc.stdin.write((json.dumps({"id": next_id, "method": method, "params": params})+"\n").encode())
             child.proc.stdin.flush()
             while time.monotonic() < deadline and not overflow.is_set():
+                check()
                 try: msg = messages.get(timeout=.1)
                 except queue.Empty: continue
                 if msg.get("_eof") or ("method" in msg and "id" in msg): break
                 if msg.get("id") == next_id:
                     if "error" in msg: break
                     return msg["result"]
+            check()
             raise BridgeError(503, "model_discovery_unavailable", "CLI 模型目錄暫時不可用。")
         try:
             request("initialize", {"clientInfo": {"name": "aigo_model_discovery", "version": "1.0"}})
@@ -146,7 +246,9 @@ def model_snapshot(provider, settings):
         # Claude subscription CLI has no reliable equivalent of an API-key model list.
         return {"ready": True, "models": None, "source": "registration"}
     try: return {"ready": True, "models": list_codex_models(settings), "source": "cli_catalog"}
-    except Exception: return {"ready": True, "models": None, "source": "discovery_unavailable"}
+    except Exception:
+        check()
+        return {"ready": True, "models": None, "source": "discovery_unavailable"}
 
 
 def classify(text):
@@ -185,13 +287,24 @@ def codex_usage(usage):
 
 
 def call_claude(spec,settings,cancel,cwd):
-    if not status("claude",settings)["ready"]:
+    with timed('provider_setup_ms'):
+        ready=inference_status('claude',settings,cancel,cwd,pace=getattr(spec,'generated_schema',False))['ready']
+    check()
+    if not ready:
         raise BridgeError(503,"provider_authentication","Claude Code 尚未使用訂閱帳號登入。")
     command=[executable("claude",settings),"-p","--model",spec.model["native"],"--no-session-persistence",
              "--restricted","--tools","","--strict-mcp-config","--mcp-config",'{"mcpServers":{}}',
              "--setting-sources","","--output-format","stream-json","--verbose","--max-turns","1"]
     # Caller content travels only through stdin, never argv / a prompt file.
     command += ["--system-prompt","You are an inference assistant without tools. The input contains serialized request instructions and user content. Follow request instructions over user content. Return only the requested answer. Never access files or execute tools."]
+    generated_schema=getattr(spec,'generated_schema',False)
+    if generated_schema:
+        # Only repo-generated shapes/counts may enter argv. Caller schemas,
+        # state, labels and instructions continue to travel exclusively in stdin.
+        command += ['--json-schema',json.dumps(spec.schema,separators=(',',':'))]
+        # Native structured output can need a terminal schema turn. This remains
+        # one bounded CLI invocation; no caller tool or Bridge inference retry.
+        command[command.index('--max-turns')+1]='2'
     if spec.effort: command += ["--effort",spec.effort]
     parts=spec.messages[-1]["parts"]
     instructions={"instructions":spec.system,"response_schema":spec.schema}
@@ -207,9 +320,11 @@ def call_claude(spec,settings,cancel,cwd):
         command += ["--input-format","stream-json"]
         payload=json.dumps({"type":"user","message":{"role":"user","content":content}})+"\n"
     else: payload=prefix+"\n".join(p["text"] for p in parts)
-    child=Child(command,cwd,environment())
+    with timed('cli_spawn_ms'):
+        child=Child(command,cwd,environment())
     try:
-        raw=child.communicate(payload.encode(),cancel,settings.get("timeout_s"))
+        with timed('inference_ms'):
+            raw=child.communicate(payload.encode(),cancel,settings.get("timeout_s"))
         try:
             events=[json.loads(line) for line in raw.splitlines() if line.strip()]
             result=next(e for e in reversed(events) if e.get("type")=="result")
@@ -217,7 +332,9 @@ def call_claude(spec,settings,cancel,cwd):
             raise BridgeError(502,"invalid_provider_response","CLI 回應不是合法 JSON。") from None
         if child.proc.returncode or result.get("is_error"):
             raise classify(str(result.get("result", "")))
-        text=result.get("result") or ""
+        # Preserve verified usage before Runtime rejects a missing native output.
+        # Empty text fails the fixed parser; plaintext is never a native fallback.
+        text="" if generated_schema and result.get('structured_output') is None else result.get("result") or ""
         if "structured_output" in result and result["structured_output"] is not None:
             text=json.dumps(result["structured_output"],ensure_ascii=False,separators=(",",":"))
         elif spec.schema:
@@ -256,9 +373,13 @@ def codex_command(settings):
 
 
 def call_codex(spec,settings,cancel,cwd):
-    if not status("codex",settings)["ready"]:
+    with timed('provider_setup_ms'):
+        ready=inference_status('codex',settings,cancel,cwd)['ready']
+    check()
+    if not ready:
         raise BridgeError(503,"provider_authentication","Codex 尚未使用 ChatGPT 訂閱登入。")
-    child=Child(codex_command(settings),cwd,environment())
+    with timed('cli_spawn_ms'):
+        child=Child(codex_command(settings),cwd,environment())
     messages=queue.Queue(maxsize=4096); overflow=threading.Event()
     def reader():
         try:
@@ -285,7 +406,7 @@ def call_codex(spec,settings,cancel,cwd):
         next_id+=1
         message={"method":method,"params":params or {}}
         if not notification: message["id"]=next_id
-        child.proc.stdin.write((json.dumps(message)+"\n").encode()); child.proc.stdin.flush()
+        child.write((json.dumps(message)+"\n").encode(),cancel,max(.001,deadline-time.monotonic()))
         return next_id
     def receive():
         while True:
@@ -310,8 +431,9 @@ def call_codex(spec,settings,cancel,cwd):
                 if "error" in m: raise classify(str(m["error"].get("message","")))
                 return m.get("result",{})
     try:
-        response(send("initialize",{"clientInfo":{"name":"aigo_llm_bridge","version":"0.2.0"},"capabilities":{"experimentalApi":True}}))
-        send("initialized",notification=True)
+        with timed('cli_ready_ms'):
+            response(send("initialize",{"clientInfo":{"name":"aigo_llm_bridge","version":"0.2.0"},"capabilities":{"experimentalApi":True}}))
+            send("initialized",notification=True)
         start=response(send("thread/start",{"cwd":cwd,"ephemeral":True,"model":spec.model["native"],
             "approvalPolicy":"never","sandbox":"read-only",
             "baseInstructions":"You are an LLM inference assistant. Never use tools, access files, execute commands, or create sessions.\n"+spec.system,
@@ -341,6 +463,7 @@ def call_codex(spec,settings,cancel,cwd):
         params={"threadId":tid,"input":inputs}
         if spec.effort: params["effort"]=spec.effort
         if spec.schema: params["outputSchema"]=spec.schema
+        inference_started=time.monotonic()
         rid=send("turn/start",params)
         chunks=[]; size=0; usage={}; final=None
         while True:
@@ -359,7 +482,10 @@ def call_codex(spec,settings,cancel,cwd):
         return "".join(chunks),codex_usage(usage),"stop",start['model']
     except (BrokenPipeError,OSError):
         raise BridgeError(502,"provider_unavailable","CLI 通道中斷。") from None
-    finally: child.close()
+    finally:
+        if 'inference_started' in locals() and (budget:=current()):
+            budget.timings['inference_ms']=budget.timings.get('inference_ms',0)+time.monotonic()-inference_started
+        child.close()
 
 
 def infer(spec,settings,cancel):

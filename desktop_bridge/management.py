@@ -159,14 +159,14 @@ class ManagementServer:
         threading.Thread(target=check, daemon=True, name="bridge-auth-status").start()
 
     def state(self):
-        settings = {k: self.store.get(k) for k in ("public_url", "tunnel_name", "port", "retention_days", "timeout_s", "inference_workers", "claude_path", "codex_path", "models", "relay_enabled")}
+        settings = {k: self.store.get(k) for k in ("public_url", "tunnel_name", "port", "retention_days", "timeout_s", "inference_workers", "inference_pending", "claude_path", "codex_path", "models", "relay_enabled")}
         with self.store.lock:
             counts = dict(self.store.db.execute("select status,count(*) from requests group by status"))
         keys = self.store.keys()
         with self.auth_lock:
             auth = {p: {"ready": bool(s.get("ready"))} for p, s in self.auth.items()}
             checking = self.auth_checking
-        return {"version": __version__, "preview": self.preview, "max_concurrent_requests": self.runtime.max_workers, "shared_provider_capacity": True, "accepting": self.store.get("accepting"), "settings": settings,
+        return {"version": __version__, "preview": self.preview, **self.runtime.capacity(), "accepting": self.store.get("accepting"), "settings": settings,
                 "endpoint": (settings["public_url"] or f"http://127.0.0.1:{self.api.port}") + "/api/v1",
                 "local_port": self.api.port, "startup": startup_enabled(self.store.directory), "keys": keys,
                 "counts": counts, "auth": auth, "auth_checking": checking,
@@ -235,6 +235,14 @@ class ManagementServer:
         return {"ok": True}
 
     def save_settings(self, data):
+        capacity_fields={'inference_workers','inference_pending'}
+        if set(data)==capacity_fields:
+            # Dedicated narrow API; the six-page settings form remains unchanged.
+            self.runtime.configure_capacity(data['inference_workers'],data['inference_pending'])
+            return
+        for name in capacity_fields&set(data):
+            if type(data[name]) is not int or data[name]!=self.store.get(name):
+                raise ValueError('Supply both capacity settings in a dedicated paused/idle request.')
         names = ("public_url", "tunnel_name", "claude_path", "codex_path")
         values = {}
         for name in names:

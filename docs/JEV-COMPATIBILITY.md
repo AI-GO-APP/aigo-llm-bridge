@@ -15,6 +15,8 @@
 
 GET 與 refresh 不執行推論；probe 會消耗訂閱用量，使用既有佇列、限流及成本計算，不接受自訂 prompt。chat probe 核對 PONG；Decisions probe 回傳固定問題的 noul 答案。一次成功不保證下一次一定成功。
 
+0.9.7-mac.1 的 Claude Decisions 對 repo 產生的固定結構使用 CLI 原生 JSON Schema 輸出，再由 Bridge 驗證型別及機率語意；state／題目／criteria 名稱仍只在 stdin／RAM。CLI 版本須支援 `--json-schema`／structured_output；格式失敗仍回 502 並保留已知成本，不重試。固定結構及原生輸出不保證機率校準相同。Claude 自有 Decisions 採 20 ms 冷啟動間距，受理與執行上限仍依 profile，等待計入期限。
+
 同一登入下 refresh 最短 5 秒合併；正常快取 30 秒。登入世代改變立即失效，不因防重複探查而保留舊帳號證據。Windows 0.9.0 以 0.8.2 安全版為基礎，Decisions schema 定義及輸出同樣走受時間／記憶體／並行限制的隔離 validator。
 
 `availability.state` 為 verified、unverified 或 unavailable，附 checked_at、expires_at、固定分類的 reason。catalog_listed 僅表示 CLI 有列出；Codex model/list 也可能是內建選單，不能證明訂閱權限。Claude 沒有等價的可靠訂閱模型列舉，因此列出登錄模型再以實際結果驗證。

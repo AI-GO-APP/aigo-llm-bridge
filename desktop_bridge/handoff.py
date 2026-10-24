@@ -15,8 +15,9 @@ def integration(store, model=None, providers=('claude','codex'), key=None, publi
                       'questions':{'needs_response':{'type':'noul','instructions':'Does the customer need a response?'}},
                       'provider':{'data_collection':'deny'}}
     payload={'model':selected['id'],'messages':[{'role':'user','content':'Reply exactly PONG.'}],'stream':False}
+    capacity=store.get('inference_pending')
     config={'base_url':base,'api_key_env':'LLM_BRIDGE_KEY','model':selected['id'],
-            'stream':False,'timeout_seconds':100,'max_retries':0,'max_concurrent_requests':64}
+            'stream':False,'timeout_seconds':100,'max_retries':0,'max_concurrent_requests':capacity}
     credential=('LLM_BRIDGE_KEY='+key if key else 'LLM_BRIDGE_KEY 由擁有者另行提供；放入執行環境的 secret 設定。')
     status = public_status or {'state': 'unchecked', 'tests': []}
     status_text = {'needs_update': '公開 Worker 缺少新路徑：請先原地更新同一 Worker；Decisions／模型探索尚不可交付。',
@@ -42,7 +43,7 @@ Content-Type: application/json
 模型 ID: {selected['id']}
 最小 request: {json.dumps(payload,ensure_ascii=False)}
 
-標準容量為每裝置 64 筆同時推論，Claude／Codex 與 Chat／Decisions 共用總容量。請視為普通同步 API，以 async/await、Promise.all 或 HTTP connection pool 並行 POST，最多同時 64 筆。每筆直接取得結果，不需建立工單或輪詢；超過 64 尚未驗證。既有 key 的每分鐘上限仍依擁有者設定。
+標準容量為每裝置最多受理 64 筆（包含內部排隊），Claude／Codex 與 Chat／Decisions 共用總容量。此裝置目前受理上限為 {capacity} 筆。請視為普通同步 API，以 async/await、Promise.all 或 HTTP connection pool 並行 POST，最多同時 {capacity} 筆。每筆直接取得結果，不需建立工單或輪詢；超過 64 尚未驗證。既有 key 的每分鐘上限仍依擁有者設定。
 這是 OpenRouter 的部分相容介面。使用可自訂 base_url 的 OpenAI Chat Completions/HTTP adapter；不要預設選擇鎖定 openrouter.ai 的專用 adapter。
 停用串流及自動工具呼叫。不要自動送 temperature、top_p、max_tokens、max_completion_tokens、tools、tool_choice、plugins 等預設值；不支援的非 null 參數會回 400 unsupported_parameter。0.6 起接受 provider.data_collection=deny/allow 作路由相容欄位，不影響接單，也不代表驗證訂閱資料政策。可另行啟用文字工具提案 tools/tool_choice，參數以 JSON Schema 驗證，工具由呼叫端執行；請先通過工具多輪驗收。需要串流的 IDE 仍不相容。
 成功回傳 choices[0].message.content 及 usage；usage.cost 是依實際 token 與 OpenRouter 公開牌價換算的 USD 估值，不是實際扣款。不要使用 OpenRouter 帳務/key introspection、Responses API 或全模型目錄假設。

@@ -113,3 +113,13 @@ Schema aggregate ≤256 KiB／8192 nodes／深度 24，不接受任何 $ref／$d
 
 
 每裝置標準 64 筆同時推論，Claude／Codex、Chat／Decisions 共用。直接並行同步 POST；jobs 為可選進階擴充，標準整批呼叫不需要工單或輪詢。`GET /health` 回 `max_concurrent_requests` 與 `shared_provider_capacity:true`；本機反映實際設定，Worker 反映轉接容量。來源仍受 key RPM、訂閱及同步期限限制。詳見 [併發規格](CONCURRENCY.md)。
+
+## 0.9.7-mac.1 候選：受理與排隊
+
+本機 /health 與 /manage/state 的 max_concurrent_requests 是驗證＋排隊＋執行總受理數，另回 max_execution_workers、queued_requests（含驗證）、running_requests、shared_provider_capacity。Worker health 的 64 只代表外層上限。
+
+以本機管理 token POST /manage/settings，body 僅含 `{"inference_workers":32,"inference_pending":64}` 可改容量；須 paused 且無未完成工作，1≤workers≤pending≤64。兩值與 live scheduler 一起更新。完整設定表單可帶原容量值，不能用混合更新改容量。
+
+同步本機受理時取 min(90 秒、timeout_s、X-Bridge-Deadline)，包含驗證／排隊／輸出驗證；jobs 保留 timeout_s 並含排隊。queued timeout 為 408／calls_started=0，已完成程序清理才回 execution_state:terminated。本機斷線取消工作；公開 Worker 斷線沒有完整取消傳播，只依原 deadline 終止，不保證零用量。成功 body／計價不變；分段耗時只由本機 logs／CSV 取得。[放行門檻](PERFORMANCE-PLAN.md)。
+
+終態 metadata 寫入失敗回 503 `metadata_unavailable`，釋放記憶體／受理名額且不回成功、不重送。先前已寫入的 billing 保留；DB 收據可能仍顯示非終態，直到後續恢復或重啟標為 interrupted，不能假造完整計量或以同 UUID 再推論。

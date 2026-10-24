@@ -12,7 +12,7 @@ Windows 0.8.2 原生入口另將 API／管理 listener 設為 `SO_EXCLUSIVEADDRU
 
 ## 內容不落地與 CLI
 
-Bridge 只持久保存 allowlist metadata、牌價、設定與 OS 保護憑證。請求／結果經 RAM、stdin/stdout pipe 與 loopback；不建立 prompt／schema 暫存檔，不把動態內容放在 argv。Claude 的 caller system／developer 指令與 response schema 以 stdin 包裝後處理，使用固定服務 system prompt；不是原生 API system role 或 CLI `--json-schema` 的完全等價映射。Structured output 仍由 Bridge 驗證，不符合回 502，已發生的 token／成本仍留回執。
+Bridge 只持久保存 allowlist metadata、牌價、設定與 OS 保護憑證。請求／結果經 RAM、stdin/stdout pipe 與 loopback；不建立 prompt／schema 暫存檔，不把 caller 內容放在 argv。Claude 的 caller system／developer 指令與外部 response schema 以 stdin 包裝後處理，使用固定服務 system prompt；不是原生 API system role 或 CLI `--json-schema` 的完全等價映射。自有 Decisions 僅將 repo 產生的固定結構／陣列長度交給原生 `--json-schema`，argv 沒有 state／instructions／criteria 名稱或外部 schema。Structured output 仍由 Bridge 驗證，不符合回 502，已發生的 token／成本仍留回執。
 
 Codex 使用 ephemeral thread、拒絕非允許工具事件；Claude 使用 restricted、空 tools／MCP、停 session persistence。共用 provider environment 採 OS／訂閱目錄／proxy 必要項 allowlist，不傳一般雲端秘密。Windows Job Object 只管理自有程序，不是阻擋所有本機檔案讀取的 OS sandbox；CLI 版本變更仍需負面測試。不操作其他正在使用的 CLI session 或全域登入。
 
@@ -47,3 +47,11 @@ Windows 全依賴及 announce signer 子集使用 published artifact SHA256 鎖�
 0.9 也在 Windows 共用啟動入口安裝同一獨占 listener adapter，涵蓋新版 source／ZIP；原生入口保留保護。Windows background 若埠占用則安靜回 exit 2，不跳出 Tk 對話框或搶占埠；Mac 分支不變。直接嵌入 Python 類別的開發者仍須自行選擇適當 server adapter，不將這些 entrypoint 保護宣稱成 stdlib 全域保證。
 
 模型發現僅以 stat metadata 識別登入世代，不讀取／輸出 auth.json；唯讀 Codex model/list 不建立推論 thread。refresh 最短 5 秒合併、一般快取 30 秒，避免重複持 KEY 探查啟動 CLI。這不是防已接管 OS 的隔離，也不代表 picker 目錄證明訂閱權限。新路徑只交付 Worker 範本，未獲部署授權時不得聲稱外部新路徑已修補／可用。
+
+## 0.9.7-mac.1 候選驗證預算（D-34／D-35）
+
+修訂前述歷史預算：外部 schema 保留四個一次性子程序，每次至多 3 秒，名額等待至多 30 秒，兩者均受 request 剩餘期限／取消約束。昂貴驗證前保留受理容量。Decisions 自有結構改固定欄位／長度／型別／有限值／0–1 驗證，JSON 至多 1 MB／深度 4；不提供外部 schema 程序內快速路徑。Windows 256 MiB Job Object 保留；Mac 只有既有輸入／複雜度／時間／並行預算，不宣稱相同 OS RSS hard limit。
+
+移除 queued spec 後釋放引用，worker 空閒清掉上一筆 spec；終態錯誤保存新的固定診斷，不保留 caller exception traceback。CLI stdin 也有取消／期限，避免不讀 pipe 的子程序永久卡住。分段時間僅接受 SCHEMA 的固定數字，未知 ready 為 null。公開取消限制與效能門檻見 [計畫](PERFORMANCE-PLAN.md)。
+
+推論前僅合併同 provider／auth generation、時間重疊的 auth status；完成即移除，沒有 TTL／憑證快取。等候者維持自己的期限／取消，查詢子程序由 Bridge 獨立擁有並清理。Claude 自有 Decisions 的 20 ms 啟動間距等待也受同一預算約束，等待後再核對 generation；沒有常駐推論 CLI。

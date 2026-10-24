@@ -64,3 +64,7 @@ Mac 使用相同的拒絕 Relay redirect、回應讀取上限、provider 環境 
 `BRIDGE_PY`／`BRIDGE_APP` 分別取自原 `source-install.json` 的 `python`／`app`，不能拿別的安裝目錄代入。`stop` 保留登入自動啟動設定，若要停用下次登入自啟，使用同命令的 `disable`。只 pause 不等於程序退出，也不釋放全機鎖。
 
 停止後固定 Worker URL 仍存在；它可能短暫保留在線狀態或等待至逾時，但無法再由已停止的本機完成推論。判斷停止應確認本機程序已退出、原 API port 無法連線，不單看 Worker health。不同 profile 的背景啟動若因鎖被占而退出，不會自動重試；請先正常停止原服務，再明確啟動選定 profile。全機互斥不改變單一 runtime 內的推論容量設定。
+
+## 0.9.7-mac.1 候選受理容量
+
+更新後可用 `mac_service.py workers --count 32 --pending 64` 明確選擇 32 執行／64 總受理。先驗值再沿用 pause/drain/stop，原子改兩值、保留原 accepting 狀態。缺 pending 的舊 profile 保留原明確 workers 容量；新預設仍 64/64，未達實測門檻不自動調低。health 另回 execution／queued／running；[計畫與回復](PERFORMANCE-PLAN.md)。

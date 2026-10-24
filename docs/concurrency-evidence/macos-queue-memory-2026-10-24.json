@@ -1,0 +1,43 @@
+{
+  "synthetic_only": true,
+  "rounds": [
+    {
+      "round": 1,
+      "accepted": 64,
+      "max_body_bytes": 2999080,
+      "queued_specs_released": 63,
+      "zero_inference_cancelled": 63,
+      "cancel_seconds": 0.0251,
+      "rss_before_kib": 30720,
+      "peak_rss_kib": 284432,
+      "rss_after_drain_kib": 284480
+    },
+    {
+      "round": 2,
+      "accepted": 64,
+      "max_body_bytes": 2999080,
+      "queued_specs_released": 63,
+      "zero_inference_cancelled": 63,
+      "cancel_seconds": 0.026,
+      "rss_before_kib": 284480,
+      "peak_rss_kib": 330656,
+      "rss_after_drain_kib": 330656
+    },
+    {
+      "round": 3,
+      "accepted": 64,
+      "max_body_bytes": 2999080,
+      "queued_specs_released": 63,
+      "zero_inference_cancelled": 63,
+      "cancel_seconds": 0.0597,
+      "rss_before_kib": 330656,
+      "peak_rss_kib": 347552,
+      "rss_after_drain_kib": 347552
+    }
+  ],
+  "rss_kind": "sampled current process RSS; allocator may retain freed pages",
+  "owned_workers_after_stop": 0,
+  "queue_after_stop": 0,
+  "success": true,
+  "temporary_key_revoked": true
+}

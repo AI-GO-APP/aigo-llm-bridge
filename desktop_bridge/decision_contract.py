@@ -6,7 +6,7 @@ import json
 
 from .contract import Inference, validate as validate_chat
 from .errors import BridgeError
-from .schema_guard import check_schemas
+from .execution_budget import check
 
 FIELDS = {"model", "state", "questions", "provider", "session_id", "user", "trace"}
 MAX_QUESTIONS = 100
@@ -74,7 +74,7 @@ class DecisionSpec:
         payload = json.dumps({"state": self.state, "type": kind,
             "instructions": question["instructions"], "criteria": criteria}, ensure_ascii=False, allow_nan=False)
         return Inference(self.model, [{"role": "user", "parts": [{"type": "text", "text": payload}]}],
-                         SYSTEM, None, "json_schema", schema)
+                         SYSTEM, None, "json_schema", schema, generated_schema=True)
 
 
 def validate(body, settings, caller):
@@ -122,5 +122,7 @@ def validate(body, settings, caller):
         if not isinstance(trace, dict) or len(trace) > 16: invalid("trace")
         json_value(trace, "trace")
         if len(json.dumps(trace, ensure_ascii=False).encode()) > 8192: invalid("trace")
-    check_schemas([output_schema(q) for q in questions.values()],'questions')
+    # These schemas are fixed code, never caller-supplied JSON Schema. The typed
+    # contract above bounds their only variable (criterion count) to 1..255.
+    check()
     return DecisionSpec(dict(model), state, questions)

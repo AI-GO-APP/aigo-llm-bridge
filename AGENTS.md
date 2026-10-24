@@ -33,4 +33,4 @@ Windows 新安裝需依 [ONBOARDING](docs/ONBOARDING.md) 完成本人訂閱 CLI�
 依本次使用者授權的平台維護；macOS 安裝／更新／發布依 docs/MACOS-RELEASE.md 與獨立驗收文件，不把 Windows 結果當成 Mac 通過。保持外部標準 POST／GET 及明確 unsupported_parameter；不把非等價 CLI 控制宣稱為完整 OpenRouter 相容。改完執行 `python -m pytest desktop_bridge/tests -q`、`node --test cloudflare/test/relay.test.js`、`python tools/lint_terms.py --require`。BYO 建置見 `tools/build_byo.ps1`；不要將 `.desktop-data/`、`.desktop-build/`、`.wrangler/` 或任何安裝者設定打包／提交。
 
 
-標準容量每裝置 64 筆同時推論，Claude／Codex 預設相同且共用總容量；詳見 [併發規格](docs/CONCURRENCY.md)。對外以普通同步 API 並行 POST，串接 prompt 不要求消費端管理排隊、建立工單或輪詢。大於 64 列待驗證，未另行授權不測；Claude 真實負載與預設規格分開回報。
+標準容量每裝置最多受理 64 筆（驗證＋排隊＋執行），執行上限預設 64，可明確降低並保留內部排隊；Claude／Codex 共用總容量；詳見 [併發規格](docs/CONCURRENCY.md)。對外以普通同步 API 並行 POST，串接 prompt 不要求消費端管理排隊、建立工單或輪詢。大於 64 列待驗證，未另行授權不測；Claude 真實負載與預設規格分開回報。

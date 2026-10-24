@@ -42,3 +42,5 @@ BRIDGE_APP="$("$BRIDGE_PY" -c 'import json,sys; print(json.load(open(sys.argv[1]
 6. 把 Release URL、來源 SHA、附件 SHA256、CI URL、公開回讀、下載安裝、已安裝升級與外部驗證記入 QA／ACCEPTANCE。文件收據 PR 不升版，與已發布 immutable runtime 分開。
 
 發布權限只限 Mac GitHub Release，不部署任何安裝者 Worker、不變更 Windows 更新政策、不操作其他 Cloud 專案。根 release.yml 持續略過 Mac 版號，避免把歷史 worker 附件當作現行 Mac 安裝包。
+
+0.9.7-mac.1 為 #36 階段 0–2 的候選來源，測試不代表已發布或正式安裝。[效能門檻](PERFORMANCE-PLAN.md)與[本輪 QA](qa/2026-10-24-macos-queue-decisions.md)分層記錄，warm CLI 不隨本批啟用。

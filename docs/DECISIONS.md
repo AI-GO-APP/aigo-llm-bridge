@@ -65,3 +65,13 @@ D-29（2026-10-23）：公開 API 的交付證據分為本機支援、無 Key �
 **D-32 採用 2026-10-23：Mac 64 容量沿用原地更新。** 新安裝使用共用標準；舊 profile 不隱式覆寫明確容量，由既有排空／停止／workers 指令設為 64。Mac Key handoff 預設 600 RPM，原 Key 頻率保留。本輪先跑少量公開 Chat／Decisions 與成本，另依新增授權本機 Claude 64 測試；不將 64 設定值視為負載實測。
 
 **D-33 採用 2026-10-23：Mac 自行提高描述符上限。** LaunchAgent 繼承 256 軟上限，不足以容納 64 個 CLI 子程序與 socket。Bridge 啟動時只提高本程序 RLIMIT_NOFILE 軟上限至 4096（不超過硬上限），不改 launchctl、sysctl 或 LaunchAgent 以外設定。
+
+**D-34 採用 2026-10-24：有界受理與可取消 FIFO。** #36 階段 0–1 補充 D-31：64 是驗證＋排隊＋執行的總受理數，執行預設仍為 64、可明確調低；舊明確 workers 缺 pending 者保留原受理容量。先保留名額再驗 schema，queued 取消／逾時／撤 Key 可移除及釋放，不等前方 CLI。同步受理時固定最長 90 秒，可被設定／外部 deadline 縮短；jobs 使用設定期限且含排隊。容量修改要求 paused＋idle，兩值原子更新；只存數值分段 metadata。不保證公開斷線即時取消，不自動重送未知結果。[門檻與代價](PERFORMANCE-PLAN.md)。
+
+**D-35 採用 2026-10-24：Decisions 固定結構型別驗證。** #36 階段 2 只優化自有 noul/probabilities，不以「無 pattern」推斷外部 schema 安全；維持 bytes/depth／型別／有限值／範圍／機率語意。外部 schema 保留四個一次性隔離程序、3 秒及原平台預算，等待計入 request deadline。Mac 不宣稱有 Windows Job Object 等價 RSS hard limit。warm CLI 池移至 #39，須獨立驗證隔離與含補池的持續收益。
+
+**D-36 採用 2026-10-24：合併重疊的唯讀登入狀態查詢。** 真訂閱 64 混合實測顯示 CLI auth status 的重複程序增加準備成本與 Chat p95。每個 Runtime 僅合併同 provider／auth generation、時間重疊的查詢；完成立即移除，不設 TTL、不保留憑證、不池化推論 CLI。等待者維持自己的取消／期限；查詢者取消時其他等待者可自行重新讀 metadata，絕不重送推論。generation 改變拒絕沿用結果。推論前 auth status 改用自有可取消程序群組，結束／回錯前清理；非推論的既有管理查詢契約保留。
+
+**D-37 採用 2026-10-24：Claude 自有 Decisions 使用原生結構輸出。** 真訂閱發現僅提示 JSON 仍可能產生格式錯誤。只有 `DecisionSpec.inference` 可標記 generated_schema，Claude 使用已安裝 CLI 支援的 `--json-schema`，且要求 result 的 structured_output；原生結構終結步驟採 CLI --max-turns=2，同一題仍只啟動一次 CLI、沒有 Bridge 重送，tools 保持空集合；typed validator 仍獨立檢查數值與語意。argv 只含 repo 產生的固定 noul／probabilities 結構及陣列長度，不含 state／instructions／criteria 名稱／任意外部 schema；原始內容仍走 stdin／RAM。Chat 外部 schema 與 tools 不設此內部標記。Codex 原已有 stdin outputSchema，不改其協定。此能力不等於機率校準保證，不加重試。
+
+**D-38 採用 2026-10-24：限制冷 CLI 啟動瞬間負載。** 同一 Runtime 僅對 Claude 自有 Decisions 使用最短 20 ms 的啟動間距，保持 64/64 受理／執行上限與既有 profile；不限制已啟動 CLI 的推論重疊數、不保留 warm CLI。64 筆 Decisions 同時到達的純間距最長約 1.26 秒，計入 provider_setup_ms 與既有期限。等待可取消／逾時，取消不留下未來預約名額；取得啟動機會後再核對 auth generation。一般 Chat 與 Codex 沿用原啟動方式；目的是降低移除 Decisions schema 子程序後，Claude 結構輸出集中冷啟動的 RSS／CPU 峰值，必須重驗原吞吐與 p95 門檻，不以名目容量當作實測通過。

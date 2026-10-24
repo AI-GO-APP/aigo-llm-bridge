@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.7-mac.1] - 2026-10-24
+
+- Mac source 候選實作 #36 階段 0–2：固定受理期限、可移除 FIFO、排隊取消／撤 Key／逾時及時釋放，新增受理總數與執行數的獨立設定及 health metadata。
+- Decisions 自有固定結構採型別驗證，保留機率／confidence 與成本語意；外部 schema 保持四個一次性隔離子程序並共用剩餘請求預算。
+- 新增僅含數值的分段耗時與不啟動訂閱 CLI 的 HTTP 基準工具；warm CLI 池另見 #39。既有裝置、URL、KEY、明確容量與 Windows 發布政策保留；候選測試不代表已發布／正式安裝。
+- 合併重疊的唯讀 auth status、獨立可取消程序與 Claude 自有 Decisions 的 20 ms 冷啟動間距；Claude 自有 Decisions 採原生固定結構輸出並保留 Bridge 語意驗證，外部 schema 仍只走 stdin／隔離驗證。
+
 ## [0.9.6-mac.1] - 2026-10-24
 
 - Mac source 安裝器的來源紀錄優先採用 Release ZIP 內的 `source-release.json`；只有來源目錄本身是 git repo 根目錄時才採用其 HEAD，修正 ZIP 解壓在其他 repo 內時誤記外層 commit。驗證失敗在建立版本目錄前即拒絕。
