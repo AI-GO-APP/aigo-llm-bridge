@@ -61,7 +61,8 @@ def install(root, data_dir=None, *, dependencies=True):
     for name in ('AGENTS.md','CLAUDE.md','README.md','README-LEGACY.md','CONTEXT.md','CONTRIBUTING.md','VERSION','CHANGELOG.md'):
         shutil.copyfile(SOURCE/name,release/name)
     (release/'tools').mkdir()
-    for name in ('byo_setup.py','mac_service.py','mac_key_handoff.py'):
+    for name in ('byo_setup.py','mac_service.py','mac_key_handoff.py',
+                 'benchmark_api_latency.py','benchmark_warm_cli.py','warm_cli_pool.py'):
         shutil.copyfile(SOURCE/'tools'/name,release/'tools'/name)
     launcher=root/'Bridge.pyw'
     launcher.write_text("import json, pathlib, runpy, sys\np=pathlib.Path(__file__).parent\nm=json.loads((p/'source-install.json').read_text(encoding='utf-8'))\nsys.path.insert(0,m['app'])\nsys.argv=[sys.argv[0],'--data-dir',m['data_dir'],*sys.argv[1:]]\nrunpy.run_module('desktop_bridge',run_name='__main__')\n",encoding='utf-8')
