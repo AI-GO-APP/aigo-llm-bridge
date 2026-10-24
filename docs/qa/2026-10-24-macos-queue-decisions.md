@@ -74,3 +74,11 @@ PR 保持 Draft。真訂閱三輪、公開 HTTPS 64、Mac release／正式安裝
 ## 發布前相依修補
 
 Mac 與 Windows source CI 均通過後，Windows installer 的既有 OSV 閘門仍擋住 undici 7.29.1。維持 Wrangler 4.152.0，以 npm override 精確鎖定同一 major 的 undici 7.30.1，重新產生 lockfile；這是上游三份公告共同的修補版本（[EventSource memory](https://github.com/nodejs/undici/security/advisories/GHSA-4qv8-2p9j-2685)、[SRI](https://github.com/nodejs/undici/security/advisories/GHSA-f72v-6w45-q472)、[content-encoding](https://github.com/nodejs/undici/security/advisories/GHSA-xjj6-f33q-929c)）。未略過或放寬掃描。`audit_dependencies.py` 120 個鎖定版本查詢零公告，npm audit 零漏洞。此修補不發布 Windows 套件。
+
+## 近 3 MB 滿額排隊
+
+`tools/benchmark_queue_memory.py` 以獨立合成 profile、1 running＋63 queued，連續三輪各 64 筆 2,999,080-byte JSON；第 65 筆皆在推論前回 429。每輪 63 個 queued spec 的 weak references 均釋放，calls_started=0，取消耗時 25.1／26.0／59.7 ms；停止後 queue／owned workers 均零。RSS 取樣峰值約 278／323／339 MiB；Python／macOS allocator 保留已釋放頁面，drain 後 RSS 不立即回落，不能聲稱清空後回到初始 RSS。內容未落盤，僅 aggregate metadata。
+
+## 真訂閱測試器校準
+
+首次 Haiku 4.5 混合 64 皆 HTTP 200、64 筆完整收據，但測試器誤把 noul 合法機率限定為恆等 0.9，誤列 10 筆不符（54/64）。此輪保留為校準紀錄，未列入效能放行；修正為 API 的固定欄位／finite 0–1 格式檢查，另由回歸驗 bool／非有限值／多餘欄位必須拒絕。不重送原 request ID、不挑最佳輪，也不以不同答案值宣稱機率校準相同。

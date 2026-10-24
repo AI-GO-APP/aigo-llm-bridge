@@ -36,7 +36,10 @@
 python tools/benchmark_queue.py --source /path/to/baseline --rounds 3 --output /tmp/baseline.json
 python tools/benchmark_queue.py --rounds 3 --output /tmp/candidate.json
 python tools/benchmark_queue.py --waves 3 --rounds 3 --output /tmp/candidate-sustained.json
+python tools/benchmark_queue_memory.py --output /tmp/queue-memory.json
 ```
+
+真訂閱比較使用 `python tools/benchmark_live_queue.py --apply --label baseline --rounds 3 --output /tmp/live-baseline.json`，排空並切換候選後以相同參數、`--label candidate` 另跑；`--public --rounds 1` 另驗真 HTTPS。此工具會消耗本人訂閱，以 RAM 臨時 Key、固定合成內容、唯一 request ID 檢查回應模型、格式及成本／呼叫收據，結束撤銷 Key，不自動重試。Decisions 僅檢查其合法機率格式，不要求模型機率恆等於提示內數字或宣稱校準品質。
 
 工具只存 aggregate metadata／暫時 SQLite metadata 與 key hash，結束撤銷測試 Key 並刪暫時 profile；ps CPU 是程序生命期平均的取樣峰值（100%=一個 logical core），不是瞬時峰值，sampler 自己也計入 descendant 峰值。須另以真訂閱測 CLI 程序樹。
 
