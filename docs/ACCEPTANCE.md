@@ -1,5 +1,7 @@
 # 驗收與交付矩陣
 
+Mac **0.9.8-mac.1 已合併、公開發布、匿名下載／ZIP 安裝及完成原安裝更新**。同一測試 Key 跨升級、公開 Chat／JSON／工具提案／去重與設定、裝置、owner Key、64/64 保留通過；少量 Chat／Decisions 延遲與完整發布證據見 [0.9.8 收據](qa/2026-10-24-macos-warm-cli-release.md)。warm pool 未啟用，#39 仍 open；不以小量測速代替 warm／64 併發門檻。
+
 Mac **0.9.7-mac.1 階段 0–2 已合併、發布、匿名下載校驗及完成原安裝更新**。真訂閱 192/192、原 Worker HTTPS 64/64、公開 ZIP 實際安裝與全機互斥、升級後 Codex／Claude 三題型及成本收據通過；原設定、28 筆既有 Key rows 與 3 把有效 Key 保留。詳見 [完成收據](qa/2026-10-24-macos-queue-release.md)；warm CLI 仍為獨立 #39，Cloudflare 原免費配額未變。
 
 R-23／D-29 的 Mac 公開 Worker 部署、全鏈合成推論與管理台證據修補見 [公開 API 上線收據](qa/2026-10-23-macos-public-api.md)。套件發布、已安裝來源與公開 Worker 驗證須分別記錄；不得以 401 路由探查或 health.online 代替真推論。
@@ -73,7 +75,7 @@ Mac 0.9.5-mac.1：在 256 描述符上限下 64 個真實子程序經 HTTP 全�
 
 ## #39 warm CLI 原型（未放行）
 
-[Mac 原型收據](qa/2026-10-24-macos-warm-cli-pilot.md)區分 fake CLI 隔離、真 Codex 待命與小量對照，以及仍待完成的全量門檻。正式服務保持 0.9.7-mac.1 cold CLI；沒有管理 UI／常駐設定或 Windows 驗收。owner 的常駐零關閉及不得超過併發上限規則見 [計畫](WARM-CLI-PLAN.md)。
+[Mac 原型收據](qa/2026-10-24-macos-warm-cli-pilot.md)區分 fake CLI 隔離、真 Codex 待命與小量對照，以及仍待完成的全量門檻。原型實測基線是 0.9.7-mac.1，後續 0.9.8 仍為 cold CLI；沒有管理 UI／常駐設定或 Windows warm 實機驗收。owner 的常駐零關閉及不得超過併發上限規則見 [計畫](WARM-CLI-PLAN.md)。
 
 ## Mac 0.9.8 發布與少量 API 延遲
 

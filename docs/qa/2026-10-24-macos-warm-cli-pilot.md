@@ -1,6 +1,6 @@
 # Mac #39 warm CLI 可行性原型
 
-日期：2026-10-24。狀態：實作中，預設關閉；正式 0.9.7-mac.1、原 profile／Worker／URL／Key 未變。
+日期：2026-10-24。本文件保留原型階段的 0.9.7-mac.1 基線；後續 0.9.8 已發布／更新，見 [發布收據](2026-10-24-macos-warm-cli-release.md)。warm pool 仍預設關閉，原 profile／Worker／URL／Key 保留。
 
 新增 Codex 單次使用 transport 與獨立 pool／實機工具，詳見 [契約與門檻](../WARM-CLI-PLAN.md)。owner 要求的「常駐設零可關閉、不得大於併發上限」已納入 RAM 原型規則及後台規格；沒有宣稱管理台已開放此功能。
 
