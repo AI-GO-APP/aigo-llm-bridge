@@ -110,3 +110,5 @@ Runtime 擁有 StatusReads 與 LaunchPacer：前者僅合併時間重疊的唯�
 ## Codex 推論專用上下文（0.9.10-mac.1）
 
 `codex_command` 僅對 Bridge 子程序停用 goals，不改個人 config／登入。冷啟動與 warm lease 都在 claim 前，以同一 app-server 對空 cwd 執行一次唯讀 `skills/list(forceReload=true)`，用有界、經驗證的完整 path 清單產生 `thread/start.config["skills.config"]` 停用項。每個 thread 都重新查詢，不沿用常駐建立時的技能快取；不另開 metadata CLI、不使用 `skills/config/write`，不傳入 caller 內容。清單異常在 thread／turn 前失敗，查詢納入 provider_setup_ms 及原 request deadline／cancel。warm 補池仍只做 initialize／initialized。每程序一題、ephemeral／空 cwd／用量核對及清理契約不變。此設定只精簡已驗證的 goals／技能注入，尚有 Codex 內建工具、權限與環境上下文；不宣稱完整零工具 token。[D-41](DECISIONS.md)、[驗收](qa/2026-10-24-macos-codex-context.md)。
+
+0.9.11-mac.1 依 D-42，`codex_command` 的 code_mode 改用 disabled table 並排除 functions／clock 內層 namespace，cold 與 initialize-only warm 共用同一 command；不改 skills/list 或 thread 隔離流程。Claude generated_schema 改固定 system prompt，直接呼叫原生 StructuredOutput；其餘 Chat 保留原無工具提示，外部 schema 仍走 stdin。max-turns=2、單次 CLI、typed parsing、模型／完整 usage 核對維持。`benchmark_api_latency.py` 以臨時 Key＋UUID 查同一本機 request row 取得 cache／reasoning，不從省略這些欄位的公開 compact receipt 推定零。[驗收](qa/2026-10-24-macos-cli-token-release.md)。

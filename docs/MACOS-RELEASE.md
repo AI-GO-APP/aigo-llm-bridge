@@ -46,3 +46,5 @@ BRIDGE_APP="$("$BRIDGE_PY" -c 'import json,sys; print(json.load(open(sys.argv[1]
 0.9.7-mac.1 已完成 #36 階段 0–2、公開發布及原安裝升級。[效能門檻](PERFORMANCE-PLAN.md)、[實作與負面結果](qa/2026-10-24-macos-queue-decisions.md)及[發布收據](qa/2026-10-24-macos-queue-release.md)分層記錄，warm CLI 不隨本批啟用。
 
 0.9.10-mac.1 已依 issue 46 精簡 Bridge Codex goals／技能上下文；完整診斷、負面測試與公開發布／原安裝同題對照見 [上下文收據](qa/2026-10-24-macos-codex-context.md)。原 Worker 與 2/64 profile 不因上下文修補重建。
+
+0.9.11-mac.1 候選依 D-42 整合 namespace／Claude formatter 精簡；必須先綠燈合併再執行 Mac source 發布、公開下載安裝與原 profile 更新。狀態見 [本輪收據](qa/2026-10-24-macos-cli-token-release.md)，未完成前仍以文首 0.9.10 為已發布版。

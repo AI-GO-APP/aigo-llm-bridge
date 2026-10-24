@@ -2,6 +2,7 @@
 import sys
 import threading
 import time
+import tomllib
 
 import pytest
 
@@ -92,6 +93,11 @@ def test_goals_override_is_child_only_and_preserves_personal_settings(tmp_path, 
     monkeypatch.setattr(providers, 'executable', lambda *_: 'synthetic-codex')
     command = providers.codex_command({})
     assert 'features.goals=false' in command
+    overrides = [command[i+1] for i, arg in enumerate(command) if arg == '-c']
+    config = tomllib.loads('\n'.join(overrides))
+    assert config['features']['code_mode'] == {
+        'enabled':False, 'excluded_tool_namespaces':['functions','clock']}
+    assert config['features']['shell_tool'] is False
     assert 'mcp_servers.example.enabled=false' in command
     assert personal.read_text() == original
 
