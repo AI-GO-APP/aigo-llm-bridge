@@ -22,8 +22,6 @@ Mac source 的獨立安裝、系統授權與原生視窗見 [Mac 設定](MACOS-S
 
 ## 訂閱 CLI 授權
 
-買完或兌換方案後的完整步驟、可用方案、就緒判定與 AI 助手提示詞見 [自備 AI 方案接上 Bridge](SUBSCRIPTION-SETUP.md)。
-
 Codex：先依 [OpenAI 官方驗證說明](https://developers.openai.com/codex/auth/) 安裝／使用 CLI。
 
 ```powershell
